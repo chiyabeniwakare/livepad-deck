@@ -1,0 +1,3654 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>LIVEPAD DECK - Streamer Sampler & BGM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // テーマカラー：accent / accent2 の色を CSS変数（--ac-* / --ac2-*）で切り替える
+    const acShade = (p, shades) => Object.fromEntries(shades.map(s => [s, `rgb(var(--${p}-${s}) / <alpha-value>)`]));
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            accent: acShade('ac', [200, 300, 400, 500, 600, 700]),
+            accent2: acShade('ac2', [400, 500, 600])
+          }
+        }
+      }
+    };
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #0b0d11;
+      --bg-panel: #14171f;
+      --bg-card: #1b202b;
+      --border-subtle: #282f3d;
+      /* テーマカラー（初期値：シアン）。設定で選んだ色に JS で書き換える */
+      --ac-200: 165 243 252; --ac-300: 103 232 249; --ac-400: 34 211 238;
+      --ac-500: 6 182 212;   --ac-600: 8 145 178;   --ac-700: 14 116 144;
+      --ac2-400: 96 165 250; --ac2-500: 59 130 246; --ac2-600: 37 99 235;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    input[type="text"], select {
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    body {
+      font-family: 'Inter', 'Noto Sans JP', sans-serif;
+      background-color: #07090d;
+      color: #e2e8f0;
+      margin: 0;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      overflow: hidden;
+      height: 100dvh;
+      width: 100vw;
+    }
+
+    .font-mono-num {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Tailwind v3(CDN)に grid-cols-16 が無いため自前定義（L/Rメーター用） */
+    .grid-cols-16 {
+      grid-template-columns: repeat(16, minmax(0, 1fr));
+    }
+
+    /* パッドの押し心地・発光・ドラッグ＆ドロップ演出 */
+    .sampler-pad {
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.06s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 10px rgba(0,0,0,0.45);
+      touch-action: none;
+    }
+
+    .sampler-pad:active,
+    .sampler-pad.is-pressed {
+      transform: scale(0.96);
+    }
+
+    .sampler-pad.is-playing {
+      box-shadow: inset 0 0 18px var(--pad-glow), 0 0 16px var(--pad-glow);
+      border-color: var(--pad-color) !important;
+    }
+
+    .sampler-pad.drag-over {
+      border-color: rgb(var(--ac-400)) !important;
+      background-color: rgb(var(--ac-400) / 0.14) !important;
+      box-shadow: inset 0 0 20px rgb(var(--ac-400) / 0.4), 0 0 16px rgb(var(--ac-400) / 0.45);
+      transform: scale(1.02);
+    }
+
+    .pad-progress-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 0%;
+      background: linear-gradient(90deg, var(--pad-bg-soft) 0%, var(--pad-bg-strong) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* プロ機材風フェーダースライダー */
+    input[type="range"].pro-fader {
+      -webkit-appearance: none;
+      appearance: none;
+      background: #0d1016;
+      height: 7px;
+      border-radius: 999px;
+      border: 1px solid #2a3242;
+      outline: none;
+    }
+
+    input[type="range"].pro-fader::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 22px;
+      border-radius: 4px;
+      background: linear-gradient(180deg, #e2e8f0 0%, #94a3b8 100%);
+      border: 1px solid #475569;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 #fff;
+      cursor: pointer;
+    }
+
+    input[type="range"].pro-fader.accent-cyan::-webkit-slider-thumb {
+      background: linear-gradient(180deg, rgb(var(--ac-300)) 0%, rgb(var(--ac-600)) 100%);
+      border-color: rgb(var(--ac-700));
+    }
+
+    input[type="range"].pro-fader.accent-emerald::-webkit-slider-thumb {
+      background: linear-gradient(180deg, #6ee7b7 0%, #059669 100%);
+      border-color: #047857;
+    }
+
+    /* PANIC STOP ボタン */
+    .panic-btn {
+      background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.28), 0 4px 14px rgba(220, 38, 38, 0.35);
+      transition: transform 0.08s ease, box-shadow 0.12s ease, filter 0.12s ease;
+    }
+    .panic-btn:hover { filter: brightness(1.08); }
+    .panic-btn:active, .panic-btn.triggered {
+      transform: scale(0.97);
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.5), 0 0 22px rgba(239, 68, 68, 0.75);
+    }
+
+    /* LEDセグメント */
+    .led-seg {
+      transition: background-color 0.04s linear, box-shadow 0.04s linear;
+    }
+
+    /* iPhone横モード時のフレーム演出 */
+    .device-shell {
+      transition: max-width 0.25s ease, max-height 0.25s ease, border-radius 0.25s ease;
+    }
+    .device-shell.mode-iphone {
+      max-width: 960px;
+      max-height: 500px;
+      border: 3px solid #2b3344;
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.06);
+    }
+
+    /* シークバー（再生位置）：再生済みの部分をテーマカラーで塗る */
+    input[type="range"].seek-fader {
+      height: 5px;
+      background: linear-gradient(to right, rgb(var(--ac-500)) var(--fill, 0%), #0d1016 var(--fill, 0%));
+    }
+    input[type="range"].seek-fader::-webkit-slider-thumb {
+      width: 12px;
+      height: 16px;
+      border-radius: 3px;
+      background: linear-gradient(180deg, rgb(var(--ac-300)) 0%, rgb(var(--ac-600)) 100%);
+      border-color: rgb(var(--ac-700));
+    }
+
+    /* BGMプレイリスト */
+    .bgm-list {
+      scrollbar-width: thin;
+      scrollbar-color: #2f3849 transparent;
+      overscroll-behavior: contain;
+    }
+    .bgm-list::-webkit-scrollbar { width: 6px; }
+    .bgm-list::-webkit-scrollbar-thumb { background: #2f3849; border-radius: 999px; }
+    .bgm-list::-webkit-scrollbar-track { background: transparent; }
+
+    .bgm-row {
+      position: relative;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 4px 0 10px;
+      border-bottom: 1px solid #171c27;
+      background: #0e1118;
+      cursor: pointer;
+      transition: background-color .12s ease, transform .14s ease;
+    }
+    .bgm-row:hover { background: #141925; }
+    .bgm-row.is-current { background: rgb(var(--ac-500) / .12); }
+    .bgm-row.is-current::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 6px;
+      bottom: 6px;
+      width: 3px;
+      border-radius: 0 2px 2px 0;
+      background: rgb(var(--ac-400));
+      box-shadow: 0 0 8px rgb(var(--ac-400) / .7);
+    }
+    .bgm-row.is-dragging {
+      z-index: 5;
+      transition: none;
+      background: #1b2130;
+      border-radius: 6px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.55), 0 0 0 1px rgb(var(--ac-500) / .5);
+    }
+    .bgm-row-icon {
+      width: 16px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      color: #64748b;
+    }
+    .bgm-row-name {
+      flex: 1;
+      min-width: 0;
+      font-size: 11px;
+      font-weight: 700;
+      color: #cbd5e1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .bgm-row.is-current .bgm-row-name { color: rgb(var(--ac-200)); }
+    .bgm-row-dur { font-size: 10px; color: #64748b; flex-shrink: 0; }
+    .bgm-handle {
+      width: 24px;
+      height: 28px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #475569;
+      border-radius: 4px;
+      touch-action: none;
+      cursor: grab;
+    }
+    .bgm-handle:hover { color: #cbd5e1; background: #1a2030; }
+
+    /* 再生中のイコライザー表示 */
+    .eq { display: flex; align-items: flex-end; gap: 2px; height: 10px; }
+    .eq i { width: 2px; border-radius: 1px; background: rgb(var(--ac-400)); animation: eq-bounce .9s ease-in-out infinite; }
+    .eq i:nth-child(2) { animation-delay: -.3s; }
+    .eq i:nth-child(3) { animation-delay: -.6s; }
+    @keyframes eq-bounce { 0%, 100% { height: 3px; } 50% { height: 10px; } }
+
+    /* 長押しメニュー */
+    .ctx-item {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #e2e8f0;
+      text-align: left;
+      transition: background-color .1s ease;
+    }
+    .ctx-item:hover { background: #262d3d; }
+    .ctx-item.is-danger { color: #fca5a5; }
+    .ctx-item:disabled { color: #64748b; background: transparent; cursor: default; }
+    .ctx-item.is-confirm, .ctx-item.is-confirm:hover { background: #dc2626; color: #fff; }
+
+    /* MIXER：縦フェーダー＋縦メーター */
+    .mixer-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr)) clamp(70px, 26%, 92px);
+      column-gap: 4px;
+      row-gap: 5px;
+      justify-items: center;
+      align-items: center;
+      grid-template-rows: auto 150px auto;
+    }
+    #panel-mixer.is-floating .mixer-grid { grid-template-rows: auto minmax(80px, 1fr) auto; }
+    .mixer-actions {
+      grid-column: 5;
+      grid-row: 1 / span 3;
+      align-self: center;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-left: 6px;
+    }
+    .square-btn {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      touch-action: none;
+    }
+    .duck-pad {
+      border: 1px solid rgba(251,191,36,.45);
+      background: linear-gradient(180deg, #2a2412 0%, #1c180c 100%);
+      color: #fcd34d;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 4px 10px rgba(0,0,0,.45);
+      transition: transform .06s ease, background .1s ease, box-shadow .1s ease, color .1s ease;
+      cursor: pointer;
+    }
+    .duck-pad:hover { border-color: rgba(251,191,36,.75); }
+    .duck-pad.is-active {
+      background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+      color: #1a1205;
+      border-color: #fde68a;
+      box-shadow: 0 0 18px rgba(245,158,11,.65), inset 0 1px 0 rgba(255,255,255,.4);
+      transform: scale(.96);
+    }
+    .duck-btn.duck-btn-head { font-size: 9px; padding: 4px 8px; border-radius: 6px; white-space: nowrap; }
+    .strip-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      color: #94a3b8;
+    }
+    .strip-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .vfader {
+      --v: .5;
+      --fc: 148 163 184;
+      position: relative;
+      width: 40px;
+      height: 100%;
+      min-height: 80px;
+      touch-action: none;
+      cursor: ns-resize;
+    }
+    .vfader:focus-visible { outline: 2px solid rgb(var(--ac-400)); outline-offset: 2px; border-radius: 6px; }
+    /* 目盛り */
+    .vfader::before, .vfader::after {
+      content: '';
+      position: absolute;
+      top: 8px;
+      bottom: 8px;
+      width: 6px;
+      background: repeating-linear-gradient(to bottom, #333c4f 0 1px, transparent 1px 10.4px);
+    }
+    .vfader::before { left: 0; }
+    .vfader::after { right: 0; }
+    .vfader-track {
+      position: absolute;
+      left: 50%;
+      top: 8px;
+      bottom: 8px;
+      width: 7px;
+      transform: translateX(-50%);
+      background: #0d1016;
+      border: 1px solid #2a3242;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .vfader-fill {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: calc(var(--d, var(--v)) * 100%);
+      background: linear-gradient(0deg, rgb(var(--fc) / .2) 0%, rgb(var(--fc) / .85) 100%);
+    }
+    .vfader-thumb {
+      position: absolute;
+      left: 50%;
+      bottom: calc(8px + (100% - 16px) * var(--d, var(--v)));
+      width: 34px;
+      height: 18px;
+      transform: translate(-50%, 50%);
+      border-radius: 4px;
+      background: linear-gradient(180deg, #e2e8f0 0%, #94a3b8 100%);
+      border: 1px solid #475569;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 #fff;
+      z-index: 1;
+    }
+    .vfader-thumb::after {
+      content: '';
+      position: absolute;
+      left: 5px;
+      right: 5px;
+      top: 50%;
+      height: 2px;
+      margin-top: -1px;
+      border-radius: 1px;
+      background: rgba(0,0,0,.45);
+    }
+    .vfader.is-accent { --fc: var(--ac-400); }
+    .vfader.is-accent .vfader-thumb {
+      background: linear-gradient(180deg, rgb(var(--ac-300)) 0%, rgb(var(--ac-600)) 100%);
+      border-color: rgb(var(--ac-700));
+      box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,.7);
+    }
+    .vfader.is-emerald { --fc: 52 211 153; }
+    .vfader.is-emerald .vfader-thumb {
+      background: linear-gradient(180deg, #6ee7b7 0%, #059669 100%);
+      border-color: #047857;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,.7);
+    }
+    .vfader.is-dragging .vfader-thumb { filter: brightness(1.15); }
+
+    .vmeter-box { display: flex; gap: 4px; height: 100%; padding: 8px 0; }
+    .vmeter {
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 2px;
+      width: 13px;
+      height: 100%;
+      padding: 2px;
+      background: #0b0d11;
+      border: 1px solid #222836;
+      border-radius: 3px;
+    }
+    .vmeter .led-seg { flex: 1; }
+
+    /* AUTO DUCKING ボタン */
+    .duck-btn {
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .05em;
+      transition: all .12s ease;
+    }
+    .duck-btn.is-off { color: #64748b; border-color: #2a3242; background: #0d1016; }
+    .duck-btn.is-on { color: #fcd34d; border-color: rgba(251,191,36,.5); background: rgba(245,158,11,.12); }
+    .duck-btn.is-active { color: #1a1205; border-color: #fbbf24; background: #f59e0b; box-shadow: 0 0 10px rgba(245,158,11,.6); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .eq i { animation: none; height: 8px; }
+    }
+
+    /* ---- パネル（ドック／浮遊） ---- */
+    .deck-panel { position: relative; }
+    .panel-grip {
+      width: 9px;
+      height: 14px;
+      flex-shrink: 0;
+      opacity: .6;
+      background-image: radial-gradient(circle, #94a3b8 1.1px, transparent 1.3px);
+      background-size: 4.5px 4.5px;
+    }
+    #deviceShell:not(.is-locked) .panel-head { cursor: grab; touch-action: none; }
+    #deviceShell.is-locked .panel-grip { opacity: .15; }
+
+    .deck-panel.is-floating {
+      position: absolute;
+      pointer-events: auto;
+      box-shadow: 0 18px 48px rgba(0,0,0,.72), 0 0 0 1px rgba(148,163,184,.10);
+    }
+    .deck-panel.is-moving { cursor: grabbing; opacity: .94; }
+    .deck-panel.is-moving .panel-head { cursor: grabbing; }
+    #panel-se:not(.is-floating) { width: 100%; max-width: 1240px; margin: 0 auto; }
+    .sampler-pad { container-type: inline-size; }
+    @container (max-width: 150px) {
+      .pad-src-badge { display: none; }
+    }
+    @container (max-width: 120px) {
+      .pad-vol { display: none; }
+      .pad-status-dot { font-size: 0; gap: 0; }
+    }
+    .se-panel.is-floating {
+      background: #11141b;
+      border: 1px solid #2b3447;
+      border-radius: 14px;
+      padding: 10px;
+    }
+
+    .panel-pin {
+      display: none;
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+      border-radius: 6px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #2a3242;
+      background: #10131b;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: color .12s ease, border-color .12s ease;
+    }
+    .panel-pin:hover { color: #fff; border-color: rgb(var(--ac-500) / .6); }
+    .deck-panel.is-floating .panel-pin { display: flex; }
+    #deviceShell.is-locked .panel-pin { display: none !important; }
+
+    .panel-resize {
+      display: none;
+      position: absolute;
+      right: 1px;
+      bottom: 1px;
+      width: 18px;
+      height: 18px;
+      z-index: 3;
+      cursor: nwse-resize;
+      touch-action: none;
+      border-radius: 0 0 11px 0;
+      background: linear-gradient(135deg, transparent 52%, #4b5568 52%, #4b5568 60%, transparent 60%, transparent 70%, #4b5568 70%, #4b5568 78%, transparent 78%);
+    }
+    .deck-panel.is-floating .panel-resize { display: block; }
+    #deviceShell.is-locked .panel-resize { display: none !important; }
+
+    /* 浮遊中に空いた「定位置」：ここにドラッグすると戻る */
+    .slot-placeholder {
+      display: none;
+      flex: 1;
+      min-height: 64px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 10px;
+      text-align: center;
+      border: 1.5px dashed #2a3242;
+      border-radius: 12px;
+      color: #64748b;
+      transition: border-color .12s ease, background-color .12s ease, color .12s ease;
+    }
+    .slot-placeholder.is-short { flex: none; height: 64px; }
+    .dock-slot.is-empty { min-height: 0 !important; }
+    .dock-slot.is-empty > .slot-placeholder { display: flex; }
+    .dock-slot.is-drop-target > .slot-placeholder {
+      border-color: rgb(var(--ac-400));
+      background: rgb(var(--ac-400) / .08);
+      color: rgb(var(--ac-300));
+    }
+    .placeholder-title { font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+    .placeholder-sub { font-size: 10px; }
+
+    /* ダッキング中：BGMフェーダーの元の位置に黄色い印 */
+    .vfader-mark {
+      position: absolute;
+      left: 50%;
+      bottom: calc(8px + (100% - 16px) * var(--v));
+      width: 40px;
+      height: 2px;
+      transform: translate(-50%, 50%);
+      border-radius: 1px;
+      background: #fbbf24;
+      box-shadow: 0 0 6px rgba(251,191,36,.8);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .15s ease;
+    }
+    .vfader.is-ducked .vfader-mark { opacity: 1; }
+    .strip-value.is-ducked { color: #fcd34d !important; }
+
+    .duck-btn-2line {
+      font-size: 8px;
+      line-height: 1.15;
+      padding: 3px 4px;
+      text-align: center;
+    }
+
+    /* PC（マウス操作の環境）でだけ表示するもの：キーボードのヒント */
+    .pc-only { display: none; }
+    .kbd {
+      display: none;
+      min-width: 15px;
+      height: 15px;
+      padding: 0 3px;
+      margin-right: 5px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 3px;
+      border: 1px solid #334155;
+      background: #0f1219;
+      color: #94a3b8;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .pc-only { display: inline; }
+      .kbd { display: inline-flex; }
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="flex items-center justify-center">
+
+  <!-- 起動時オーバーレイ（iOS Safari等のWeb Audio APIアンロック用） -->
+  <div id="startupOverlay" class="fixed inset-0 z-50 bg-[#07090d]/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent-500 to-accent2-600 flex items-center justify-center shadow-2xl shadow-accent-500/30 mb-5">
+      <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+        <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+        <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+        <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+        <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+      </svg>
+    </div>
+    <h1 class="text-2xl sm:text-3xl font-black tracking-wider text-white mb-2">
+      LIVEPAD <span class="text-accent-400">DECK</span>
+    </h1>
+    <p class="text-xs sm:text-sm text-slate-400 max-w-md mb-7 leading-relaxed">
+      配信向けポン出しサンプラー＆BGMデッキ。<br>
+      手持ちのMP3/WAV音源を割り当ててブラウザ内に自動保存できます。
+    </p>
+    <button id="btnStartDeck" type="button" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-accent-500 to-accent2-500 hover:from-accent-400 hover:to-accent2-400 text-slate-950 font-black text-base tracking-wider shadow-xl shadow-accent-500/30 active:scale-95 transition-all flex items-center gap-3 cursor-pointer">
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <polygon points="6 4 20 12 6 20 6 4"></polygon>
+      </svg>
+      START DECK
+    </button>
+    <p class="text-[11px] text-slate-500 mt-4">※ タップしてオーディオエンジンを有効化します（横向き推奨）</p>
+  </div>
+
+  <!-- メインデバイスコンテナ -->
+  <div id="deviceShell" class="device-shell relative w-full h-full flex flex-col bg-[#0f1115] overflow-hidden">
+
+    <!-- 1. トップヘッダーバー -->
+    <header class="h-12 shrink-0 bg-[#14171f] border-b border-[#262c3a] px-2.5 sm:px-4 flex items-center justify-between gap-2 z-20">
+      <!-- 左：ロゴ -->
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-accent-500 to-accent2-600 flex items-center justify-center shadow-md shadow-accent-500/20 shrink-0">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+          </svg>
+        </div>
+        <span class="font-extrabold tracking-wider text-sm sm:text-base text-slate-100 truncate">
+          LIVEPAD <span class="text-accent-400">DECK</span>
+        </span>
+      </div>
+
+      <!-- 中央：レイアウト切替 (iPad 4x4 / iPhone 4x2) -->
+      <div class="flex items-center bg-[#0b0d11] p-0.5 rounded-lg border border-[#262c3a] shrink-0">
+        <button id="btnLayoutIpad" type="button" class="px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-bold transition-all bg-accent-500/20 text-accent-300 border border-accent-500/40">
+          iPad 4×4
+        </button>
+        <button id="btnLayoutIphone" type="button" class="px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-bold transition-all text-slate-400 hover:text-slate-200 border border-transparent">
+          iPhone 4×2
+        </button>
+      </div>
+
+      <!-- 右：Wake Lock / Performance Lock / Settings -->
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <!-- Screen Wake Lock トグル -->
+        <button id="btnWakeLock" type="button" title="画面スリープ防止 (Wake Lock)" class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-[#2c3445] bg-[#1a1f2b] hover:bg-[#222838] transition-all text-[11px] font-bold text-slate-400">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+          </svg>
+          <span class="hidden lg:inline">WAKE</span>
+        </button>
+
+        <!-- PERFORMANCE LOCK トグル -->
+        <button id="btnPerfLock" type="button" aria-pressed="false" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#2c3445] bg-[#1a1f2b] hover:bg-[#222838] transition-all text-[11px] font-bold text-slate-300">
+          <svg id="iconLockOpen" class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+          </svg>
+          <svg id="iconLockClosed" class="w-3.5 h-3.5 text-amber-400 hidden" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <span class="hidden md:inline">PERFORMANCE LOCK</span>
+          <span class="md:hidden">LOCK</span>
+          <span id="lockStatePill" class="px-1.5 py-0.5 rounded text-[9px] font-mono-num bg-slate-800 text-slate-400">OFF</span>
+        </button>
+
+        <!-- 設定ボタン -->
+        <button id="btnOpenSettings" type="button" title="設定・データ管理" class="p-1.5 rounded-lg border border-[#2c3445] bg-[#1a1f2b] hover:bg-[#222838] text-slate-300 hover:text-white transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- 2. メインエリア（横画面2カラム：左30% / 右70%） -->
+    <!-- 2. メインエリア（横画面2カラム：左30% / 右70%）
+         BGM DECK / MIXER / SE DECK は「パネル」。タイトル部分をドラッグすると浮遊し、好きな位置に置ける -->
+    <main class="flex-1 min-h-0 flex flex-row overflow-hidden">
+
+      <!-- 左カラム：PANIC STOP + BGM DECK + MIXER -->
+      <aside class="w-[34%] min-w-[280px] max-w-[440px] bg-[#14171f] border-r border-[#262c3a] p-2.5 flex flex-col gap-2 min-h-0 overflow-y-auto no-scrollbar">
+
+        <!-- BGM DECK の定位置 -->
+        <div id="slot-bgm" class="dock-slot flex-1 min-h-[230px] flex flex-col" data-slot="bgm">
+          <section id="panel-bgm" data-panel="bgm" class="deck-panel bg-[#181c26] rounded-xl border border-[#282f3d] p-2.5 flex flex-col gap-2 flex-1 min-h-0">
+            <!-- タイトル（ドラッグで浮遊）＆BGM追加ボタン -->
+            <div class="panel-head flex items-center justify-between gap-1">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="panel-grip"></span>
+                <span class="w-2 h-2 rounded-full bg-accent-400 shadow-[0_0_8px_rgb(var(--ac-400))] shrink-0"></span>
+                <span class="text-[11px] font-bold tracking-wider text-slate-200 whitespace-nowrap">BGM DECK</span>
+                <span id="bgmCount" class="text-[9px] font-mono-num text-slate-500 whitespace-nowrap"></span>
+              </div>
+              <div class="flex items-center gap-1 shrink-0">
+                <button id="btnAddBgm" type="button" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-accent-500/15 hover:bg-accent-500/25 text-accent-300 border border-accent-500/40 transition-colors cursor-pointer">
+                  + BGM追加
+                </button>
+                <button type="button" class="panel-pin" data-pin="bgm" title="元の位置に戻す" aria-label="BGM DECKを元の位置に戻す"></button>
+              </div>
+              <input id="inputBgmFiles" type="file" accept="audio/*" multiple class="hidden" />
+            </div>
+
+            <!-- プレイリスト（タップで再生 / 再生中の曲をタップで一時停止 / 長押しでメニュー / ≡ドラッグで並び替え） -->
+            <div id="bgmList" class="bgm-list flex-1 min-h-[110px] overflow-y-auto bg-[#0e1118] rounded-lg border border-[#242b38] relative" role="listbox" aria-label="BGMリスト"></div>
+
+            <!-- Prev / Play-Pause / Next & X-FADE -->
+            <div class="flex items-center justify-between gap-1.5">
+              <div class="flex items-center gap-1">
+                <button id="btnBgmPrev" type="button" title="前の曲" class="w-8 h-8 rounded-lg bg-[#10131b] hover:bg-[#1e2433] border border-[#2a3242] text-slate-300 flex items-center justify-center active:scale-95">
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+                </button>
+                <button id="btnBgmPlay" type="button" title="再生 / 一時停止 [Space]" class="w-9 h-8 rounded-lg bg-gradient-to-b from-accent-500 to-accent-600 text-slate-950 flex items-center justify-center shadow-md shadow-accent-500/20 active:scale-95">
+                  <svg id="iconBgmPlay" class="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                  <svg id="iconBgmPause" class="w-3.5 h-3.5 hidden" fill="currentColor" viewBox="0 0 24 24"><rect x="5" y="4" width="5" height="16" rx="1"></rect><rect x="14" y="4" width="5" height="16" rx="1"></rect></svg>
+                </button>
+                <button id="btnBgmNext" type="button" title="次の曲" class="w-8 h-8 rounded-lg bg-[#10131b] hover:bg-[#1e2433] border border-[#2a3242] text-slate-300 flex items-center justify-center active:scale-95">
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                </button>
+              </div>
+              <button id="btnBgmXfade" type="button" class="px-2 py-1 rounded text-[10px] font-bold border transition-all bg-violet-500/20 text-violet-300 border-violet-500/40">X-FADE</button>
+            </div>
+
+            <!-- シークバー＋リピート -->
+            <div class="flex items-center gap-1.5">
+              <span id="bgmElapsed" class="text-[10px] font-mono-num text-slate-400 shrink-0">00:00</span>
+              <input id="bgmSeek" type="range" min="0" max="1000" value="0" class="pro-fader seek-fader flex-1 min-w-0" aria-label="再生位置">
+              <span id="bgmDuration" class="text-[10px] font-mono-num text-slate-400 shrink-0">00:24</span>
+              <button id="btnBgmRepeat" type="button" class="repeat-btn relative w-8 h-8 shrink-0 rounded-lg border flex items-center justify-center active:scale-95 transition-all">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                  <path d="M17 2l4 4-4 4"></path><path d="M3 11V9a3 3 0 0 1 3-3h15"></path>
+                  <path d="M7 22l-4-4 4-4"></path><path d="M21 13v2a3 3 0 0 1-3 3H3"></path>
+                </svg>
+                <span id="repeatOneBadge" class="hidden absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-accent-400 text-slate-950 text-[8px] font-black font-mono-num leading-[14px] text-center">1</span>
+              </button>
+            </div>
+            <div class="panel-resize" data-resize="bgm" title="ドラッグで大きさを変更"></div>
+          </section>
+          <div class="slot-placeholder" data-placeholder="bgm">
+            <span class="placeholder-title">BGM DECK はフロート中</span>
+            <span class="placeholder-sub">ここへドラッグ、または 📌 で元に戻せます</span>
+          </div>
+        </div>
+
+        <!-- MIXER の定位置 -->
+        <div id="slot-mixer" class="dock-slot shrink-0 flex flex-col sticky -bottom-2.5 z-10" data-slot="mixer">
+          <section id="panel-mixer" data-panel="mixer" class="deck-panel bg-[#181c26] rounded-xl border border-[#282f3d] p-2.5 flex flex-col">
+            <div class="panel-head flex items-center justify-between gap-1 mb-1.5">
+              <div class="flex items-center gap-1.5">
+                <span class="panel-grip"></span>
+                <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">MIXER</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <span id="peakBadge" class="text-[9px] font-mono-num font-bold px-1.5 py-0.5 rounded bg-[#0d1016] text-slate-500 border border-[#262c3a]">PEAK</span>
+                <button type="button" class="panel-pin" data-pin="mixer" title="元の位置に戻す" aria-label="MIXERを元の位置に戻す"></button>
+              </div>
+            </div>
+            <div class="mixer-grid flex-1 min-h-0">
+              <span class="strip-label">SE</span>
+              <span class="strip-label text-accent-300">BGM</span>
+              <span class="strip-label text-emerald-300">MASTER</span>
+              <span class="strip-label">L&nbsp;R</span>
+
+              <div id="faderSe" class="vfader" aria-label="SE全体の音量"></div>
+              <div id="faderBgm" class="vfader is-accent" aria-label="BGMの音量"></div>
+              <div id="faderMaster" class="vfader is-emerald" aria-label="全体の音量"></div>
+              <div class="vmeter-box">
+                <div id="meterL" class="vmeter"></div>
+                <div id="meterR" class="vmeter"></div>
+              </div>
+
+              <span id="seVolValue" class="strip-value text-slate-300">100%</span>
+              <span id="bgmVolValue" class="strip-value text-accent-300">70%</span>
+              <span id="masterVolValue" class="strip-value text-emerald-300">90%</span>
+              <span class="strip-value text-slate-500">OUT</span>
+
+              <!-- 右側：PANIC STOP（上）と DUCK（下）。押しやすい正方形ボタン -->
+              <div class="mixer-actions">
+                <button id="btnPanicStop" type="button" title="全SE・BGMを即フェード停止 [Esc]" class="panic-btn square-btn border border-red-400/40 cursor-pointer">
+                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                    <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon>
+                    <rect x="9" y="9" width="6" height="6" fill="currentColor"></rect>
+                  </svg>
+                  <span class="text-[11px] font-black tracking-wider text-white leading-none">PANIC</span>
+                  <span class="text-[11px] font-black tracking-wider text-white leading-none">STOP</span>
+                  <span class="pc-only text-[8px] font-mono-num font-bold text-red-100/80 leading-none">Esc</span>
+                </button>
+                <button id="btnManualDuck" type="button" aria-pressed="false" title="DUCK：押している間だけBGMを下げる（離すと元に戻る）" class="duck-pad square-btn is-off">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M17 7v9"></path><path d="M14 13l3 3 3-3"></path>
+                  </svg>
+                  <span class="text-[12px] font-black tracking-wider leading-none">DUCK</span>
+                  <span class="text-[8px] font-bold leading-none opacity-80">BGM↓</span>
+                </button>
+              </div>
+            </div>
+            <div class="panel-resize" data-resize="mixer" title="ドラッグで大きさを変更"></div>
+          </section>
+          <div class="slot-placeholder is-short" data-placeholder="mixer">
+            <span class="placeholder-title">MIXER はフロート中</span>
+            <span class="placeholder-sub">ここへドラッグ、または 📌 で元に戻せます</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 右カラム：SE DECK の定位置 -->
+      <section class="flex-1 min-w-0 bg-[#0f1115] p-2.5 flex flex-col min-h-0 overflow-hidden">
+        <div id="slot-se" class="dock-slot flex-1 min-h-0 flex flex-col" data-slot="se">
+          <section id="panel-se" data-panel="se" class="deck-panel se-panel flex-1 min-h-0 flex flex-col gap-2">
+            <!-- タイトル（ドラッグで浮遊）＋バンクタブ -->
+            <div class="panel-head flex items-center justify-between gap-2 shrink-0">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="flex items-center gap-1.5 shrink-0 pr-1">
+                  <span class="panel-grip"></span>
+                  <span class="w-2 h-2 rounded-full bg-accent2-400 shadow-[0_0_8px_rgb(var(--ac2-400))]"></span>
+                  <span class="text-[11px] font-bold tracking-wider text-slate-200 whitespace-nowrap">SE DECK</span>
+                </div>
+                <button id="btnDuckToggle" type="button" aria-pressed="true" title="AUTO DUCKING：SE再生中はBGMを自動で下げる" class="duck-btn duck-btn-head is-on shrink-0">AUTO DUCKING</button>
+                <div id="bankTabs" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar min-w-0"></div>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <span class="hidden xl:inline text-[10px] text-slate-500">音声ファイルをパッドへ直接ドラッグ＆ドロップ可能</span>
+                <button type="button" class="panel-pin" data-pin="se" title="元の位置に戻す" aria-label="SE DECKを元の位置に戻す"></button>
+              </div>
+            </div>
+
+            <!-- パッドグリッド -->
+            <div id="padGrid" class="flex-1 min-h-0 grid grid-cols-4 grid-rows-4 gap-2 sm:gap-2.5"></div>
+            <div class="panel-resize" data-resize="se" title="ドラッグで大きさを変更"></div>
+          </section>
+          <div class="slot-placeholder" data-placeholder="se">
+            <span class="placeholder-title">SE DECK はフロート中</span>
+            <span class="placeholder-sub">ここへドラッグ、または 📌 で元に戻せます</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 浮遊中のパネルを置く層 -->
+    <div id="floatLayer" class="absolute inset-0 z-30 pointer-events-none"></div>
+  </div>
+
+  <!-- パッド編集モーダル -->
+  <div id="editModalBackdrop" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
+    <div class="bg-[#181c26] border border-[#30384b] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]">
+      <div class="px-4 py-3 bg-[#14171f] border-b border-[#262c3a] flex items-center justify-between shrink-0">
+        <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+          <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg>
+          パッド設定を編集
+        </h3>
+        <button id="btnEditModalClose" type="button" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-4 space-y-3.5 overflow-y-auto">
+        <!-- 音源ソース（ファイル読み込み / 内蔵シンセ / クリア） -->
+        <div class="bg-[#10131b] border border-[#262c3a] rounded-xl p-3 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-300">音源ファイル</span>
+            <span id="editSourceBadge" class="text-[10px] font-mono-num px-2 py-0.5 rounded bg-accent-500/20 text-accent-300 border border-accent-500/40">SYNTH</span>
+          </div>
+          <div id="editSourceName" class="text-xs text-slate-400 truncate">内蔵シンセ: applause</div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <label class="px-3 py-1.5 rounded-lg bg-accent-500 hover:bg-accent-400 text-slate-950 text-xs font-bold cursor-pointer transition-colors">
+              ファイルを選択 (MP3/WAV/M4A)
+              <input id="inputPadAudioFile" type="file" accept="audio/*" class="hidden" />
+            </label>
+            <button id="btnRevertSynth" type="button" class="px-2.5 py-1.5 rounded-lg bg-[#1c2230] hover:bg-[#262e40] text-slate-300 text-xs font-bold border border-[#30384b]">内蔵音に戻す</button>
+            <button id="btnClearPad" type="button" class="px-2.5 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 text-xs font-bold border border-red-500/30">クリア</button>
+          </div>
+        </div>
+
+        <!-- パッド名 -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 mb-1">パッド表示名</label>
+          <input id="editPadName" type="text" maxlength="18" class="w-full px-3 py-2 rounded-lg bg-[#0d1016] border border-[#2a3242] text-sm font-bold text-white focus:outline-none focus:border-accent-400" />
+        </div>
+
+        <!-- 再生モード & 連打挙動 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1">再生モード</label>
+            <div class="grid grid-cols-3 gap-1">
+              <button type="button" data-mode="1-SHOT" class="mode-opt-btn py-1.5 rounded-lg border text-[11px] font-bold">1-SHOT</button>
+              <button type="button" data-mode="GATE" class="mode-opt-btn py-1.5 rounded-lg border text-[11px] font-bold">GATE</button>
+              <button type="button" data-mode="TOGGLE" class="mode-opt-btn py-1.5 rounded-lg border text-[11px] font-bold">TOGGLE</button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1">連打挙動 (1-SHOT)</label>
+            <div class="grid grid-cols-2 gap-1">
+              <button type="button" data-retrigger="OVERLAP" class="retrigger-opt-btn py-1.5 rounded-lg border text-[11px] font-bold">OVERLAP</button>
+              <button type="button" data-retrigger="CUT" class="retrigger-opt-btn py-1.5 rounded-lg border text-[11px] font-bold">CUT</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- カラーラベル -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 mb-1.5">カラーラベル</label>
+          <div id="editColorGroup" class="flex items-center gap-2.5 flex-wrap"></div>
+        </div>
+
+        <!-- 個別音量 -->
+        <div>
+          <div class="flex items-center justify-between text-xs font-bold mb-1">
+            <span class="text-slate-400">個別音量 (ゲイン)</span>
+            <span id="editPadVolVal" class="font-mono-num text-accent-300">100%</span>
+          </div>
+          <input id="editPadVol" type="range" min="0" max="150" value="100" class="pro-fader accent-cyan w-full">
+        </div>
+      </div>
+
+      <div class="px-4 py-3 bg-[#14171f] border-t border-[#262c3a] flex items-center justify-between shrink-0">
+        <button id="btnTestPadSound" type="button" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#1f2636] hover:bg-[#2a3347] text-accent-300 border border-accent-500/30 flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+          テスト再生
+        </button>
+        <div class="flex items-center gap-2">
+          <button id="btnEditModalCancel" type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:bg-slate-800">キャンセル</button>
+          <button id="btnEditModalSave" type="button" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-accent-500 hover:bg-accent-400 text-slate-950 shadow-lg shadow-accent-500/20">保存する</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 設定＆データ初期化モーダル -->
+  <div id="settingsModalBackdrop" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
+    <div class="bg-[#181c26] border border-[#30384b] rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
+      <div class="px-4 py-3 bg-[#14171f] border-b border-[#262c3a] flex items-center justify-between">
+        <h3 class="text-sm font-bold text-slate-100">設定・データ管理</h3>
+        <button id="btnSettingsClose" type="button" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="p-4 space-y-4">
+        <div class="bg-[#10131b] border border-[#262c3a] rounded-xl p-3 space-y-2">
+          <div class="text-xs font-bold text-accent-300">テーマカラー</div>
+          <div id="themeGroup" class="grid grid-cols-6 gap-1"></div>
+        </div>
+
+        <div class="bg-[#10131b] border border-[#262c3a] rounded-xl p-3 space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="text-xs font-bold text-accent-300">DUCKの下げ幅</div>
+            <span id="duckAmountValue" class="text-[11px] font-mono-num font-bold text-amber-300">80%</span>
+          </div>
+          <input id="sliderDuckAmount" type="range" min="30" max="95" step="5" value="80" class="pro-fader accent-cyan w-full" aria-label="DUCKの下げ幅">
+          <p class="text-[10px] text-slate-500 leading-relaxed">MIXERのDUCKボタンを押している間、BGMを今の音量の何%にするか（例：BGM 70% で 80% の場合 → 56%）</p>
+        </div>
+
+        <div class="bg-[#10131b] border border-[#262c3a] rounded-xl p-3 text-xs text-slate-300 space-y-1">
+          <div class="font-bold text-accent-300">IndexedDB 自動保存</div>
+          <p class="text-slate-400 leading-relaxed">
+            登録した音声ファイル・パッド設定・BGMプレイリストはブラウザ内に自動保存され、リロード後も維持されます。
+          </p>
+        </div>
+
+        <div class="border-t border-[#262c3a] pt-3">
+          <div class="text-xs font-bold text-red-400 mb-2">データの初期化</div>
+          <div id="resetInitialArea">
+            <button id="btnRequestReset" type="button" class="w-full py-2 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/40 text-xs font-bold transition-colors">
+              データ初期化（すべての音源と設定をリセット）
+            </button>
+          </div>
+          <div id="resetConfirmArea" class="hidden space-y-2 bg-red-950/40 border border-red-500/50 rounded-xl p-3">
+            <p class="text-xs text-red-200 font-bold">本当にすべての音源データと設定を削除して初期状態に戻しますか？</p>
+            <div class="flex items-center gap-2">
+              <button id="btnCancelReset" type="button" class="flex-1 py-1.5 rounded-lg bg-slate-800 text-slate-200 text-xs font-bold">キャンセル</button>
+              <button id="btnConfirmReset" type="button" class="flex-1 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold">初期化する</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- タブ名変更モーダル -->
+  <div id="tabModalBackdrop" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
+    <form id="tabRenameForm" class="bg-[#181c26] border border-[#30384b] rounded-2xl w-full max-w-xs shadow-2xl overflow-hidden">
+      <div class="px-4 py-3 bg-[#14171f] border-b border-[#262c3a] flex items-center justify-between">
+        <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+          <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg>
+          タブ名を変更
+        </h3>
+        <button id="btnTabClose" type="button" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="p-4">
+        <label class="block text-xs font-bold text-slate-400 mb-1" for="tabNameInput">タブ表示名（10文字まで）</label>
+        <input id="tabNameInput" type="text" maxlength="10" class="w-full px-3 py-2 rounded-lg bg-[#0d1016] border border-[#2a3242] text-sm font-bold text-white focus:outline-none focus:border-accent-400" />
+      </div>
+      <div class="px-4 py-3 bg-[#14171f] border-t border-[#262c3a] flex items-center justify-end gap-2">
+        <button id="btnTabCancel" type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:bg-slate-800">キャンセル</button>
+        <button id="btnTabSave" type="submit" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-accent-500 hover:bg-accent-400 text-slate-950 shadow-lg shadow-accent-500/20">保存する</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- BGMリストの長押しメニュー -->
+  <div id="bgmMenuShield" class="fixed inset-0 z-40 hidden"></div>
+  <div id="bgmMenu" class="fixed z-50 hidden w-[210px] bg-[#1b202b] border border-[#30384b] rounded-xl shadow-2xl shadow-black/60 p-1" role="menu">
+    <div id="bgmMenuTitle" class="px-2.5 pt-1.5 pb-1.5 text-[10px] font-bold text-slate-500 truncate border-b border-[#262c3a] mb-1"></div>
+    <button id="bgmMenuPlay" type="button" class="ctx-item" role="menuitem">
+      <svg class="w-3.5 h-3.5 text-accent-300" fill="currentColor" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+      <span id="bgmMenuPlayLabel">再生</span>
+    </button>
+    <button id="bgmMenuDelete" type="button" class="ctx-item is-danger" role="menuitem">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <polyline points="3 6 5 6 21 6"></polyline>
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+      </svg>
+      <span id="bgmMenuDeleteLabel">削除</span>
+    </button>
+  </div>
+  <!-- トースト通知 -->
+  <div id="toastBox" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-200 translate-y-2">
+    <div class="px-4 py-2 rounded-xl bg-[#1b202b] border border-accent-500/40 text-xs font-bold text-slate-100 shadow-2xl flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-accent-400"></span>
+      <span id="toastMessage">通知</span>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * =========================================================================
+     * LIVEPAD DECK - IndexedDB永続化 + Web Audio API 配信向けサンプラー＆BGMデッキ
+     * =========================================================================
+     */
+
+    /**
+     * テーマカラー（設定から選択）
+     * ac  = メインの色（200〜700の濃淡）
+     * ac2 = グラデーションの相方の色（ロゴ・起動ボタンなど）
+     * 値は "R G B"（CSS変数 --ac-* / --ac2-* に入れる）
+     */
+    const THEMES = {
+      cyan: {
+        name: 'シアン',
+        ac:  { 200: '165 243 252', 300: '103 232 249', 400: '34 211 238', 500: '6 182 212', 600: '8 145 178', 700: '14 116 144' },
+        ac2: { 400: '96 165 250', 500: '59 130 246', 600: '37 99 235' }
+      },
+      blue: {
+        name: 'ブルー',
+        ac:  { 200: '191 219 254', 300: '147 197 253', 400: '96 165 250', 500: '59 130 246', 600: '37 99 235', 700: '29 78 216' },
+        ac2: { 400: '129 140 248', 500: '99 102 241', 600: '79 70 229' }
+      },
+      violet: {
+        name: 'パープル',
+        ac:  { 200: '221 214 254', 300: '196 181 253', 400: '167 139 250', 500: '139 92 246', 600: '124 58 237', 700: '109 40 217' },
+        ac2: { 400: '232 121 249', 500: '217 70 239', 600: '192 38 211' }
+      },
+      pink: {
+        name: 'ピンク',
+        ac:  { 200: '251 207 232', 300: '249 168 212', 400: '244 114 182', 500: '236 72 153', 600: '219 39 119', 700: '190 24 93' },
+        ac2: { 400: '251 113 133', 500: '244 63 94', 600: '225 29 72' }
+      },
+      amber: {
+        name: 'アンバー',
+        ac:  { 200: '253 230 138', 300: '252 211 77', 400: '251 191 36', 500: '245 158 11', 600: '217 119 6', 700: '180 83 9' },
+        ac2: { 400: '251 146 60', 500: '249 115 22', 600: '234 88 12' }
+      },
+      mint: {
+        name: 'ミント',
+        ac:  { 200: '167 243 208', 300: '110 231 183', 400: '52 211 153', 500: '16 185 129', 600: '5 150 105', 700: '4 120 87' },
+        ac2: { 400: '45 212 191', 500: '20 184 166', 600: '13 148 136' }
+      }
+    };
+    const DEFAULT_THEME = 'cyan';
+
+    /** AUTO DUCKING 作動中のBGMの音量（元の35%） */
+    const AUTO_DUCK_LEVEL = 0.35;
+
+
+    const COLOR_PALETTE = {
+      cyan:    { hex: '#22d3ee', soft: 'rgba(34, 211, 238, 0.14)', strong: 'rgba(34, 211, 238, 0.36)', glow: 'rgba(34, 211, 238, 0.45)' },
+      amber:   { hex: '#fbbf24', soft: 'rgba(251, 191, 36, 0.14)', strong: 'rgba(251, 191, 36, 0.36)', glow: 'rgba(251, 191, 36, 0.45)' },
+      emerald: { hex: '#34d399', soft: 'rgba(52, 211, 153, 0.14)', strong: 'rgba(52, 211, 153, 0.36)', glow: 'rgba(52, 211, 153, 0.45)' },
+      rose:    { hex: '#fb7185', soft: 'rgba(251, 113, 133, 0.14)', strong: 'rgba(251, 113, 133, 0.36)', glow: 'rgba(251, 113, 133, 0.45)' },
+      violet:  { hex: '#a78bfa', soft: 'rgba(167, 139, 250, 0.14)', strong: 'rgba(167, 139, 250, 0.36)', glow: 'rgba(167, 139, 250, 0.45)' },
+      blue:    { hex: '#60a5fa', soft: 'rgba(96, 165, 250, 0.14)', strong: 'rgba(96, 165, 250, 0.36)', glow: 'rgba(96, 165, 250, 0.45)' },
+      orange:  { hex: '#fb923c', soft: 'rgba(251, 146, 60, 0.14)', strong: 'rgba(251, 146, 60, 0.36)', glow: 'rgba(251, 146, 60, 0.45)' },
+    };
+
+    /** デフォルトのバンク・パッド構成を生成 */
+    function createDefaultBanks() {
+      const makeEmptyPads = (prefix) => Array.from({ length: 16 }, (_, i) => ({
+        id: `${prefix}_${i + 1}`,
+        name: `空きパッド ${i + 1}`,
+        mode: '1-SHOT',
+        retrigger: 'OVERLAP',
+        color: 'cyan',
+        volume: 100,
+        sourceType: 'empty',
+        synthType: 'pon',
+        defaultSynth: 'pon',
+        duration: 0.6,
+        fileId: null,
+        fileName: null
+      }));
+
+      const bank1Pads = [
+        { id: 'b1_1',  name: '拍手',         mode: '1-SHOT', retrigger: 'OVERLAP', color: 'emerald', volume: 100, sourceType: 'synth', synthType: 'applause',  duration: 1.8 },
+        { id: 'b1_2',  name: '歓声',         mode: '1-SHOT', retrigger: 'OVERLAP', color: 'amber',   volume: 100, sourceType: 'synth', synthType: 'cheer',     duration: 1.7 },
+        { id: 'b1_3',  name: 'チーン',       mode: '1-SHOT', retrigger: 'OVERLAP', color: 'cyan',    volume: 100, sourceType: 'synth', synthType: 'chime',     duration: 1.5 },
+        { id: 'b1_4',  name: 'ドラムロール', mode: 'GATE',   retrigger: 'CUT',     color: 'orange',  volume: 105, sourceType: 'synth', synthType: 'drumroll',  duration: 1.6 },
+        { id: 'b1_5',  name: 'ピー音',       mode: 'GATE',   retrigger: 'CUT',     color: 'rose',    volume: 85,  sourceType: 'synth', synthType: 'beep',      duration: 1.0 },
+        { id: 'b1_6',  name: 'クイズ出題',   mode: '1-SHOT', retrigger: 'CUT',     color: 'violet',  volume: 100, sourceType: 'synth', synthType: 'quiz',      duration: 0.9 },
+        { id: 'b1_7',  name: '正解',         mode: '1-SHOT', retrigger: 'OVERLAP', color: 'emerald', volume: 100, sourceType: 'synth', synthType: 'pingpong',  duration: 0.9 },
+        { id: 'b1_8',  name: '不正解',       mode: '1-SHOT', retrigger: 'CUT',     color: 'rose',    volume: 100, sourceType: 'synth', synthType: 'buzzer',    duration: 0.75 },
+        { id: 'b1_9',  name: '鼓動',         mode: 'TOGGLE', retrigger: 'CUT',     color: 'rose',    volume: 105, sourceType: 'synth', synthType: 'heartbeat', duration: 0.95 },
+        { id: 'b1_10', name: '警報',         mode: 'TOGGLE', retrigger: 'CUT',     color: 'orange',  volume: 95,  sourceType: 'synth', synthType: 'alert',     duration: 1.1 },
+        { id: 'b1_11', name: 'レベルUP',     mode: '1-SHOT', retrigger: 'OVERLAP', color: 'emerald', volume: 100, sourceType: 'synth', synthType: 'levelup',   duration: 1.2 },
+        { id: 'b1_12', name: 'シャキン',     mode: '1-SHOT', retrigger: 'OVERLAP', color: 'cyan',    volume: 100, sourceType: 'synth', synthType: 'slash',     duration: 0.65 },
+        { id: 'b1_13', name: 'ファンファーレ', mode: '1-SHOT', retrigger: 'CUT',   color: 'amber',   volume: 105, sourceType: 'synth', synthType: 'fanfare',   duration: 1.85 },
+        { id: 'b1_14', name: '爆発',         mode: '1-SHOT', retrigger: 'OVERLAP', color: 'orange',  volume: 110, sourceType: 'synth', synthType: 'explosion', duration: 1.35 },
+        { id: 'b1_15', name: 'ジャジャーン', mode: '1-SHOT', retrigger: 'CUT',     color: 'amber',   volume: 105, sourceType: 'synth', synthType: 'taDa',      duration: 1.15 },
+        { id: 'b1_16', name: 'ポン',         mode: '1-SHOT', retrigger: 'OVERLAP', color: 'blue',    volume: 100, sourceType: 'synth', synthType: 'pon',       duration: 0.4 }
+      ].map(p => ({ ...p, defaultSynth: p.synthType, fileId: null, fileName: null }));
+
+      return [
+        { id: 'talk',     label: '雑談',     pads: bank1Pads },
+        { id: 'game',     label: 'ゲーム',   pads: makeEmptyPads('b2') },
+        { id: 'tsukkomi', label: 'ツッコミ', pads: makeEmptyPads('b3') },
+        { id: 'custom',   label: 'カスタム', pads: makeEmptyPads('b4') }
+      ];
+    }
+
+    function createDefaultBgmList() {
+      return [
+        { id: 'builtin_lofi', name: 'Lo-Fi Chill (内蔵シンセ)', type: 'synth', durationSec: 24, fileId: null }
+      ];
+    }
+
+    // アプリ状態
+    const state = {
+      layoutMode: window.innerWidth < 900 ? 'iphone' : 'ipad',
+      perfLock: false,
+      wakeLockActive: false,
+      activeBankIndex: 0,
+      masterVolume: 0.90,
+      seVolume: 1.0,          // MIXERのSEフェーダー（全SE共通の音量）
+      duckAmount: 0.8,        // 手動DUCKの下げ幅（今のBGM音量の何倍にするか）
+      panels: createDefaultPanels(),   // パネルの浮遊状態と位置
+      themeColor: DEFAULT_THEME,
+      banks: createDefaultBanks(),
+      bgmList: createDefaultBgmList(),
+      bgm: {
+        trackIndex: 0,
+        isPlaying: false,
+        repeat: 'all',        // リピート：'off'（なし）/ 'all'（リスト全体）/ 'one'（1曲）
+        manualDuck: false,    // 手動DUCK中か
+        crossfade: true,
+        volume: 0.70,
+        elapsedSec: 0
+      },
+      ducking: {
+        enabled: true,
+        isActive: false
+      },
+      editingPad: null,
+      editDraft: null
+    };
+
+    // =========================================================================
+    // IndexedDB 永続化マネージャー
+    // =========================================================================
+    class DeckStorage {
+      constructor() {
+        this.dbName = 'LivePadDeckDB_v1';
+        this.db = null;
+      }
+
+      async open() {
+        if (this.db) return this.db;
+        return new Promise((resolve, reject) => {
+          const req = indexedDB.open(this.dbName, 1);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('meta')) {
+              db.createObjectStore('meta', { keyPath: 'key' });
+            }
+            if (!db.objectStoreNames.contains('audioFiles')) {
+              db.createObjectStore('audioFiles', { keyPath: 'id' });
+            }
+          };
+          req.onsuccess = (e) => {
+            this.db = e.target.result;
+            resolve(this.db);
+          };
+          req.onerror = (e) => reject(e.target.error);
+        });
+      }
+
+      async saveState() {
+        try {
+          const db = await this.open();
+          const tx = db.transaction('meta', 'readwrite');
+          const store = tx.objectStore('meta');
+          const payload = {
+            key: 'appState',
+            banks: state.banks,
+            bgmList: state.bgmList,
+            masterVolume: state.masterVolume,
+            seVolume: state.seVolume,
+            bgmVolume: state.bgm.volume,
+            bgmRepeat: state.bgm.repeat,
+            bgmCrossfade: state.bgm.crossfade,
+            duckingEnabled: state.ducking.enabled,
+            layoutMode: state.layoutMode,
+            themeColor: state.themeColor,
+            duckAmount: state.duckAmount,
+            panels: state.panels
+          };
+          store.put(payload);
+        } catch (err) {
+          console.error('saveState error:', err);
+        }
+      }
+
+      async loadState() {
+        try {
+          const db = await this.open();
+          return new Promise((resolve) => {
+            const tx = db.transaction('meta', 'readonly');
+            const req = tx.objectStore('meta').get('appState');
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => resolve(null);
+          });
+        } catch (err) {
+          console.error('loadState error:', err);
+          return null;
+        }
+      }
+
+      async saveAudioFile(file) {
+        const db = await this.open();
+        const id = 'af_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+        const arrayBuffer = await file.arrayBuffer();
+        const record = { id, name: file.name, type: file.type || 'audio/mpeg', data: arrayBuffer };
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction('audioFiles', 'readwrite');
+          tx.objectStore('audioFiles').put(record);
+          tx.oncomplete = () => resolve(record);
+          tx.onerror = (e) => reject(e.target.error);
+        });
+      }
+
+      async getAudioFile(id) {
+        const db = await this.open();
+        return new Promise((resolve) => {
+          const tx = db.transaction('audioFiles', 'readonly');
+          const req = tx.objectStore('audioFiles').get(id);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
+        });
+      }
+
+      async deleteAudioFile(id) {
+        if (!id) return;
+        const db = await this.open();
+        const tx = db.transaction('audioFiles', 'readwrite');
+        tx.objectStore('audioFiles').delete(id);
+      }
+
+      async clearAll() {
+        const db = await this.open();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(['meta', 'audioFiles'], 'readwrite');
+          tx.objectStore('meta').clear();
+          tx.objectStore('audioFiles').clear();
+          tx.oncomplete = () => resolve();
+          tx.onerror = (e) => reject(e.target.error);
+        });
+      }
+    }
+
+    const storage = new DeckStorage();
+
+    // =========================================================================
+    // Web Audio API オーディオエンジン
+    // =========================================================================
+    class LiveAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.mainGain = null;
+        this.seMasterGain = null;
+        this.bgmVolumeGain = null;
+        this.bgmDuckGain = null;
+        this.analyserL = null;
+        this.analyserR = null;
+        this.noiseBuffer = null;
+
+        this.bufferCache = new Map();
+        this.activeVoices = new Map();
+        this.duckReleaseTimer = null;
+
+        this.bgmSynthTimer = null;
+        this.bgmStep = 0;
+        this.currentBgmDeckGain = null;
+        this.currentBgmSource = null;
+      }
+
+      ensureInit() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioCtx();
+
+          const compressor = this.ctx.createDynamicsCompressor();
+          compressor.threshold.value = -5;
+          compressor.knee.value = 12;
+          compressor.ratio.value = 6;
+          compressor.attack.value = 0.003;
+          compressor.release.value = 0.15;
+
+          this.mainGain = this.ctx.createGain();
+          this.mainGain.gain.value = state.masterVolume;
+
+          this.seMasterGain = this.ctx.createGain();
+          this.seMasterGain.gain.value = 0.95 * state.seVolume;
+
+          this.bgmDuckGain = this.ctx.createGain();
+          this.bgmDuckGain.gain.value = 1.0;
+
+          this.bgmVolumeGain = this.ctx.createGain();
+          this.bgmVolumeGain.gain.value = state.bgm.volume;
+
+          this.seMasterGain.connect(this.mainGain);
+          // 手動DUCK用のゲイン（AUTO DUCKINGとは別。MIXERのDUCKボタンでBGMを下げる）
+          this.bgmManualGain = this.ctx.createGain();
+          this.bgmManualGain.gain.value = state.bgm.manualDuck ? state.duckAmount : 1.0;
+          this.bgmDuckGain.connect(this.bgmManualGain);
+          this.bgmManualGain.connect(this.bgmVolumeGain);
+          this.bgmVolumeGain.connect(this.mainGain);
+
+          this.mainGain.connect(compressor);
+          compressor.connect(this.ctx.destination);
+
+          const splitter = this.ctx.createChannelSplitter(2);
+          this.analyserL = this.ctx.createAnalyser();
+          this.analyserR = this.ctx.createAnalyser();
+          this.analyserL.fftSize = 256;
+          this.analyserR.fftSize = 256;
+          this.analyserL.smoothingTimeConstant = 0.72;
+          this.analyserR.smoothingTimeConstant = 0.72;
+
+          compressor.connect(splitter);
+          splitter.connect(this.analyserL, 0);
+          splitter.connect(this.analyserR, 1);
+
+          const len = Math.floor(this.ctx.sampleRate * 2.0);
+          this.noiseBuffer = this.ctx.createBuffer(2, len, this.ctx.sampleRate);
+          for (let ch = 0; ch < 2; ch++) {
+            const d = this.noiseBuffer.getChannelData(ch);
+            for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+          }
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      setMasterVolume(val) {
+        if (!this.ctx || !this.mainGain) return;
+        this.mainGain.gain.setTargetAtTime(val, this.ctx.currentTime, 0.02);
+      }
+
+      setBgmVolume(val) {
+        if (!this.ctx || !this.bgmVolumeGain) return;
+        this.bgmVolumeGain.gain.setTargetAtTime(val, this.ctx.currentTime, 0.02);
+      }
+
+      setSeVolume(val) {
+        if (!this.ctx || !this.seMasterGain) return;
+        this.seMasterGain.gain.setTargetAtTime(0.95 * val, this.ctx.currentTime, 0.02);
+      }
+
+      /** 手動DUCK：ONなら BGM を「今の音量 × 下げ幅」に、OFFなら元に戻す（なめらかに） */
+      applyManualDuck() {
+        if (!this.ctx || !this.bgmManualGain) return;
+        const target = state.bgm.manualDuck ? state.duckAmount : 1.0;
+        this.bgmManualGain.gain.setTargetAtTime(target, this.ctx.currentTime, state.bgm.manualDuck ? 0.06 : 0.12);
+      }
+
+      async getDecodedBuffer(fileId) {
+        this.ensureInit();
+        if (this.bufferCache.has(fileId)) return this.bufferCache.get(fileId);
+        const record = await storage.getAudioFile(fileId);
+        if (!record || !record.data) return null;
+        const buffer = await this.ctx.decodeAudioData(record.data.slice(0));
+        this.bufferCache.set(fileId, buffer);
+        return buffer;
+      }
+
+      getTotalActiveSeCount() {
+        let count = 0;
+        this.activeVoices.forEach(list => { count += list.length; });
+        return count;
+      }
+
+      updateDucking() {
+        const shouldDuck = state.ducking.enabled && this.getTotalActiveSeCount() > 0;
+        if (this.duckReleaseTimer) {
+          clearTimeout(this.duckReleaseTimer);
+          this.duckReleaseTimer = null;
+        }
+        if (shouldDuck) {
+          state.ducking.isActive = true;
+          updateDuckingVisuals();
+          if (this.ctx && this.bgmDuckGain) {
+            this.bgmDuckGain.gain.setTargetAtTime(AUTO_DUCK_LEVEL, this.ctx.currentTime, 0.035);
+          }
+        } else {
+          this.duckReleaseTimer = setTimeout(() => {
+            if (this.getTotalActiveSeCount() === 0 || !state.ducking.enabled) {
+              state.ducking.isActive = false;
+              updateDuckingVisuals();
+              if (this.ctx && this.bgmDuckGain) {
+                this.bgmDuckGain.gain.setTargetAtTime(1.0, this.ctx.currentTime, 0.18);
+              }
+            }
+          }, 160);
+        }
+      }
+
+      async triggerPadDown(pad) {
+        if (pad.sourceType === 'empty') {
+          if (!state.perfLock) openEditModal(pad);
+          return;
+        }
+        this.ensureInit();
+
+        const existing = this.activeVoices.get(pad.id) || [];
+
+        if (pad.mode === 'TOGGLE' && existing.length > 0) {
+          this.stopPad(pad.id, 0.08);
+          return;
+        }
+
+        if ((pad.mode === '1-SHOT' && pad.retrigger === 'CUT') || pad.mode === 'GATE') {
+          if (existing.length > 0) this.stopPad(pad.id, 0.02, true);
+        }
+
+        const isLooping = (pad.mode === 'GATE' || pad.mode === 'TOGGLE');
+        const voiceGain = this.ctx.createGain();
+        voiceGain.gain.setValueAtTime((pad.volume / 100) * 0.78, this.ctx.currentTime);
+        voiceGain.connect(this.seMasterGain);
+
+        const voice = {
+          id: Math.random().toString(36).slice(2),
+          startTime: performance.now(),
+          durationMs: (pad.duration || 1.0) * 1000,
+          isLooping,
+          stopFn: () => {}
+        };
+
+        const list = this.activeVoices.get(pad.id) || [];
+        list.push(voice);
+        this.activeVoices.set(pad.id, list);
+        setPadVisualPlaying(pad.id, true);
+        this.updateDucking();
+
+        const removeThisVoice = () => {
+          const cur = this.activeVoices.get(pad.id);
+          if (!cur) return;
+          const idx = cur.indexOf(voice);
+          if (idx !== -1) cur.splice(idx, 1);
+          if (cur.length === 0) {
+            this.activeVoices.delete(pad.id);
+            setPadVisualPlaying(pad.id, false);
+            this.updateDucking();
+          }
+        };
+
+        if (pad.sourceType === 'file' && pad.fileId) {
+          try {
+            const audioBuffer = await this.getDecodedBuffer(pad.fileId);
+            if (!audioBuffer) {
+              removeThisVoice();
+              showToast('音源データの読み込みに失敗しました');
+              return;
+            }
+            const cur = this.activeVoices.get(pad.id);
+            if (!cur || !cur.includes(voice)) return;
+
+            voice.durationMs = audioBuffer.duration * 1000;
+            voice.startTime = performance.now();
+
+            const src = this.ctx.createBufferSource();
+            src.buffer = audioBuffer;
+            src.loop = isLooping;
+            src.connect(voiceGain);
+            src.start(0);
+
+            src.onended = () => {
+              if (!isLooping) removeThisVoice();
+            };
+
+            voice.stopFn = (fadeSec = 0.04) => {
+              const now = this.ctx.currentTime;
+              try {
+                voiceGain.gain.cancelScheduledValues(now);
+                voiceGain.gain.setValueAtTime(voiceGain.gain.value, now);
+                voiceGain.gain.linearRampToValueAtTime(0.0001, now + fadeSec);
+                setTimeout(() => {
+                  try { src.stop(); src.disconnect(); voiceGain.disconnect(); } catch (e) {}
+                }, fadeSec * 1000 + 30);
+              } catch (e) {}
+            };
+          } catch (err) {
+            console.error(err);
+            removeThisVoice();
+          }
+          return;
+        }
+
+        const nodes = [];
+        let loopTimer = null;
+        let endTimer = null;
+
+        const fireSynth = () => {
+          if (!this.ctx) return;
+          nodes.push(...this.synthesizeSE(pad.synthType || 'pon', voiceGain, pad.duration || 0.8));
+        };
+
+        fireSynth();
+
+        if (isLooping) {
+          const loopMs = Math.max(350, Math.floor((pad.duration || 1.0) * 900));
+          loopTimer = setInterval(() => {
+            const cur = this.activeVoices.get(pad.id);
+            if (!cur || !cur.includes(voice)) {
+              clearInterval(loopTimer);
+              return;
+            }
+            voice.startTime = performance.now();
+            fireSynth();
+          }, loopMs);
+        } else {
+          endTimer = setTimeout(() => {
+            removeThisVoice();
+          }, voice.durationMs + 70);
+        }
+
+        voice.stopFn = (fadeSec = 0.04) => {
+          if (loopTimer) clearInterval(loopTimer);
+          if (endTimer) clearTimeout(endTimer);
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          try {
+            voiceGain.gain.cancelScheduledValues(now);
+            voiceGain.gain.setValueAtTime(voiceGain.gain.value, now);
+            voiceGain.gain.linearRampToValueAtTime(0.0001, now + fadeSec);
+          } catch (e) {}
+          setTimeout(() => {
+            nodes.forEach(n => { try { n.stop && n.stop(); n.disconnect && n.disconnect(); } catch (e) {} });
+            try { voiceGain.disconnect(); } catch (e) {}
+          }, fadeSec * 1000 + 30);
+        };
+      }
+
+      triggerPadUp(pad) {
+        if (pad.mode === 'GATE' && this.activeVoices.has(pad.id)) {
+          this.stopPad(pad.id, 0.05);
+        }
+      }
+
+      stopPad(padId, fadeSec = 0.05, silent = false) {
+        const list = this.activeVoices.get(padId);
+        if (!list) return;
+        this.activeVoices.delete(padId);
+        list.forEach(v => v.stopFn(fadeSec));
+        if (!silent) {
+          setPadVisualPlaying(padId, false);
+          this.updateDucking();
+        }
+      }
+
+      panicStop() {
+        for (const padId of Array.from(this.activeVoices.keys())) {
+          this.stopPad(padId, 0.15);
+        }
+        if (state.bgm.isPlaying) {
+          this.stopBgm(0.15);
+        }
+        this.updateDucking();
+      }
+
+      synthesizeSE(type, dest, duration) {
+        const ctx = this.ctx;
+        const t = ctx.currentTime;
+        const nodes = [];
+
+        const osc = (wave, freq, start, stop, peak, endVal = 0.001) => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.type = wave;
+          o.frequency.setValueAtTime(freq, start);
+          g.gain.setValueAtTime(0.001, start);
+          g.gain.linearRampToValueAtTime(peak, start + 0.01);
+          g.gain.exponentialRampToValueAtTime(endVal, stop);
+          o.connect(g);
+          g.connect(dest);
+          o.start(start);
+          o.stop(stop + 0.02);
+          nodes.push(o, g);
+          return { o, g };
+        };
+
+        const noise = (start, dur, fType, fFreq, q, peak) => {
+          const src = ctx.createBufferSource();
+          src.buffer = this.noiseBuffer;
+          const f = ctx.createBiquadFilter();
+          f.type = fType;
+          f.frequency.setValueAtTime(fFreq, start);
+          f.Q.value = q;
+          const g = ctx.createGain();
+          g.gain.setValueAtTime(0.001, start);
+          g.gain.linearRampToValueAtTime(peak, start + 0.01);
+          g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+          src.connect(f);
+          f.connect(g);
+          g.connect(dest);
+          src.start(start);
+          src.stop(start + dur + 0.02);
+          nodes.push(src, f, g);
+          return { src, f, g };
+        };
+
+        switch (type) {
+          case 'applause':
+            for (let i = 0; i < 22; i++) {
+              const off = (i / 22) * (duration * 0.8) + Math.random() * 0.05;
+              noise(t + off, 0.08 + Math.random() * 0.05, 'bandpass', 950 + Math.random() * 1400, 2.2, 0.25 + Math.random() * 0.18);
+            }
+            break;
+          case 'cheer':
+            {
+              const { f } = noise(t, duration, 'bandpass', 700, 1.5, 0.45);
+              f.frequency.linearRampToValueAtTime(1400, t + duration * 0.45);
+              f.frequency.linearRampToValueAtTime(900, t + duration);
+              [440, 554, 659].forEach(fr => osc('triangle', fr, t, t + duration * 0.85, 0.12));
+            }
+            break;
+          case 'chime':
+            [1046.5, 2110, 3180, 4250].forEach((f, i) => osc('sine', f, t, t + duration / (1 + i * 0.4), 0.34 / (i + 1)));
+            break;
+          case 'drumroll':
+            for (let i = 0; i < 18; i++) {
+              const off = i * 0.065;
+              const v = 0.22 + (i / 18) * 0.3;
+              noise(t + off, 0.05, 'highpass', 1200, 1.0, v);
+              osc('triangle', 180, t + off, t + off + 0.04, v * 0.45);
+            }
+            break;
+          case 'beep':
+            osc('sine', 1000, t, t + duration, 0.35, 0.32);
+            break;
+          case 'quiz':
+            [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => osc('triangle', f, t + i * 0.12, t + i * 0.12 + 0.35, 0.32));
+            break;
+          case 'pingpong':
+            osc('sine', 659.25, t, t + 0.35, 0.52);
+            osc('sine', 523.25, t + 0.18, t + 0.85, 0.56);
+            break;
+          case 'buzzer':
+            [0, 0.24].forEach(off => {
+              osc('sawtooth', 145, t + off, t + off + 0.22, 0.3);
+              osc('sawtooth', 153, t + off, t + off + 0.22, 0.3);
+            });
+            break;
+          case 'heartbeat':
+            [0, 0.24].forEach((off, idx) => {
+              const { o } = osc('sine', idx === 0 ? 78 : 66, t + off, t + off + 0.22, 0.72);
+              o.frequency.exponentialRampToValueAtTime(34, t + off + 0.2);
+            });
+            break;
+          case 'alert':
+            {
+              const { o } = osc('sawtooth', 580, t, t + duration, 0.22, 0.18);
+              o.frequency.linearRampToValueAtTime(920, t + duration * 0.5);
+              o.frequency.linearRampToValueAtTime(580, t + duration);
+            }
+            break;
+          case 'levelup':
+            [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => osc('square', f, t + i * 0.09, t + i * 0.09 + (i === 4 ? 0.55 : 0.12), 0.17));
+            break;
+          case 'slash':
+            {
+              const { f } = noise(t, 0.42, 'bandpass', 4800, 3.0, 0.55);
+              f.frequency.exponentialRampToValueAtTime(600, t + 0.4);
+              const { o } = osc('sawtooth', 1800, t, t + 0.32, 0.24);
+              o.frequency.exponentialRampToValueAtTime(320, t + 0.3);
+            }
+            break;
+          case 'fanfare':
+            [
+              { f: 523.25, s: 0.00, d: 0.15 }, { f: 523.25, s: 0.15, d: 0.15 },
+              { f: 523.25, s: 0.30, d: 0.15 }, { f: 659.25, s: 0.45, d: 0.30 },
+              { f: 587.33, s: 0.75, d: 0.17 }, { f: 659.25, s: 0.92, d: 0.17 },
+              { f: 783.99, s: 1.09, d: 0.70 }
+            ].forEach(n => {
+              osc('sawtooth', n.f, t + n.s, t + n.s + n.d, 0.2);
+              osc('triangle', n.f * 0.5, t + n.s, t + n.s + n.d, 0.2);
+            });
+            break;
+          case 'explosion':
+            {
+              const { f } = noise(t, 1.25, 'lowpass', 900, 1.0, 0.85);
+              f.frequency.exponentialRampToValueAtTime(80, t + 1.2);
+              const { o } = osc('sine', 110, t, t + 0.75, 0.68);
+              o.frequency.exponentialRampToValueAtTime(26, t + 0.7);
+            }
+            break;
+          case 'taDa':
+            [261.63, 329.63, 392.0, 523.25].forEach(f => {
+              osc('sawtooth', f, t, t + 0.14, 0.15);
+              osc('sawtooth', f * 1.122, t + 0.16, t + 1.05, 0.17);
+            });
+            break;
+          case 'pon':
+          default:
+            {
+              const { o } = osc('sine', 520, t, t + 0.25, 0.55);
+              o.frequency.exponentialRampToValueAtTime(240, t + 0.22);
+            }
+            break;
+        }
+        return nodes;
+      }
+
+      /** BGMを offsetSec の位置から再生。withCrossfade=true なら前の曲と重ねて切り替える */
+      async startBgm(withCrossfade = false, offsetSec = 0) {
+        this.ensureInit();
+        const track = state.bgmList[state.bgm.trackIndex];
+        if (!track) return;
+
+        if (this.bgmSynthTimer) {
+          clearInterval(this.bgmSynthTimer);
+          this.bgmSynthTimer = null;
+        }
+
+        if (this.currentBgmDeckGain) {
+          const oldGain = this.currentBgmDeckGain;
+          const oldSrc = this.currentBgmSource;
+          const fadeSec = withCrossfade ? 0.8 : 0.04;
+          const now = this.ctx.currentTime;
+          try {
+            oldGain.gain.cancelScheduledValues(now);
+            oldGain.gain.setValueAtTime(oldGain.gain.value, now);
+            oldGain.gain.linearRampToValueAtTime(0.0001, now + fadeSec);
+            setTimeout(() => {
+              try { oldSrc && oldSrc.stop(); oldSrc && oldSrc.disconnect(); oldGain.disconnect(); } catch (e) {}
+            }, fadeSec * 1000 + 60);
+          } catch (e) {}
+        }
+
+        const deckGain = this.ctx.createGain();
+        const now = this.ctx.currentTime;
+        if (withCrossfade) {
+          deckGain.gain.setValueAtTime(0.001, now);
+          deckGain.gain.linearRampToValueAtTime(1.0, now + 0.8);
+        } else {
+          deckGain.gain.setValueAtTime(1.0, now);
+        }
+        deckGain.connect(this.bgmDuckGain);
+        this.currentBgmDeckGain = deckGain;
+        this.currentBgmSource = null;
+
+        state.bgm.isPlaying = true;
+        state.bgm.elapsedSec = Math.max(0, offsetSec);
+
+        if (track.type === 'file' && track.fileId) {
+          try {
+            const buf = await this.getDecodedBuffer(track.fileId);
+            if (!buf) {
+              showToast('BGMファイルの読み込みに失敗しました');
+              this.stopBgm(0.05);
+              return;
+            }
+            if (!state.bgm.isPlaying || this.currentBgmDeckGain !== deckGain) return;
+            track.durationSec = buf.duration;
+            const offset = Math.max(0, Math.min(offsetSec, buf.duration - 0.05));
+            state.bgm.elapsedSec = offset;
+
+            const src = this.ctx.createBufferSource();
+            src.buffer = buf;
+            src.loop = state.bgm.repeat === 'one';
+            src.connect(deckGain);
+            src.start(0, offset);
+            this.currentBgmSource = src;
+
+            src.onended = () => {
+              if (this.currentBgmSource === src && state.bgm.repeat !== 'one') {
+                this.onTrackFinished();
+              }
+            };
+          } catch (err) {
+            console.error(err);
+            this.stopBgm(0.05);
+            return;
+          }
+        } else {
+          const stepMs = (60 / 82 / 2) * 1000;
+          this.bgmStep = Math.floor((state.bgm.elapsedSec * 1000) / stepMs);
+          this.triggerLofiStep(this.bgmStep++, deckGain);
+          this.bgmSynthTimer = setInterval(() => {
+            if (!state.bgm.isPlaying || this.currentBgmDeckGain !== deckGain) return;
+            this.triggerLofiStep(this.bgmStep++, deckGain);
+          }, stepMs);
+        }
+
+        updateBgmUI();
+      }
+
+      /** 停止（一時停止）。再生位置 state.bgm.elapsedSec はそのまま残す */
+      stopBgm(fadeSec = 0.12) {
+        state.bgm.isPlaying = false;
+        if (this.bgmSynthTimer) {
+          clearInterval(this.bgmSynthTimer);
+          this.bgmSynthTimer = null;
+        }
+        if (this.currentBgmDeckGain && this.ctx) {
+          const oldGain = this.currentBgmDeckGain;
+          const oldSrc = this.currentBgmSource;
+          this.currentBgmDeckGain = null;
+          this.currentBgmSource = null;
+          const now = this.ctx.currentTime;
+          try {
+            oldGain.gain.cancelScheduledValues(now);
+            oldGain.gain.setValueAtTime(oldGain.gain.value, now);
+            oldGain.gain.linearRampToValueAtTime(0.0001, now + fadeSec);
+            setTimeout(() => {
+              try { oldSrc && oldSrc.stop(); oldSrc && oldSrc.disconnect(); oldGain.disconnect(); } catch (e) {}
+            }, fadeSec * 1000 + 60);
+          } catch (e) {}
+        }
+        updateBgmUI();
+      }
+
+      /** 再生ボタン：再生中なら一時停止、止まっていれば続きから再生 */
+      togglePlayPause() {
+        if (state.bgm.isPlaying) {
+          this.stopBgm(0.12);
+          return;
+        }
+        const track = state.bgmList[state.bgm.trackIndex];
+        const dur = track ? (track.durationSec || 0) : 0;
+        if (dur > 0 && state.bgm.elapsedSec >= dur - 0.05) state.bgm.elapsedSec = 0;
+        this.startBgm(false, state.bgm.elapsedSec);
+      }
+
+      /** リストの曲をタップ：別の曲ならすぐ再生、今の曲なら一時停止／再開 */
+      playTrackAt(index) {
+        if (index === state.bgm.trackIndex) {
+          this.togglePlayPause();
+          return;
+        }
+        const wasPlaying = state.bgm.isPlaying;
+        state.bgm.trackIndex = index;
+        state.bgm.elapsedSec = 0;
+        renderBgmList();
+        this.startBgm(wasPlaying && state.bgm.crossfade, 0);
+      }
+
+      /** シークバーで再生位置を変更 */
+      seekBgm(sec) {
+        state.bgm.elapsedSec = Math.max(0, sec);
+        if (state.bgm.isPlaying) this.startBgm(false, state.bgm.elapsedSec);
+        else updateBgmUI();
+      }
+
+      /** 1曲が最後まで終わったとき：リピート設定に従って次へ進むか止める */
+      onTrackFinished() {
+        const isLast = state.bgm.trackIndex >= state.bgmList.length - 1;
+        if (state.bgm.repeat === 'off' && isLast) {
+          this.stopBgm(0.1);
+          state.bgm.elapsedSec = 0;
+          updateBgmUI();
+          return;
+        }
+        this.nextBgm();
+      }
+
+      nextBgm() {
+        if (state.bgmList.length === 0) return;
+        state.bgm.trackIndex = (state.bgm.trackIndex + 1) % state.bgmList.length;
+        state.bgm.elapsedSec = 0;
+        renderBgmList();
+        if (state.bgm.isPlaying) this.startBgm(state.bgm.crossfade, 0);
+        else updateBgmUI();
+      }
+
+      prevBgm() {
+        if (state.bgmList.length === 0) return;
+        state.bgm.trackIndex = (state.bgm.trackIndex - 1 + state.bgmList.length) % state.bgmList.length;
+        state.bgm.elapsedSec = 0;
+        renderBgmList();
+        if (state.bgm.isPlaying) this.startBgm(state.bgm.crossfade, 0);
+        else updateBgmUI();
+      }
+      triggerLofiStep(step, dest) {
+        if (!this.ctx) return;
+        const ctx = this.ctx;
+        const t = ctx.currentTime;
+        const s = step % 32;
+
+        const playNote = (type, freq, dur, vol, lpf = 1400) => {
+          const o = ctx.createOscillator();
+          const f = ctx.createBiquadFilter();
+          const g = ctx.createGain();
+          o.type = type;
+          o.frequency.setValueAtTime(freq, t);
+          f.type = 'lowpass';
+          f.frequency.value = lpf;
+          g.gain.setValueAtTime(0.001, t);
+          g.gain.linearRampToValueAtTime(vol, t + 0.015);
+          g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+          o.connect(f); f.connect(g); g.connect(dest);
+          o.start(t); o.stop(t + dur + 0.03);
+        };
+
+        const chords = [
+          [174.61, 220.00, 261.63, 329.63],
+          [164.81, 196.00, 246.94, 293.66],
+          [146.83, 174.61, 220.00, 261.63],
+          [130.81, 164.81, 196.00, 246.94]
+        ];
+        if (s % 8 === 0) {
+          chords[Math.floor(s / 8) % 4].forEach(fr => playNote('triangle', fr, 1.4, 0.085, 1100));
+        }
+        if (s % 8 === 0 || s % 8 === 5) {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.type = 'sine';
+          o.frequency.setValueAtTime(115, t);
+          o.frequency.exponentialRampToValueAtTime(40, t + 0.12);
+          g.gain.setValueAtTime(0.32, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+          o.connect(g); g.connect(dest);
+          o.start(t); o.stop(t + 0.18);
+        }
+        if (s % 4 === 2) {
+          const src = ctx.createBufferSource();
+          src.buffer = this.noiseBuffer;
+          const hp = ctx.createBiquadFilter();
+          hp.type = 'highpass'; hp.frequency.value = 6500;
+          const g = ctx.createGain();
+          g.gain.setValueAtTime(0.055, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.045);
+          src.connect(hp); hp.connect(g); g.connect(dest);
+          src.start(t); src.stop(t + 0.06);
+        }
+        const mel = [0, 0, 523.25, 0, 440, 0, 392, 0];
+        if (mel[s % 8]) playNote('sine', mel[s % 8], 0.45, 0.055, 1500);
+      }
+
+      getStereoLevels() {
+        if (!this.analyserL || !this.analyserR) return { l: 0, r: 0, peakL: 0, peakR: 0 };
+        const bufL = new Float32Array(this.analyserL.fftSize);
+        const bufR = new Float32Array(this.analyserR.fftSize);
+        this.analyserL.getFloatTimeDomainData(bufL);
+        this.analyserR.getFloatTimeDomainData(bufR);
+        // rms: メーター表示用。dB換算して -36dB〜0dB を 0〜1 に割り当てる
+        //      （16セグ = 1セグ2.25dB。黄 ≒ -13.5dB以上、赤 ≒ -6.75dB以上）
+        // peak: 波形の実際の最大値（PEAK判定用）
+        const METER_FLOOR_DB = -36;
+        const measure = (arr) => {
+          let sum = 0;
+          let peak = 0;
+          for (let i = 0; i < arr.length; i++) {
+            const n = arr[i];
+            sum += n * n;
+            const a = Math.abs(n);
+            if (a > peak) peak = a;
+          }
+          const rmsLin = Math.sqrt(sum / arr.length);
+          const db = rmsLin > 0 ? 20 * Math.log10(rmsLin) : -Infinity;
+          const level = Math.max(0, Math.min(1, (db - METER_FLOOR_DB) / -METER_FLOOR_DB));
+          return { rms: level, peak };
+        };
+        const mL = measure(bufL);
+        const mR = measure(bufR);
+        return { l: mL.rms, r: mR.rms, peakL: mL.peak, peakR: mR.peak };
+      }
+    }
+
+    const audioEngine = new LiveAudioEngine();
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const box = document.getElementById('toastBox');
+      document.getElementById('toastMessage').textContent = msg;
+      box.classList.remove('opacity-0', 'translate-y-2');
+      box.classList.add('opacity-100', 'translate-y-0');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        box.classList.add('opacity-0', 'translate-y-2');
+        box.classList.remove('opacity-100', 'translate-y-0');
+      }, 2200);
+    }
+
+    const $ = (id) => document.getElementById(id);
+
+    const PENCIL_SVG = `<svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>`;
+    const GRIP_SVG = `<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="2" rx="1"></rect><rect x="4" y="11" width="16" height="2" rx="1"></rect><rect x="4" y="16" width="16" height="2" rx="1"></rect></svg>`;
+    const PAUSE_MINI_SVG = `<svg class="w-2.5 h-2.5 text-accent-300" fill="currentColor" viewBox="0 0 24 24"><rect x="5" y="4" width="5" height="16" rx="1"></rect><rect x="14" y="4" width="5" height="16" rx="1"></rect></svg>`;
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function fmtTime(sec) {
+      const s = Math.max(0, Math.floor(sec || 0));
+      return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+    }
+
+    function initLevelMeters() {
+      ['meterL', 'meterR'].forEach(id => {
+        const el = $(id);
+        el.innerHTML = '';
+        for (let i = 0; i < 16; i++) {
+          const seg = document.createElement('div');
+          seg.className = 'led-seg rounded-[1px] bg-[#1a202c]';
+          el.appendChild(seg);
+        }
+      });
+    }
+
+    // =========================================================================
+    // テーマカラー
+    // =========================================================================
+    function applyTheme() {
+      if (!THEMES[state.themeColor]) state.themeColor = DEFAULT_THEME;
+      const th = THEMES[state.themeColor];
+      const root = document.documentElement.style;
+      Object.entries(th.ac).forEach(([k, v]) => root.setProperty(`--ac-${k}`, v));
+      Object.entries(th.ac2).forEach(([k, v]) => root.setProperty(`--ac2-${k}`, v));
+      renderThemeGroup();
+    }
+
+    function renderThemeGroup() {
+      const group = $('themeGroup');
+      if (!group) return;
+      group.innerHTML = '';
+      Object.entries(THEMES).forEach(([key, th]) => {
+        const sel = key === state.themeColor;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'flex flex-col items-center gap-1 py-1 rounded-lg hover:bg-[#1a1f2b]';
+        btn.setAttribute('aria-pressed', String(sel));
+        btn.title = th.name;
+        btn.innerHTML = `
+          <span class="w-7 h-7 rounded-full transition-transform ${sel ? 'scale-110 ring-2 ring-white ring-offset-2 ring-offset-[#10131b]' : 'opacity-80'}"
+                style="background: linear-gradient(135deg, rgb(${th.ac['400']}) 0%, rgb(${th.ac2['500']}) 100%);"></span>
+          <span class="text-[10px] font-bold ${sel ? 'text-slate-100' : 'text-slate-500'}">${th.name}</span>`;
+        btn.addEventListener('click', () => {
+          state.themeColor = key;
+          applyTheme();
+          storage.saveState();
+        });
+        group.appendChild(btn);
+      });
+    }
+
+    // =========================================================================
+    // 縦フェーダー（MIXER）。つまみは「触った位置からの相対移動」で動く
+    // （本番中にフェーダーを触っただけで音量が跳ねないように）
+    // =========================================================================
+    function createVFader(el, { max = 100, value = 0, defaultValue = value, onInput }) {
+      el.innerHTML = '<div class="vfader-track"><div class="vfader-fill"></div></div><div class="vfader-mark"></div><div class="vfader-thumb"></div>';
+      el.setAttribute('role', 'slider');
+      el.setAttribute('aria-valuemin', '0');
+      el.setAttribute('aria-valuemax', String(max));
+      el.tabIndex = 0;
+      let cur = value;
+      let display = null;          // null＝設定値どおり / 数値＝ダッキング中などで実際に鳴っている音量
+      let lastPointerType = 'mouse';
+
+      const paint = () => {
+        el.style.setProperty('--v', String(cur / max));
+        el.style.setProperty('--d', String((display === null ? cur : display) / max));
+      };
+      const set = (v, emit) => {
+        cur = Math.max(0, Math.min(max, Math.round(v)));
+        el.setAttribute('aria-valuenow', String(cur));
+        paint();
+        if (emit && onInput) onInput(cur);
+      };
+
+      el.addEventListener('pointerdown', (e) => {
+        lastPointerType = e.pointerType;
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        e.preventDefault();
+        el.setPointerCapture(e.pointerId);
+        el.classList.add('is-dragging');
+        const startY = e.clientY;
+        const startVal = cur;
+        const travel = el.getBoundingClientRect().height - 16;
+        const move = (ev) => set(startVal + ((startY - ev.clientY) / travel) * max, true);
+        const up = () => {
+          el.classList.remove('is-dragging');
+          el.removeEventListener('pointermove', move);
+          el.removeEventListener('pointerup', up);
+          el.removeEventListener('pointercancel', up);
+        };
+        el.addEventListener('pointermove', move);
+        el.addEventListener('pointerup', up);
+        el.addEventListener('pointercancel', up);
+      });
+
+      el.addEventListener('keydown', (e) => {
+        const step = e.shiftKey ? 10 : 2;
+        if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { set(cur + step, true); e.preventDefault(); }
+        if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { set(cur - step, true); e.preventDefault(); }
+      });
+
+      // PC：ホイールで上げ下げ（Shiftで大きく）、ダブルクリックで初期値に戻す
+      el.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 2;
+        set(cur + (e.deltaY < 0 ? step : -step), true);
+      }, { passive: false });
+      el.addEventListener('dblclick', () => {
+        if (lastPointerType !== 'mouse') return;   // 指のダブルタップでは戻さない（本番中の誤操作防止）
+        set(defaultValue, true);
+      });
+
+      set(value, false);
+      return {
+        set: (v) => set(v, false),
+        setDisplay: (v) => {
+          display = (v === null) ? null : Math.max(0, Math.min(max, v));
+          paint();
+        }
+      };
+    }
+
+    // =========================================================================
+    // BGMプレイリスト
+    // =========================================================================
+    let bgmRowStateKey = '';
+    let seekDragging = false;
+    let suppressRowClick = false;
+
+    function renderBgmList() {
+      const list = $('bgmList');
+      const prevScroll = list.scrollTop;
+      list.innerHTML = '';
+      state.bgmList.forEach((tr, idx) => {
+        const row = document.createElement('div');
+        row.className = 'bgm-row';
+        row.dataset.index = String(idx);
+        row.setAttribute('role', 'option');
+        const durKnown = tr.type !== 'file' || tr.durationSec > 0;
+        row.innerHTML = `
+          <span class="bgm-row-icon"></span>
+          <span class="bgm-row-name">${escapeHtml(tr.name)}</span>
+          <span class="bgm-row-dur font-mono-num">${durKnown ? fmtTime(tr.durationSec || 24) : '--:--'}</span>
+          ${!state.perfLock ? `<span class="bgm-handle" title="ドラッグで並び替え">${GRIP_SVG}</span>` : ''}`;
+        bindBgmRow(row, idx);
+        list.appendChild(row);
+      });
+      list.scrollTop = prevScroll;
+      $('bgmCount').textContent = `${state.bgmList.length}曲`;
+      bgmRowStateKey = '';
+      updateBgmUI();
+    }
+
+    /** 再生中・一時停止中の行表示を更新（状態が変わった時だけ） */
+    function updateBgmRowStates() {
+      const key = `${state.bgm.trackIndex}:${state.bgm.isPlaying}`;
+      if (key === bgmRowStateKey) return;
+      const indexChanged = !bgmRowStateKey.startsWith(`${state.bgm.trackIndex}:`);
+      bgmRowStateKey = key;
+
+      const list = $('bgmList');
+      list.querySelectorAll('.bgm-row').forEach(row => {
+        const idx = Number(row.dataset.index);
+        const isCur = idx === state.bgm.trackIndex;
+        row.classList.toggle('is-current', isCur);
+        row.setAttribute('aria-selected', String(isCur));
+        const icon = row.querySelector('.bgm-row-icon');
+        if (isCur && state.bgm.isPlaying) icon.innerHTML = '<span class="eq"><i></i><i></i><i></i></span>';
+        else if (isCur) icon.innerHTML = PAUSE_MINI_SVG;
+        else icon.innerHTML = `<span class="font-mono-num">${idx + 1}</span>`;
+      });
+
+      // 曲が変わったら、その行がリストの見える位置に来るようにスクロール
+      if (indexChanged) {
+        const row = list.querySelector(`.bgm-row[data-index="${state.bgm.trackIndex}"]`);
+        if (row) {
+          const top = row.offsetTop;
+          const bottom = top + row.offsetHeight;
+          if (top < list.scrollTop) list.scrollTop = top;
+          else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight;
+        }
+      }
+    }
+
+    function bindBgmRow(row, idx) {
+      let timer = null;
+      let sx = 0;
+      let sy = 0;
+      const clearTimer = () => { if (timer) { clearTimeout(timer); timer = null; } };
+
+      row.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('.bgm-handle')) return;
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        suppressRowClick = false;
+        sx = e.clientX;
+        sy = e.clientY;
+        clearTimer();
+        if (!state.perfLock) {
+          // 長押し（0.5秒）でメニュー
+          timer = setTimeout(() => {
+            timer = null;
+            suppressRowClick = true;
+            openBgmMenu(idx, sx, sy);
+          }, 500);
+        }
+      });
+      row.addEventListener('pointermove', (e) => {
+        if (timer && Math.hypot(e.clientX - sx, e.clientY - sy) > 8) clearTimer();
+      });
+      row.addEventListener('pointerup', clearTimer);
+      row.addEventListener('pointercancel', clearTimer);
+      row.addEventListener('pointerleave', clearTimer);
+
+      // タップ：別の曲 → すぐ再生 / 今の曲 → 一時停止・再開
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('.bgm-handle')) return;
+        if (suppressRowClick) { suppressRowClick = false; return; }
+        audioEngine.playTrackAt(idx);
+      });
+
+      // PCの右クリック（Androidの長押し）でもメニュー
+      row.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        clearTimer();
+        if (state.perfLock) return;
+        if (!$('bgmMenu').classList.contains('hidden') && bgmMenuIndex === idx) return;
+        openBgmMenu(idx, e.clientX, e.clientY);
+      });
+
+      const handle = row.querySelector('.bgm-handle');
+      if (handle) handle.addEventListener('pointerdown', (e) => startBgmDrag(e, idx, row, handle));
+    }
+
+    /** ≡ をドラッグして並び替え */
+    function startBgmDrag(e, from, row, handle) {
+      if (state.perfLock) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const list = $('bgmList');
+      const rows = Array.from(list.querySelectorAll('.bgm-row'));
+      const rowH = row.offsetHeight;
+      const startY = e.clientY;
+      const startScroll = list.scrollTop;
+      let to = from;
+
+      handle.setPointerCapture(e.pointerId);
+      row.classList.add('is-dragging');
+
+      const move = (ev) => {
+        const lr = list.getBoundingClientRect();
+        if (ev.clientY < lr.top + 18) list.scrollTop -= 6;
+        else if (ev.clientY > lr.bottom - 18) list.scrollTop += 6;
+        const dy = ev.clientY - startY + (list.scrollTop - startScroll);
+        row.style.transform = `translateY(${dy}px)`;
+        to = Math.max(0, Math.min(rows.length - 1, from + Math.round(dy / rowH)));
+        rows.forEach((r, i) => {
+          if (i === from) return;
+          let shift = 0;
+          if (from < to && i > from && i <= to) shift = -rowH;
+          else if (from > to && i < from && i >= to) shift = rowH;
+          r.style.transform = shift ? `translateY(${shift}px)` : '';
+        });
+      };
+
+      const up = async () => {
+        handle.removeEventListener('pointermove', move);
+        handle.removeEventListener('pointerup', up);
+        handle.removeEventListener('pointercancel', up);
+        row.classList.remove('is-dragging');
+        rows.forEach(r => { r.style.transform = ''; });
+        if (to !== from) {
+          const current = state.bgmList[state.bgm.trackIndex];
+          const [item] = state.bgmList.splice(from, 1);
+          state.bgmList.splice(to, 0, item);
+          state.bgm.trackIndex = state.bgmList.indexOf(current);
+          renderBgmList();
+          await storage.saveState();
+        }
+      };
+
+      handle.addEventListener('pointermove', move);
+      handle.addEventListener('pointerup', up);
+      handle.addEventListener('pointercancel', up);
+    }
+
+    // ---- 長押しメニュー ----------------------------------------------------
+    let bgmMenuIndex = -1;
+    let bgmDeleteArmed = false;
+
+    function openBgmMenu(index, x, y) {
+      if (state.perfLock) return;
+      const tr = state.bgmList[index];
+      if (!tr) return;
+      bgmMenuIndex = index;
+      bgmDeleteArmed = false;
+
+      $('bgmMenuTitle').textContent = tr.name;
+      const isCurPlaying = index === state.bgm.trackIndex && state.bgm.isPlaying;
+      $('bgmMenuPlayLabel').textContent = isCurPlaying ? '一時停止' : '再生';
+
+      const del = $('bgmMenuDelete');
+      del.classList.remove('is-confirm');
+      del.disabled = tr.type !== 'file';
+      $('bgmMenuDeleteLabel').textContent = tr.type === 'file' ? '削除' : '内蔵曲は削除できません';
+
+      const menu = $('bgmMenu');
+      menu.classList.remove('hidden');
+      const mw = menu.offsetWidth;
+      const mh = menu.offsetHeight;
+      menu.style.left = `${Math.min(Math.max(8, x), window.innerWidth - mw - 8)}px`;
+      menu.style.top = `${Math.min(Math.max(8, y), window.innerHeight - mh - 8)}px`;
+      $('bgmMenuShield').classList.remove('hidden');
+    }
+
+    function closeBgmMenu() {
+      $('bgmMenu').classList.add('hidden');
+      $('bgmMenuShield').classList.add('hidden');
+      bgmMenuIndex = -1;
+      bgmDeleteArmed = false;
+    }
+
+    async function deleteBgmAt(index) {
+      const tr = state.bgmList[index];
+      if (!tr || tr.type !== 'file') return;
+      const isCurrent = index === state.bgm.trackIndex;
+      if (isCurrent && state.bgm.isPlaying) audioEngine.stopBgm(0.05);
+      await storage.deleteAudioFile(tr.fileId);
+      audioEngine.bufferCache.delete(tr.fileId);
+      state.bgmList.splice(index, 1);
+      if (isCurrent) {
+        state.bgm.trackIndex = Math.min(index, state.bgmList.length - 1);
+        state.bgm.elapsedSec = 0;
+      } else if (index < state.bgm.trackIndex) {
+        state.bgm.trackIndex -= 1;
+      }
+      state.bgm.trackIndex = Math.max(0, state.bgm.trackIndex);
+      await storage.saveState();
+      renderBgmList();
+      showToast(`「${tr.name}」を削除しました`);
+    }
+
+    // ---- 再生ボタン・シークバー・リピート ----------------------------------
+    function setSeekValue(v) {
+      const seek = $('bgmSeek');
+      seek.value = v;
+      seek.style.setProperty('--fill', `${v / 10}%`);
+    }
+
+    function updateBgmUI() {
+      const track = state.bgmList[state.bgm.trackIndex];
+      const playing = state.bgm.isPlaying;
+
+      $('iconBgmPlay').classList.toggle('hidden', playing);
+      $('iconBgmPause').classList.toggle('hidden', !playing);
+      const btnPlay = $('btnBgmPlay');
+      const playCls = playing
+        ? 'w-9 h-8 rounded-lg bg-gradient-to-b from-amber-400 to-amber-500 text-slate-950 flex items-center justify-center shadow-md shadow-amber-500/20 active:scale-95'
+        : 'w-9 h-8 rounded-lg bg-gradient-to-b from-accent-500 to-accent-600 text-slate-950 flex items-center justify-center shadow-md shadow-accent-500/20 active:scale-95';
+      if (btnPlay.className !== playCls) btnPlay.className = playCls;
+
+      const durKnown = track && (track.type !== 'file' || track.durationSec > 0);
+      const dur = track ? (track.durationSec || 24) : 0;
+      if (!seekDragging) {
+        $('bgmElapsed').textContent = fmtTime(state.bgm.elapsedSec);
+        setSeekValue(durKnown && dur > 0 ? Math.min(1000, Math.round((state.bgm.elapsedSec / dur) * 1000)) : 0);
+      }
+      $('bgmDuration').textContent = durKnown ? fmtTime(dur) : '--:--';
+
+      updateBgmRowStates();
+    }
+
+    const REPEAT_ORDER = ['off', 'all', 'one'];
+    const REPEAT_LABEL = { off: 'リピート：なし', all: 'リピート：リスト全体', one: 'リピート：1曲' };
+
+    function updateRepeatUI() {
+      const btn = $('btnBgmRepeat');
+      const r = state.bgm.repeat;
+      btn.className = `repeat-btn relative w-8 h-8 shrink-0 rounded-lg border flex items-center justify-center active:scale-95 transition-all ${
+        r === 'off'
+          ? 'bg-[#10131b] border-[#2a3242] text-slate-500 hover:text-slate-300'
+          : 'bg-accent-500/20 border-accent-500/50 text-accent-300'
+      }`;
+      $('repeatOneBadge').classList.toggle('hidden', r !== 'one');
+      btn.title = REPEAT_LABEL[r];
+      btn.setAttribute('aria-label', REPEAT_LABEL[r]);
+    }
+
+    function updateXfadeUI() {
+      $('btnBgmXfade').className = state.bgm.crossfade
+        ? 'px-2 py-1 rounded text-[10px] font-bold border transition-all bg-violet-500/20 text-violet-300 border-violet-500/40'
+        : 'px-2 py-1 rounded text-[10px] font-bold border transition-all bg-[#0e1118] text-slate-500 border-[#242b38]';
+    }
+
+    /** DUCKボタン：OFF＝灰 / ON＝黄色枠 / 作動中（BGMを下げている間）＝黄色く点灯 */
+    function updateDuckingVisuals() {
+      const btn = $('btnDuckToggle');
+      btn.classList.remove('is-off', 'is-on', 'is-active');
+      if (!state.ducking.enabled) btn.classList.add('is-off');
+      else if (state.ducking.isActive) btn.classList.add('is-active');
+      else btn.classList.add('is-on');
+      btn.setAttribute('aria-pressed', String(state.ducking.enabled));
+    }
+
+    // =========================================================================
+    // バンクタブ（＋タブ名変更ボタン）
+    // =========================================================================
+    function renderBankTabs() {
+      const container = $('bankTabs');
+      container.innerHTML = '';
+      state.banks.forEach((bank, idx) => {
+        const isActive = idx === state.activeBankIndex;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold tracking-wide transition-all border shrink-0 cursor-pointer ${
+          isActive
+            ? 'bg-[#1f2636] text-white border-accent-400/60 shadow-md shadow-accent-500/10'
+            : 'bg-[#14171f] text-slate-400 border-[#242a38] hover:text-slate-200 hover:bg-[#1a1f2b]'
+        }`;
+        btn.textContent = bank.label;
+        btn.addEventListener('click', () => {
+          state.activeBankIndex = idx;
+          renderBankTabs();
+          renderPads();
+        });
+        container.appendChild(btn);
+      });
+
+      if (!state.perfLock) {
+        const edit = document.createElement('button');
+        edit.type = 'button';
+        edit.id = 'btnRenameBank';
+        edit.title = '選択中のタブ名を変更';
+        edit.setAttribute('aria-label', '選択中のタブ名を変更');
+        edit.className = 'w-7 h-7 shrink-0 rounded-md bg-[#0f1219]/85 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center border border-[#2a3242] transition-colors';
+        edit.innerHTML = PENCIL_SVG;
+        edit.addEventListener('click', openTabRename);
+        container.appendChild(edit);
+      }
+    }
+
+    function openTabRename() {
+      if (state.perfLock) return;
+      $('tabNameInput').value = state.banks[state.activeBankIndex].label;
+      const backdrop = $('tabModalBackdrop');
+      backdrop.classList.remove('hidden');
+      backdrop.classList.add('flex');
+      setTimeout(() => { $('tabNameInput').focus(); $('tabNameInput').select(); }, 30);
+    }
+
+    function closeTabRename() {
+      const backdrop = $('tabModalBackdrop');
+      backdrop.classList.add('hidden');
+      backdrop.classList.remove('flex');
+    }
+    function renderPads() {
+      const grid = document.getElementById('padGrid');
+      const bank = state.banks[state.activeBankIndex];
+      const isIphone = state.layoutMode === 'iphone';
+      const padCount = isIphone ? 8 : 16;
+
+      // 大きな画面（PC）ではパッドが伸びすぎないように上限を設けて中央に置く
+      grid.className = `flex-1 min-h-0 w-full grid grid-cols-4 ${isIphone ? 'grid-rows-2 gap-3 max-h-[640px]' : 'grid-rows-4 gap-2 sm:gap-2.5 max-h-[940px]'}`;
+      grid.innerHTML = '';
+
+      bank.pads.slice(0, padCount).forEach((pad, padIndex) => {
+        const palette = COLOR_PALETTE[pad.color] || COLOR_PALETTE.cyan;
+        const isPlaying = audioEngine.activeVoices.has(pad.id);
+        const isEmpty = pad.sourceType === 'empty';
+
+        const el = document.createElement('div');
+        el.id = `pad-${pad.id}`;
+        el.style.setProperty('--pad-color', palette.hex);
+        el.style.setProperty('--pad-bg-soft', palette.soft);
+        el.style.setProperty('--pad-bg-strong', palette.strong);
+        el.style.setProperty('--pad-glow', palette.glow);
+
+        el.className = `sampler-pad rounded-xl border flex flex-col justify-between p-2 sm:p-2.5 cursor-pointer select-none ${
+          isEmpty
+            ? 'bg-[#12151d] border-dashed border-[#2a3242] hover:border-slate-500'
+            : 'bg-[#181c26] border-[#2a3242]'
+        } ${isPlaying ? 'is-playing' : ''}`;
+
+        const modeBadgeColor =
+          pad.mode === 'GATE'
+            ? 'text-amber-300 bg-amber-500/15 border-amber-400/30'
+            : pad.mode === 'TOGGLE'
+            ? 'text-violet-300 bg-violet-500/15 border-violet-400/30'
+            : 'text-slate-300 bg-slate-800/80 border-slate-700';
+
+        const sourceBadgeHtml =
+          pad.sourceType === 'file'
+            ? `<span class="pad-src-badge px-1 py-0.5 rounded text-[8px] font-mono-num font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">FILE</span>`
+            : pad.sourceType === 'synth'
+            ? `<span class="pad-src-badge px-1 py-0.5 rounded text-[8px] font-mono-num font-bold bg-slate-800 text-slate-400 border border-slate-700">SYNTH</span>`
+            : `<span class="pad-src-badge px-1 py-0.5 rounded text-[8px] font-mono-num font-bold text-slate-600">EMPTY</span>`;
+
+        el.innerHTML = `
+          <div class="absolute top-0 left-0 right-0 h-1.5" style="background-color: ${isEmpty ? '#334155' : palette.hex}; opacity: ${isEmpty ? 0.4 : 0.92};"></div>
+          <div class="pad-progress-fill" id="prog-${pad.id}"></div>
+
+          <div class="relative z-10 flex items-center justify-between gap-1 pt-0.5">
+            <div class="flex items-center gap-1">
+              ${!isEmpty ? `<span class="whitespace-nowrap px-1.5 py-0.5 rounded text-[9px] font-mono-num font-bold border ${modeBadgeColor}">${pad.mode}</span>` : ''}
+              ${sourceBadgeHtml}
+            </div>
+            ${
+              !state.perfLock
+                ? `<button type="button" class="pad-edit-btn w-6 h-6 rounded-md bg-[#0f1219]/85 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center border border-[#2a3242] transition-colors" title="パッド設定を編集">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                      <path d="M12 20h9"></path>
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                  </button>`
+                : ''
+            }
+          </div>
+
+          <div class="relative z-10 flex-1 flex items-center justify-center text-center px-1 min-h-0">
+            <span class="${isIphone ? 'text-base sm:text-lg' : 'text-xs sm:text-sm lg:text-base'} font-extrabold leading-tight line-clamp-2 ${isEmpty ? 'text-slate-500' : 'text-slate-100 drop-shadow'}">
+              ${isEmpty ? '+ 音源を割り当て' : pad.name}
+            </span>
+          </div>
+
+          <div class="relative z-10 flex items-center justify-between text-[9px] font-mono-num text-slate-400">
+            <span class="flex items-center"><span class="kbd" title="キーボードの ${KEY_LABELS[padIndex]} キーで鳴らせます">${KEY_LABELS[padIndex]}</span><span class="pad-vol whitespace-nowrap">${isEmpty ? '' : `VOL ${pad.volume}%`}</span></span>
+            <span class="pad-status-dot flex items-center gap-1 ${isPlaying ? 'text-white font-bold' : 'opacity-40'}">
+              ${!isEmpty ? `<span class="w-1.5 h-1.5 rounded-full" style="background-color: ${isPlaying ? palette.hex : '#64748b'};"></span>${isPlaying ? 'PLAY' : 'IDLE'}` : ''}
+            </span>
+          </div>
+        `;
+
+        const editBtn = el.querySelector('.pad-edit-btn');
+        if (editBtn) {
+          editBtn.addEventListener('pointerdown', e => e.stopPropagation());
+          editBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            if (!state.perfLock) openEditModal(pad);
+          });
+        }
+
+        el.addEventListener('pointerdown', (e) => {
+          if (e.button !== 0 && e.pointerType === 'mouse') return;
+          e.preventDefault();
+          el.classList.add('is-pressed');
+          audioEngine.triggerPadDown(pad);
+        });
+
+        const onRelease = () => {
+          el.classList.remove('is-pressed');
+          audioEngine.triggerPadUp(pad);
+        };
+        el.addEventListener('pointerup', onRelease);
+        el.addEventListener('pointerleave', onRelease);
+        el.addEventListener('pointercancel', onRelease);
+
+        el.addEventListener('dragover', (e) => {
+          if (state.perfLock) return;
+          e.preventDefault();
+          el.classList.add('drag-over');
+        });
+        el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+        el.addEventListener('drop', async (e) => {
+          e.preventDefault();
+          el.classList.remove('drag-over');
+          if (state.perfLock) return;
+          const file = e.dataTransfer?.files?.[0];
+          if (!file || !file.type.startsWith('audio/')) {
+            showToast('音声ファイル (MP3/WAV/M4A等) をドロップしてください');
+            return;
+          }
+          await assignFileToPad(pad, file);
+        });
+
+        grid.appendChild(el);
+      });
+    }
+
+    async function assignFileToPad(pad, file) {
+      try {
+        const oldFileId = pad.fileId;
+        const saved = await storage.saveAudioFile(file);
+        pad.sourceType = 'file';
+        pad.fileId = saved.id;
+        pad.fileName = saved.name;
+        pad.name = saved.name.replace(/\.[^/.]+$/, '').slice(0, 16);
+        if (oldFileId) storage.deleteAudioFile(oldFileId);
+        await storage.saveState();
+        renderPads();
+        showToast(`「${pad.name}」をパッドに割り当てました`);
+      } catch (err) {
+        console.error(err);
+        showToast('ファイルの保存に失敗しました');
+      }
+    }
+
+    function setPadVisualPlaying(padId, isPlaying) {
+      const el = document.getElementById(`pad-${padId}`);
+      if (!el) return;
+      if (isPlaying) {
+        el.classList.add('is-playing');
+      } else {
+        el.classList.remove('is-playing');
+        const prog = document.getElementById(`prog-${padId}`);
+        if (prog) prog.style.width = '0%';
+      }
+      const status = el.querySelector('.pad-status-dot');
+      if (status) {
+        const color = el.style.getPropertyValue('--pad-color');
+        status.className = `pad-status-dot flex items-center gap-1 ${isPlaying ? 'text-white font-bold' : 'opacity-40'}`;
+        status.innerHTML = `<span class="w-1.5 h-1.5 rounded-full" style="background-color: ${isPlaying ? color : '#64748b'};"></span>${isPlaying ? 'PLAY' : 'IDLE'}`;
+      }
+    }
+
+    function openEditModal(pad) {
+      state.editingPad = pad;
+      state.editDraft = {
+        name: pad.sourceType === 'empty' ? '' : pad.name,
+        mode: pad.mode,
+        retrigger: pad.retrigger || 'OVERLAP',
+        color: pad.color,
+        volume: pad.volume,
+        sourceType: pad.sourceType,
+        synthType: pad.synthType || pad.defaultSynth || 'pon',
+        fileId: pad.fileId,
+        fileName: pad.fileName,
+        pendingFile: null
+      };
+
+      document.getElementById('editPadName').value = state.editDraft.name;
+      document.getElementById('editPadVol').value = state.editDraft.volume;
+      document.getElementById('editPadVolVal').textContent = `${state.editDraft.volume}%`;
+      document.getElementById('inputPadAudioFile').value = '';
+
+      updateEditModalUI();
+      const backdrop = document.getElementById('editModalBackdrop');
+      backdrop.classList.remove('hidden');
+      backdrop.classList.add('flex');
+    }
+
+    function closeEditModal() {
+      const backdrop = document.getElementById('editModalBackdrop');
+      backdrop.classList.add('hidden');
+      backdrop.classList.remove('flex');
+      state.editingPad = null;
+      state.editDraft = null;
+    }
+
+    function updateEditModalUI() {
+      const d = state.editDraft;
+      if (!d) return;
+
+      const badge = document.getElementById('editSourceBadge');
+      const srcName = document.getElementById('editSourceName');
+      if (d.pendingFile) {
+        badge.textContent = 'NEW FILE';
+        badge.className = 'text-[10px] font-mono-num px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+        srcName.textContent = `選択中: ${d.pendingFile.name}`;
+      } else if (d.sourceType === 'file') {
+        badge.textContent = 'FILE';
+        badge.className = 'text-[10px] font-mono-num px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+        srcName.textContent = `保存済みファイル: ${d.fileName || 'audio'}`;
+      } else if (d.sourceType === 'synth') {
+        badge.textContent = 'SYNTH';
+        badge.className = 'text-[10px] font-mono-num px-2 py-0.5 rounded bg-accent-500/20 text-accent-300 border border-accent-500/40';
+        srcName.textContent = `内蔵シンセ音 (${d.synthType})`;
+      } else {
+        badge.textContent = 'EMPTY';
+        badge.className = 'text-[10px] font-mono-num px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700';
+        srcName.textContent = '未設定（ファイルを選択してください）';
+      }
+
+      document.querySelectorAll('.mode-opt-btn').forEach(btn => {
+        const active = btn.dataset.mode === d.mode;
+        btn.className = `mode-opt-btn py-1.5 rounded-lg border text-[11px] font-bold transition-all ${
+          active ? 'bg-accent-500/20 text-accent-200 border-accent-400' : 'bg-[#0d1016] text-slate-400 border-[#2a3242]'
+        }`;
+      });
+
+      document.querySelectorAll('.retrigger-opt-btn').forEach(btn => {
+        const active = btn.dataset.retrigger === d.retrigger;
+        btn.className = `retrigger-opt-btn py-1.5 rounded-lg border text-[11px] font-bold transition-all ${
+          active ? 'bg-violet-500/20 text-violet-200 border-violet-400' : 'bg-[#0d1016] text-slate-400 border-[#2a3242]'
+        }`;
+      });
+
+      const colorGroup = document.getElementById('editColorGroup');
+      colorGroup.innerHTML = '';
+      Object.entries(COLOR_PALETTE).forEach(([key, val]) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const isSel = key === d.color;
+        btn.className = `w-7 h-7 rounded-full transition-transform ${isSel ? 'scale-110 ring-2 ring-white ring-offset-2 ring-offset-[#181c26]' : 'opacity-75 hover:opacity-100'}`;
+        btn.style.backgroundColor = val.hex;
+        btn.addEventListener('click', () => {
+          d.color = key;
+          updateEditModalUI();
+        });
+        colorGroup.appendChild(btn);
+      });
+    }
+
+    let wakeLockSentinel = null;
+    async function toggleWakeLock() {
+      const btn = document.getElementById('btnWakeLock');
+      if (!('wakeLock' in navigator)) {
+        showToast('このブラウザはWake Lockに非対応です');
+        return;
+      }
+      try {
+        if (!state.wakeLockActive) {
+          wakeLockSentinel = await navigator.wakeLock.request('screen');
+          state.wakeLockActive = true;
+          btn.className = 'flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-emerald-400/60 bg-emerald-500/15 transition-all text-[11px] font-bold text-emerald-300';
+          showToast('画面スリープ防止 (Wake Lock) をONにしました');
+          wakeLockSentinel.addEventListener('release', () => {
+            state.wakeLockActive = false;
+            btn.className = 'flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-[#2c3445] bg-[#1a1f2b] hover:bg-[#222838] transition-all text-[11px] font-bold text-slate-400';
+          });
+        } else {
+          if (wakeLockSentinel) await wakeLockSentinel.release();
+          state.wakeLockActive = false;
+          showToast('画面スリープ防止をOFFにしました');
+        }
+      } catch (err) {
+        showToast('Wake Lockの有効化に失敗しました');
+      }
+    }
+
+    // =========================================================================
+    // PC：キーボードの割り当て（パッド16個＝ 1234 / QWER / ASDF / ZXCV）
+    // =========================================================================
+    const KEY_CODES = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'KeyQ', 'KeyW', 'KeyE', 'KeyR', 'KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyZ', 'KeyX', 'KeyC', 'KeyV'];
+    const KEY_LABELS = ['1', '2', '3', '4', 'Q', 'W', 'E', 'R', 'A', 'S', 'D', 'F', 'Z', 'X', 'C', 'V'];
+
+    // =========================================================================
+    // DUCK（手動）と、ダッキング中のBGMフェーダー表示
+    // =========================================================================
+    const faderApi = {};
+    let bgmFaderDisplay = null;
+
+    /** 実際に鳴っているBGM音量に合わせてBGMフェーダーのつまみを動かす（元の位置には黄色い印） */
+    function updateBgmFaderDuck(dt) {
+      if (!faderApi.bgm) return;
+      const autoF = (state.ducking.enabled && state.ducking.isActive) ? AUTO_DUCK_LEVEL : 1;
+      const manualF = state.bgm.manualDuck ? state.duckAmount : 1;
+      const target = state.bgm.volume * autoF * manualF;
+      if (bgmFaderDisplay === null) bgmFaderDisplay = target;
+      // 下がる時は速く、戻る時はゆっくり（実際の音の変化に合わせる）
+      const tau = target < bgmFaderDisplay ? 0.06 : 0.16;
+      bgmFaderDisplay += (target - bgmFaderDisplay) * (1 - Math.exp(-Math.max(0, dt) / tau));
+
+      const ducked = Math.abs(bgmFaderDisplay - state.bgm.volume) > 0.004;
+      faderApi.bgm.setDisplay(ducked ? bgmFaderDisplay * 100 : null);
+      $('faderBgm').classList.toggle('is-ducked', ducked);
+      const label = $('bgmVolValue');
+      label.classList.toggle('is-ducked', ducked);
+      const text = `${Math.round((ducked ? bgmFaderDisplay : state.bgm.volume) * 100)}%`;
+      if (label.textContent !== text) label.textContent = text;
+    }
+
+    function updateManualDuckUI() {
+      const btn = $('btnManualDuck');
+      btn.classList.toggle('is-off', !state.bgm.manualDuck);
+      btn.classList.toggle('is-active', state.bgm.manualDuck);
+      btn.setAttribute('aria-pressed', String(state.bgm.manualDuck));
+    }
+
+    function updateDuckAmountUI() {
+      const pct = Math.round(state.duckAmount * 100);
+      $('sliderDuckAmount').value = pct;
+      $('duckAmountValue').textContent = `${pct}%`;
+    }
+
+    // =========================================================================
+    // パネル（BGM DECK / SE DECK / MIXER）の浮遊・移動・大きさ変更・元に戻す
+    // =========================================================================
+    const PANEL_IDS = ['bgm', 'se', 'mixer'];
+    const PANEL_NAMES = { bgm: 'BGM DECK', se: 'SE DECK', mixer: 'MIXER' };
+    const PANEL_MIN = { bgm: { w: 240, h: 280 }, se: { w: 360, h: 240 }, mixer: { w: 300, h: 250 } };
+    const PIN_SVG = `<svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 17v5"></path><path d="M9 4h6l-1 6 3 4H7l3-4z"></path></svg>`;
+    let panelZ = 1;
+
+    function createDefaultPanels() {
+      return { bgm: { floating: false }, se: { floating: false }, mixer: { floating: false } };
+    }
+
+    function pointInRect(x, y, r) {
+      return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+    }
+
+    /** 画面の外に出ないように位置と大きさを調整（タイトル部分は必ず見えるようにする） */
+    function clampPanel(id) {
+      const st = state.panels[id];
+      const shell = $('deviceShell');
+      const W = shell.clientWidth;
+      const H = shell.clientHeight;
+      const min = PANEL_MIN[id];
+      st.w = Math.round(Math.max(Math.min(min.w, W), Math.min(st.w || min.w, W)));
+      st.h = Math.round(Math.max(Math.min(min.h, H), Math.min(st.h || min.h, H)));
+      st.x = Math.round(Math.max(-(st.w - 80), Math.min(st.x || 0, W - 80)));
+      st.y = Math.round(Math.max(0, Math.min(st.y || 0, H - 36)));
+    }
+
+    function applyPanelGeometry(id) {
+      const p = $(`panel-${id}`);
+      const st = state.panels[id];
+      clampPanel(id);
+      p.style.left = `${st.x}px`;
+      p.style.top = `${st.y}px`;
+      p.style.width = `${st.w}px`;
+      p.style.height = `${st.h}px`;
+    }
+
+    function bringPanelToFront(id) {
+      panelZ += 1;
+      $(`panel-${id}`).style.zIndex = String(panelZ);
+    }
+
+    function floatPanel(id, rect) {
+      const p = $(`panel-${id}`);
+      Object.assign(state.panels[id], { floating: true }, rect);
+      p.classList.add('is-floating');
+      $('floatLayer').appendChild(p);
+      $(`slot-${id}`).classList.add('is-empty');
+      applyPanelGeometry(id);
+      bringPanelToFront(id);
+    }
+
+    function dockPanel(id) {
+      const p = $(`panel-${id}`);
+      const slot = $(`slot-${id}`);
+      state.panels[id].floating = false;
+      p.classList.remove('is-floating', 'is-moving');
+      ['left', 'top', 'width', 'height', 'zIndex'].forEach(k => { p.style[k] = ''; });
+      slot.insertBefore(p, slot.firstChild);
+      slot.classList.remove('is-empty', 'is-drop-target');
+    }
+
+    function bindPanel(id) {
+      const p = $(`panel-${id}`);
+      const head = p.querySelector('.panel-head');
+      const slot = $(`slot-${id}`);
+
+      // 触ったパネルを一番手前に
+      p.addEventListener('pointerdown', () => {
+        if (state.panels[id].floating) bringPanelToFront(id);
+      }, true);
+
+      // タイトル部分をドラッグ：少し動かすと浮遊 → 好きな位置へ。元の場所で離すと戻る
+      head.addEventListener('pointerdown', (e) => {
+        if (state.perfLock) return;
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        if (e.target.closest('button, input, select, label, a')) return;
+        e.preventDefault();
+
+        const shellRect = $('deviceShell').getBoundingClientRect();
+        const pr = p.getBoundingClientRect();
+        const sx = e.clientX;
+        const sy = e.clientY;
+        let offX = sx - pr.left;
+        const offY = sy - pr.top;
+        let dragging = false;
+        // 元の場所の上から動かし始めた場合は、一度外に出るまで「戻す」判定をしない
+        let leftHome = !pointInRect(sx, sy, slot.getBoundingClientRect());
+
+        const move = (ev) => {
+          if (!dragging) {
+            if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 6) return;
+            dragging = true;
+            if (!state.panels[id].floating) {
+              let w = pr.width;
+              let h = pr.height;
+              if (id === 'se') {
+                w = Math.min(w, Math.max(PANEL_MIN.se.w, shellRect.width * 0.6));
+                h = Math.min(h, Math.max(PANEL_MIN.se.h, shellRect.height * 0.6));
+              } else if (id === 'bgm') {
+                h = Math.min(h, Math.max(PANEL_MIN.bgm.h, shellRect.height * 0.7));
+              }
+              offX = Math.min(offX, w - 24);
+              floatPanel(id, { x: pr.left - shellRect.left, y: pr.top - shellRect.top, w, h });
+            }
+            p.classList.add('is-moving');
+          }
+          const st = state.panels[id];
+          st.x = ev.clientX - shellRect.left - offX;
+          st.y = ev.clientY - shellRect.top - offY;
+          applyPanelGeometry(id);
+          const over = pointInRect(ev.clientX, ev.clientY, slot.getBoundingClientRect());
+          if (!over) leftHome = true;
+          slot.classList.toggle('is-drop-target', over && leftHome);
+        };
+
+        const up = () => {
+          window.removeEventListener('pointermove', move);
+          window.removeEventListener('pointerup', up);
+          window.removeEventListener('pointercancel', up);
+          if (!dragging) return;
+          p.classList.remove('is-moving');
+          const dropHome = slot.classList.contains('is-drop-target');
+          slot.classList.remove('is-drop-target');
+          if (dropHome) {
+            dockPanel(id);
+            showToast(`${PANEL_NAMES[id]} を元の位置に戻しました`);
+          }
+          storage.saveState();
+        };
+
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', up);
+        window.addEventListener('pointercancel', up);
+      });
+
+      // 右下の角をドラッグして大きさを変更（浮遊中のみ）
+      const rz = p.querySelector('.panel-resize');
+      rz.addEventListener('pointerdown', (e) => {
+        if (state.perfLock || !state.panels[id].floating) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const st = state.panels[id];
+        const sx = e.clientX;
+        const sy = e.clientY;
+        const sw = st.w;
+        const sh = st.h;
+        bringPanelToFront(id);
+        const move = (ev) => {
+          st.w = sw + (ev.clientX - sx);
+          st.h = sh + (ev.clientY - sy);
+          applyPanelGeometry(id);
+        };
+        const up = () => {
+          window.removeEventListener('pointermove', move);
+          window.removeEventListener('pointerup', up);
+          window.removeEventListener('pointercancel', up);
+          storage.saveState();
+        };
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', up);
+        window.addEventListener('pointercancel', up);
+      });
+
+      // 📌 ボタンで元の位置に戻す
+      p.querySelector('.panel-pin').addEventListener('click', () => {
+        dockPanel(id);
+        storage.saveState();
+        showToast(`${PANEL_NAMES[id]} を元の位置に戻しました`);
+      });
+    }
+
+    function initPanels() {
+      document.querySelectorAll('.panel-pin').forEach(btn => { btn.innerHTML = PIN_SVG; });
+      PANEL_IDS.forEach(bindPanel);
+      // 保存されていた浮遊位置を復元
+      PANEL_IDS.forEach(id => {
+        const st = state.panels[id];
+        if (st && st.floating) floatPanel(id, { x: st.x, y: st.y, w: st.w, h: st.h });
+      });
+      // ウィンドウの大きさが変わったら、画面外に出たパネルを戻す
+      window.addEventListener('resize', () => {
+        PANEL_IDS.forEach(id => { if (state.panels[id].floating) applyPanelGeometry(id); });
+      });
+    }
+
+    function dockAllPanels() {
+      PANEL_IDS.forEach(id => { if (state.panels[id] && state.panels[id].floating) dockPanel(id); });
+      state.panels = createDefaultPanels();
+    }
+
+    let lastFrameTime = performance.now();
+    let peakHoldTimer = 0;
+
+    function animateLoop(now) {
+      const dt = (now - lastFrameTime) / 1000;
+      lastFrameTime = now;
+
+      audioEngine.activeVoices.forEach((list, padId) => {
+        const progEl = document.getElementById(`prog-${padId}`);
+        if (!progEl || list.length === 0) return;
+        const latest = list[list.length - 1];
+        const elapsed = now - latest.startTime;
+        const ratio = latest.isLooping
+          ? ((elapsed % latest.durationMs) / latest.durationMs)
+          : Math.min(1, elapsed / latest.durationMs);
+        progEl.style.width = `${(ratio * 100).toFixed(1)}%`;
+      });
+
+      if (state.bgm.isPlaying) {
+        const track = state.bgmList[state.bgm.trackIndex];
+        const dur = track ? (track.durationSec || 24) : 24;
+        state.bgm.elapsedSec += dt;
+        if (state.bgm.elapsedSec >= dur) {
+          if (state.bgm.repeat === 'one') {
+            // 1曲リピート：ファイルは src.loop で自動的に頭へ戻る。内蔵曲は鳴り続ける
+            state.bgm.elapsedSec = 0;
+          } else if (track && track.type === 'synth') {
+            // 内蔵曲は終わりが無いので、長さ（24秒）で区切って次へ進む
+            state.bgm.elapsedSec = dur;
+            audioEngine.onTrackFinished();
+          } else {
+            // ファイルは再生終了（onended）で次へ進むので、ここでは止めておくだけ
+            state.bgm.elapsedSec = dur;
+          }
+        }
+        updateBgmUI();
+      }
+
+      updateBgmFaderDuck(dt);
+
+      const levels = audioEngine.getStereoLevels();
+      const renderMeter = (id, level) => {
+        const segs = document.getElementById(id).children;
+        const lit = Math.round(level * segs.length);
+        for (let i = 0; i < segs.length; i++) {
+          if (i < lit) {
+            if (i >= 13) {
+              segs[i].style.backgroundColor = '#ef4444';
+              segs[i].style.boxShadow = '0 0 6px rgba(239,68,68,0.8)';
+            } else if (i >= 10) {
+              segs[i].style.backgroundColor = '#f59e0b';
+              segs[i].style.boxShadow = '0 0 5px rgba(245,158,11,0.7)';
+            } else {
+              segs[i].style.backgroundColor = '#10b981';
+              segs[i].style.boxShadow = '0 0 4px rgba(16,185,129,0.6)';
+            }
+          } else {
+            segs[i].style.backgroundColor = '#1a202c';
+            segs[i].style.boxShadow = 'none';
+          }
+        }
+      };
+      renderMeter('meterL', levels.l);
+      renderMeter('meterR', levels.r);
+
+      const peakBadge = document.getElementById('peakBadge');
+      // 出力波形が音割れ寸前（0.95 ≒ -0.4dBFS）に達したときだけ点灯
+      if (levels.peakL >= 0.95 || levels.peakR >= 0.95) peakHoldTimer = 0.45;
+      if (peakHoldTimer > 0) {
+        peakHoldTimer -= dt;
+        peakBadge.className = 'text-[9px] font-mono-num font-bold px-1.5 py-0.5 rounded bg-red-500/25 text-red-400 border border-red-500/60';
+      } else {
+        peakBadge.className = 'text-[9px] font-mono-num font-bold px-1.5 py-0.5 rounded bg-[#0d1016] text-slate-500 border border-[#262c3a]';
+      }
+
+      requestAnimationFrame(animateLoop);
+    }
+
+    function applyLayoutUI() {
+      const shell = document.getElementById('deviceShell');
+      const btnIpad = document.getElementById('btnLayoutIpad');
+      const btnIphone = document.getElementById('btnLayoutIphone');
+      if (state.layoutMode === 'ipad') {
+        shell.classList.remove('mode-iphone');
+        btnIpad.className = 'px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-bold transition-all bg-accent-500/20 text-accent-300 border border-accent-500/40';
+        btnIphone.className = 'px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-bold transition-all text-slate-400 hover:text-slate-200 border border-transparent';
+      } else {
+        shell.classList.add('mode-iphone');
+        btnIphone.className = 'px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-bold transition-all bg-accent-500/20 text-accent-300 border border-accent-500/40';
+        btnIpad.className = 'px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-bold transition-all text-slate-400 hover:text-slate-200 border border-transparent';
+      }
+    }
+
+    /** MIXERの縦フェーダーを作成（保存済みの音量で初期化。ダブルクリックで戻る初期値つき） */
+    function initFaders() {
+      faderApi.se = createVFader($('faderSe'), {
+        value: Math.round(state.seVolume * 100),
+        defaultValue: 100,
+        onInput: (pct) => {
+          state.seVolume = pct / 100;
+          $('seVolValue').textContent = `${pct}%`;
+          audioEngine.setSeVolume(state.seVolume);
+          storage.saveState();
+        }
+      });
+      faderApi.bgm = createVFader($('faderBgm'), {
+        value: Math.round(state.bgm.volume * 100),
+        defaultValue: 70,
+        onInput: (pct) => {
+          state.bgm.volume = pct / 100;
+          $('bgmVolValue').textContent = `${pct}%`;
+          audioEngine.setBgmVolume(state.bgm.volume);
+          storage.saveState();
+        }
+      });
+      faderApi.master = createVFader($('faderMaster'), {
+        value: Math.round(state.masterVolume * 100),
+        defaultValue: 90,
+        onInput: (pct) => {
+          state.masterVolume = pct / 100;
+          $('masterVolValue').textContent = `${pct}%`;
+          audioEngine.setMasterVolume(state.masterVolume);
+          storage.saveState();
+        }
+      });
+      $('seVolValue').textContent = `${Math.round(state.seVolume * 100)}%`;
+      $('bgmVolValue').textContent = `${Math.round(state.bgm.volume * 100)}%`;
+      $('masterVolValue').textContent = `${Math.round(state.masterVolume * 100)}%`;
+    }
+
+    function bindEvents() {
+      document.getElementById('btnStartDeck').addEventListener('click', () => {
+        audioEngine.ensureInit();
+        document.getElementById('startupOverlay').classList.add('hidden');
+        showToast('LIVEPAD DECK 起動完了');
+      });
+
+      document.getElementById('btnLayoutIpad').addEventListener('click', () => {
+        state.layoutMode = 'ipad';
+        applyLayoutUI();
+        renderPads();
+        storage.saveState();
+      });
+      document.getElementById('btnLayoutIphone').addEventListener('click', () => {
+        state.layoutMode = 'iphone';
+        applyLayoutUI();
+        renderPads();
+        storage.saveState();
+      });
+
+      document.getElementById('btnWakeLock').addEventListener('click', toggleWakeLock);
+
+      const btnLock = document.getElementById('btnPerfLock');
+      btnLock.addEventListener('click', () => {
+        state.perfLock = !state.perfLock;
+        $('deviceShell').classList.toggle('is-locked', state.perfLock);
+        btnLock.setAttribute('aria-pressed', String(state.perfLock));
+        const iconOpen = document.getElementById('iconLockOpen');
+        const iconClosed = document.getElementById('iconLockClosed');
+        const pill = document.getElementById('lockStatePill');
+        const btnAddBgm = document.getElementById('btnAddBgm');
+
+        if (state.perfLock) {
+          closeEditModal();
+          closeTabRename();
+          closeBgmMenu();
+          iconOpen.classList.add('hidden');
+          iconClosed.classList.remove('hidden');
+          btnAddBgm.classList.add('hidden');
+          btnLock.className = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-amber-400/60 bg-amber-500/15 transition-all text-[11px] font-bold text-amber-200';
+          pill.className = 'px-1.5 py-0.5 rounded text-[9px] font-mono-num bg-amber-500 text-slate-950 font-black';
+          pill.textContent = 'ON';
+          showToast('PERFORMANCE LOCK ON：編集機能をロックしました');
+        } else {
+          iconOpen.classList.remove('hidden');
+          iconClosed.classList.add('hidden');
+          btnAddBgm.classList.remove('hidden');
+          btnLock.className = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#2c3445] bg-[#1a1f2b] hover:bg-[#222838] transition-all text-[11px] font-bold text-slate-300';
+          pill.className = 'px-1.5 py-0.5 rounded text-[9px] font-mono-num bg-slate-800 text-slate-400';
+          pill.textContent = 'OFF';
+          showToast('PERFORMANCE LOCK OFF：編集が可能です');
+        }
+        renderBgmList();
+        renderBankTabs();
+        renderPads();
+      });
+
+      const btnPanic = document.getElementById('btnPanicStop');
+      btnPanic.addEventListener('click', () => {
+        btnPanic.classList.add('triggered');
+        audioEngine.panicStop();
+        showToast('PANIC STOP：全音源をフェード停止しました');
+        setTimeout(() => btnPanic.classList.remove('triggered'), 200);
+      });
+
+      // ---- BGM ----
+      $('btnBgmPlay').addEventListener('click', () => audioEngine.togglePlayPause());
+      $('btnBgmNext').addEventListener('click', () => audioEngine.nextBgm());
+      $('btnBgmPrev').addEventListener('click', () => audioEngine.prevBgm());
+
+      $('btnAddBgm').addEventListener('click', () => $('inputBgmFiles').click());
+      $('inputBgmFiles').addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+        for (const f of files) {
+          const saved = await storage.saveAudioFile(f);
+          const entry = {
+            id: saved.id,
+            name: saved.name.replace(/\.[^/.]+$/, ''),
+            type: 'file',
+            durationSec: 0,
+            fileId: saved.id
+          };
+          // 追加した時点で長さを読み取ってリストに表示
+          try {
+            const buf = await audioEngine.getDecodedBuffer(saved.id);
+            if (buf) entry.durationSec = buf.duration;
+          } catch (err) {
+            console.error(err);
+          }
+          state.bgmList.push(entry);
+        }
+        await storage.saveState();
+        renderBgmList();
+        $('bgmList').scrollTop = $('bgmList').scrollHeight;
+        e.target.value = '';
+        showToast(`${files.length}件のBGMを追加しました`);
+      });
+
+      // シークバー：動かしている間は表示だけ変え、指を離したら移動
+      const seek = $('bgmSeek');
+      const seekTargetSec = () => {
+        const track = state.bgmList[state.bgm.trackIndex];
+        const dur = track ? (track.durationSec || 24) : 0;
+        return (Number(seek.value) / 1000) * dur;
+      };
+      seek.addEventListener('pointerdown', () => { seekDragging = true; });
+      seek.addEventListener('input', () => {
+        seekDragging = true;
+        seek.style.setProperty('--fill', `${Number(seek.value) / 10}%`);
+        $('bgmElapsed').textContent = fmtTime(seekTargetSec());
+      });
+      seek.addEventListener('change', () => {
+        audioEngine.seekBgm(seekTargetSec());
+        seekDragging = false;
+      });
+      seek.addEventListener('pointerup', () => { setTimeout(() => { seekDragging = false; }, 0); });
+
+      $('btnBgmRepeat').addEventListener('click', () => {
+        const i = REPEAT_ORDER.indexOf(state.bgm.repeat);
+        state.bgm.repeat = REPEAT_ORDER[(i + 1) % REPEAT_ORDER.length];
+        if (audioEngine.currentBgmSource) audioEngine.currentBgmSource.loop = state.bgm.repeat === 'one';
+        updateRepeatUI();
+        showToast(REPEAT_LABEL[state.bgm.repeat]);
+        storage.saveState();
+      });
+
+      $('btnBgmXfade').addEventListener('click', () => {
+        state.bgm.crossfade = !state.bgm.crossfade;
+        updateXfadeUI();
+        storage.saveState();
+      });
+
+      $('btnDuckToggle').addEventListener('click', () => {
+        state.ducking.enabled = !state.ducking.enabled;
+        updateDuckingVisuals();
+        audioEngine.updateDucking();
+        showToast(state.ducking.enabled ? 'AUTO DUCKING ON：SE中はBGMを下げます' : 'AUTO DUCKING OFF');
+        storage.saveState();
+      });
+
+      // ---- BGMの長押しメニュー ----
+      $('bgmMenuShield').addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        closeBgmMenu();
+      });
+      $('bgmMenuPlay').addEventListener('click', () => {
+        const idx = bgmMenuIndex;
+        closeBgmMenu();
+        if (idx >= 0) audioEngine.playTrackAt(idx);
+      });
+      $('bgmMenuDelete').addEventListener('click', async () => {
+        const idx = bgmMenuIndex;
+        if (idx < 0) return;
+        if (!bgmDeleteArmed) {
+          // 1回目：確認表示に切り替え
+          bgmDeleteArmed = true;
+          $('bgmMenuDelete').classList.add('is-confirm');
+          $('bgmMenuDeleteLabel').textContent = 'もう一度押すと削除';
+          return;
+        }
+        closeBgmMenu();
+        await deleteBgmAt(idx);
+      });
+
+      // ---- パッド編集モーダル ----
+      document.getElementById('btnEditModalClose').addEventListener('click', closeEditModal);
+      document.getElementById('btnEditModalCancel').addEventListener('click', closeEditModal);
+      document.getElementById('editModalBackdrop').addEventListener('click', (e) => {
+        if (e.target.id === 'editModalBackdrop') closeEditModal();
+      });
+
+      document.getElementById('inputPadAudioFile').addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file || !state.editDraft) return;
+        state.editDraft.pendingFile = file;
+        state.editDraft.sourceType = 'file';
+        if (!document.getElementById('editPadName').value.trim()) {
+          document.getElementById('editPadName').value = file.name.replace(/\.[^/.]+$/, '').slice(0, 16);
+        }
+        updateEditModalUI();
+      });
+
+      document.getElementById('btnRevertSynth').addEventListener('click', () => {
+        if (!state.editDraft) return;
+        state.editDraft.pendingFile = null;
+        state.editDraft.sourceType = 'synth';
+        state.editDraft.synthType = state.editingPad.defaultSynth || 'pon';
+        updateEditModalUI();
+      });
+
+      document.getElementById('btnClearPad').addEventListener('click', () => {
+        if (!state.editDraft) return;
+        state.editDraft.pendingFile = null;
+        state.editDraft.sourceType = 'empty';
+        document.getElementById('editPadName').value = '';
+        updateEditModalUI();
+      });
+
+      document.querySelectorAll('.mode-opt-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (!state.editDraft) return;
+          state.editDraft.mode = btn.dataset.mode;
+          updateEditModalUI();
+        });
+      });
+
+      document.querySelectorAll('.retrigger-opt-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (!state.editDraft) return;
+          state.editDraft.retrigger = btn.dataset.retrigger;
+          updateEditModalUI();
+        });
+      });
+
+      document.getElementById('editPadVol').addEventListener('input', (e) => {
+        if (!state.editDraft) return;
+        state.editDraft.volume = Number(e.target.value);
+        document.getElementById('editPadVolVal').textContent = `${e.target.value}%`;
+      });
+
+      document.getElementById('btnTestPadSound').addEventListener('click', () => {
+        if (!state.editDraft || state.editDraft.sourceType === 'empty') {
+          showToast('音源が設定されていません');
+          return;
+        }
+        audioEngine.ensureInit();
+        if (state.editDraft.pendingFile) {
+          const url = URL.createObjectURL(state.editDraft.pendingFile);
+          const a = new Audio(url);
+          a.volume = Math.min(1, state.editDraft.volume / 100);
+          a.play();
+          a.onended = () => URL.revokeObjectURL(url);
+        } else {
+          const tempPad = { ...state.editingPad, ...state.editDraft, mode: '1-SHOT' };
+          audioEngine.triggerPadDown(tempPad);
+        }
+      });
+
+      document.getElementById('btnEditModalSave').addEventListener('click', async () => {
+        const pad = state.editingPad;
+        const d = state.editDraft;
+        if (!pad || !d) return;
+
+        if (d.pendingFile) {
+          const oldId = pad.fileId;
+          const saved = await storage.saveAudioFile(d.pendingFile);
+          pad.fileId = saved.id;
+          pad.fileName = saved.name;
+          if (oldId) storage.deleteAudioFile(oldId);
+        } else if (d.sourceType !== 'file' && pad.fileId) {
+          storage.deleteAudioFile(pad.fileId);
+          pad.fileId = null;
+          pad.fileName = null;
+        }
+
+        pad.sourceType = d.sourceType;
+        pad.synthType = d.synthType;
+        pad.mode = d.mode;
+        pad.retrigger = d.retrigger;
+        pad.color = d.color;
+        pad.volume = d.volume;
+        const rawName = document.getElementById('editPadName').value.trim();
+        pad.name = rawName || (pad.sourceType === 'empty' ? '空きパッド' : 'サウンド');
+
+        await storage.saveState();
+        closeEditModal();
+        renderPads();
+        showToast('パッド設定を保存しました');
+      });
+
+      // ---- タブ名変更 ----
+      $('btnTabClose').addEventListener('click', closeTabRename);
+      $('btnTabCancel').addEventListener('click', closeTabRename);
+      $('tabModalBackdrop').addEventListener('click', (e) => {
+        if (e.target.id === 'tabModalBackdrop') closeTabRename();
+      });
+      $('tabRenameForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const bank = state.banks[state.activeBankIndex];
+        const name = $('tabNameInput').value.trim().slice(0, 10);
+        closeTabRename();
+        if (!name || name === bank.label) return;
+        bank.label = name;
+        await storage.saveState();
+        renderBankTabs();
+        showToast(`タブ名を「${name}」に変更しました`);
+      });
+
+      // ---- 設定 ----
+      const settingsBackdrop = document.getElementById('settingsModalBackdrop');
+      const closeSettings = () => {
+        settingsBackdrop.classList.add('hidden');
+        settingsBackdrop.classList.remove('flex');
+        document.getElementById('resetInitialArea').classList.remove('hidden');
+        document.getElementById('resetConfirmArea').classList.add('hidden');
+      };
+
+      document.getElementById('btnOpenSettings').addEventListener('click', () => {
+        renderThemeGroup();
+        settingsBackdrop.classList.remove('hidden');
+        settingsBackdrop.classList.add('flex');
+      });
+      document.getElementById('btnSettingsClose').addEventListener('click', closeSettings);
+      settingsBackdrop.addEventListener('click', (e) => { if (e.target === settingsBackdrop) closeSettings(); });
+
+      document.getElementById('btnRequestReset').addEventListener('click', () => {
+        document.getElementById('resetInitialArea').classList.add('hidden');
+        document.getElementById('resetConfirmArea').classList.remove('hidden');
+      });
+      document.getElementById('btnCancelReset').addEventListener('click', () => {
+        document.getElementById('resetInitialArea').classList.remove('hidden');
+        document.getElementById('resetConfirmArea').classList.add('hidden');
+      });
+      document.getElementById('btnConfirmReset').addEventListener('click', async () => {
+        audioEngine.panicStop();
+        await storage.clearAll();
+        audioEngine.bufferCache.clear();
+        state.banks = createDefaultBanks();
+        state.bgmList = createDefaultBgmList();
+        state.bgm.trackIndex = 0;
+        state.bgm.elapsedSec = 0;
+        state.activeBankIndex = 0;
+        state.themeColor = DEFAULT_THEME;
+        applyTheme();
+        dockAllPanels();
+        state.bgm.manualDuck = false;
+        state.duckAmount = 0.8;
+        audioEngine.applyManualDuck();
+        updateManualDuckUI();
+        updateDuckAmountUI();
+        renderBgmList();
+        renderBankTabs();
+        renderPads();
+        closeSettings();
+        showToast('すべてのデータを初期状態に戻しました');
+      });
+
+      // ---- 手動DUCK（押している間だけBGMを下げる。離すと元に戻る） ----
+      const duckBtn = $('btnManualDuck');
+      const setManualDuck = (on) => {
+        if (state.bgm.manualDuck === on) return;
+        state.bgm.manualDuck = on;
+        audioEngine.ensureInit();
+        audioEngine.applyManualDuck();
+        updateManualDuckUI();
+      };
+      const releaseManualDuck = () => setManualDuck(false);
+      duckBtn.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        e.preventDefault();
+        // 指やマウスがボタンの外へずれても、離すまでは下げたままにする
+        duckBtn.setPointerCapture(e.pointerId);
+        setManualDuck(true);
+      });
+      duckBtn.addEventListener('pointerup', releaseManualDuck);
+      duckBtn.addEventListener('pointercancel', releaseManualDuck);
+      duckBtn.addEventListener('lostpointercapture', releaseManualDuck);
+      duckBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+      // キーボードでボタンを選んでいる時は Space / Enter を押している間
+      duckBtn.addEventListener('keydown', (e) => {
+        if (e.key !== ' ' && e.key !== 'Enter') return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (!e.repeat) setManualDuck(true);
+      });
+      duckBtn.addEventListener('keyup', (e) => {
+        if (e.key !== ' ' && e.key !== 'Enter') return;
+        e.preventDefault();
+        e.stopPropagation();
+        releaseManualDuck();
+      });
+      // ウィンドウから離れたら必ず元に戻す（下げっぱなし防止）
+      window.addEventListener('blur', releaseManualDuck);
+
+      // ---- DUCKの下げ幅（設定） ----
+      $('sliderDuckAmount').addEventListener('input', (e) => {
+        state.duckAmount = Number(e.target.value) / 100;
+        $('duckAmountValue').textContent = `${e.target.value}%`;
+        audioEngine.applyManualDuck();
+        storage.saveState();
+      });
+
+      // ---- キーボード（PC） ----
+      // パッド：1234 / QWER / ASDF / ZXCV、Space：BGM再生/一時停止、Esc：PANIC STOP（画面が開いている時は閉じる）
+      const heldKeys = new Map();
+      const isOpen = (id) => !$(id).classList.contains('hidden');
+      const overlayOpen = () =>
+        isOpen('editModalBackdrop') || isOpen('settingsModalBackdrop') || isOpen('tabModalBackdrop') || isOpen('bgmMenu');
+      const isTyping = (t) => !!t && (
+        (t.tagName === 'INPUT' && !['range', 'button', 'checkbox', 'file'].includes(t.type)) ||
+        t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable
+      );
+      const releaseKey = (code) => {
+        const pad = heldKeys.get(code);
+        if (!pad) return;
+        heldKeys.delete(code);
+        const el = document.getElementById(`pad-${pad.id}`);
+        if (el) el.classList.remove('is-pressed');
+        audioEngine.triggerPadUp(pad);
+      };
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (overlayOpen()) {
+            closeBgmMenu();
+            closeTabRename();
+            closeEditModal();
+            closeSettings();
+            return;
+          }
+          if (isOpen('startupOverlay')) return;
+          e.preventDefault();
+          $('btnPanicStop').click();
+          return;
+        }
+        if (isOpen('startupOverlay') || overlayOpen() || isTyping(e.target)) return;
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+        if (e.code === 'Space') {
+          e.preventDefault();
+          if (!e.repeat) audioEngine.togglePlayPause();
+          return;
+        }
+
+        const idx = KEY_CODES.indexOf(e.code);
+        const padCount = state.layoutMode === 'iphone' ? 8 : 16;
+        if (idx < 0 || idx >= padCount) return;
+        e.preventDefault();
+        if (e.repeat || heldKeys.has(e.code)) return;
+        const pad = state.banks[state.activeBankIndex].pads[idx];
+        if (!pad || pad.sourceType === 'empty') return;
+        heldKeys.set(e.code, pad);
+        const el = document.getElementById(`pad-${pad.id}`);
+        if (el) el.classList.add('is-pressed');
+        audioEngine.triggerPadDown(pad);
+      });
+
+      document.addEventListener('keyup', (e) => {
+        if (e.code === 'Space' && !isTyping(e.target)) e.preventDefault();   // ボタンにフォーカスがあっても押されないように
+        releaseKey(e.code);
+      });
+
+      // ウィンドウからフォーカスが外れたら、押しっぱなし扱いのキーを離す（GATEパッドの鳴りっぱなし防止）
+      window.addEventListener('blur', () => {
+        Array.from(heldKeys.keys()).forEach(releaseKey);
+      });
+    }
+
+    async function boot() {
+      initLevelMeters();
+      const saved = await storage.loadState();
+      if (saved) {
+        if (saved.banks) state.banks = saved.banks;
+        if (saved.bgmList) state.bgmList = saved.bgmList;
+        if (typeof saved.masterVolume === 'number') state.masterVolume = saved.masterVolume;
+        if (typeof saved.seVolume === 'number') state.seVolume = saved.seVolume;
+        if (typeof saved.bgmVolume === 'number') state.bgm.volume = saved.bgmVolume;
+        if (REPEAT_ORDER.includes(saved.bgmRepeat)) state.bgm.repeat = saved.bgmRepeat;
+        else if (typeof saved.bgmLoop === 'boolean') state.bgm.repeat = saved.bgmLoop ? 'one' : 'all';
+        if (typeof saved.bgmCrossfade === 'boolean') state.bgm.crossfade = saved.bgmCrossfade;
+        if (typeof saved.duckingEnabled === 'boolean') state.ducking.enabled = saved.duckingEnabled;
+        if (saved.layoutMode) state.layoutMode = saved.layoutMode;
+        if (saved.themeColor && THEMES[saved.themeColor]) state.themeColor = saved.themeColor;
+        if (typeof saved.duckAmount === 'number') state.duckAmount = saved.duckAmount;
+        if (saved.panels) {
+          state.panels = createDefaultPanels();
+          PANEL_IDS.forEach(id => { if (saved.panels[id]) state.panels[id] = { ...saved.panels[id] }; });
+        }
+      }
+
+      applyTheme();
+      initFaders();
+      updateRepeatUI();
+      updateXfadeUI();
+      updateDuckingVisuals();
+      applyLayoutUI();
+      renderBgmList();
+      renderBankTabs();
+      renderPads();
+      updateManualDuckUI();
+      updateDuckAmountUI();
+      initPanels();
+      bindEvents();
+      requestAnimationFrame(animateLoop);
+    }
+
+    window.addEventListener('DOMContentLoaded', boot);
+  </script>
+</body>
+</html>
