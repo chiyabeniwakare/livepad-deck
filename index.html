@@ -603,6 +603,25 @@
       .kbd { display: inline-flex; }
     }
 
+    /* BGMが空の時の案内と、無効になった操作ボタン */
+    .bgm-empty {
+      height: 100%;
+      min-height: 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 12px;
+      text-align: center;
+      font-size: 11px;
+      color: #64748b;
+    }
+    #btnBgmPrev:disabled, #btnBgmPlay:disabled, #btnBgmNext:disabled, #bgmSeek:disabled {
+      opacity: .35;
+      cursor: not-allowed;
+    }
+
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
@@ -758,7 +777,7 @@
             <div class="flex items-center gap-1.5">
               <span id="bgmElapsed" class="text-[10px] font-mono-num text-slate-400 shrink-0">00:00</span>
               <input id="bgmSeek" type="range" min="0" max="1000" value="0" class="pro-fader seek-fader flex-1 min-w-0" aria-label="再生位置">
-              <span id="bgmDuration" class="text-[10px] font-mono-num text-slate-400 shrink-0">00:24</span>
+              <span id="bgmDuration" class="text-[10px] font-mono-num text-slate-400 shrink-0">--:--</span>
               <button id="btnBgmRepeat" type="button" class="repeat-btn relative w-8 h-8 shrink-0 rounded-lg border flex items-center justify-center active:scale-95 transition-all">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
                   <path d="M17 2l4 4-4 4"></path><path d="M3 11V9a3 3 0 0 1 3-3h15"></path>
@@ -1177,9 +1196,7 @@
     }
 
     function createDefaultBgmList() {
-      return [
-        { id: 'builtin_lofi', name: 'Lo-Fi Chill (内蔵シンセ)', type: 'synth', durationSec: 24, fileId: null }
-      ];
+      return [];   // BGMは「+ BGM追加」で登録した音声ファイルのみ（内蔵シンセBGMは廃止）
     }
 
     // アプリ状態
@@ -1345,8 +1362,6 @@
         this.activeVoices = new Map();
         this.duckReleaseTimer = null;
 
-        this.bgmSynthTimer = null;
-        this.bgmStep = 0;
         this.currentBgmDeckGain = null;
         this.currentBgmSource = null;
       }
@@ -1783,12 +1798,7 @@
       async startBgm(withCrossfade = false, offsetSec = 0) {
         this.ensureInit();
         const track = state.bgmList[state.bgm.trackIndex];
-        if (!track) return;
-
-        if (this.bgmSynthTimer) {
-          clearInterval(this.bgmSynthTimer);
-          this.bgmSynthTimer = null;
-        }
+        if (!track || track.type !== 'file' || !track.fileId) return;
 
         if (this.currentBgmDeckGain) {
           const oldGain = this.currentBgmDeckGain;
@@ -1850,14 +1860,6 @@
             this.stopBgm(0.05);
             return;
           }
-        } else {
-          const stepMs = (60 / 82 / 2) * 1000;
-          this.bgmStep = Math.floor((state.bgm.elapsedSec * 1000) / stepMs);
-          this.triggerLofiStep(this.bgmStep++, deckGain);
-          this.bgmSynthTimer = setInterval(() => {
-            if (!state.bgm.isPlaying || this.currentBgmDeckGain !== deckGain) return;
-            this.triggerLofiStep(this.bgmStep++, deckGain);
-          }, stepMs);
         }
 
         updateBgmUI();
@@ -1866,10 +1868,6 @@
       /** 停止（一時停止）。再生位置 state.bgm.elapsedSec はそのまま残す */
       stopBgm(fadeSec = 0.12) {
         state.bgm.isPlaying = false;
-        if (this.bgmSynthTimer) {
-          clearInterval(this.bgmSynthTimer);
-          this.bgmSynthTimer = null;
-        }
         if (this.currentBgmDeckGain && this.ctx) {
           const oldGain = this.currentBgmDeckGain;
           const oldSrc = this.currentBgmSource;
@@ -1948,61 +1946,6 @@
         renderBgmList();
         if (state.bgm.isPlaying) this.startBgm(state.bgm.crossfade, 0);
         else updateBgmUI();
-      }
-      triggerLofiStep(step, dest) {
-        if (!this.ctx) return;
-        const ctx = this.ctx;
-        const t = ctx.currentTime;
-        const s = step % 32;
-
-        const playNote = (type, freq, dur, vol, lpf = 1400) => {
-          const o = ctx.createOscillator();
-          const f = ctx.createBiquadFilter();
-          const g = ctx.createGain();
-          o.type = type;
-          o.frequency.setValueAtTime(freq, t);
-          f.type = 'lowpass';
-          f.frequency.value = lpf;
-          g.gain.setValueAtTime(0.001, t);
-          g.gain.linearRampToValueAtTime(vol, t + 0.015);
-          g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-          o.connect(f); f.connect(g); g.connect(dest);
-          o.start(t); o.stop(t + dur + 0.03);
-        };
-
-        const chords = [
-          [174.61, 220.00, 261.63, 329.63],
-          [164.81, 196.00, 246.94, 293.66],
-          [146.83, 174.61, 220.00, 261.63],
-          [130.81, 164.81, 196.00, 246.94]
-        ];
-        if (s % 8 === 0) {
-          chords[Math.floor(s / 8) % 4].forEach(fr => playNote('triangle', fr, 1.4, 0.085, 1100));
-        }
-        if (s % 8 === 0 || s % 8 === 5) {
-          const o = ctx.createOscillator();
-          const g = ctx.createGain();
-          o.type = 'sine';
-          o.frequency.setValueAtTime(115, t);
-          o.frequency.exponentialRampToValueAtTime(40, t + 0.12);
-          g.gain.setValueAtTime(0.32, t);
-          g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
-          o.connect(g); g.connect(dest);
-          o.start(t); o.stop(t + 0.18);
-        }
-        if (s % 4 === 2) {
-          const src = ctx.createBufferSource();
-          src.buffer = this.noiseBuffer;
-          const hp = ctx.createBiquadFilter();
-          hp.type = 'highpass'; hp.frequency.value = 6500;
-          const g = ctx.createGain();
-          g.gain.setValueAtTime(0.055, t);
-          g.gain.exponentialRampToValueAtTime(0.001, t + 0.045);
-          src.connect(hp); hp.connect(g); g.connect(dest);
-          src.start(t); src.stop(t + 0.06);
-        }
-        const mel = [0, 0, 523.25, 0, 440, 0, 392, 0];
-        if (mel[s % 8]) playNote('sine', mel[s % 8], 0.45, 0.055, 1500);
       }
 
       getStereoLevels() {
@@ -2196,17 +2139,19 @@
     function renderBgmList() {
       const list = $('bgmList');
       const prevScroll = list.scrollTop;
-      list.innerHTML = '';
+      list.innerHTML = state.bgmList.length === 0
+        ? '<div class="bgm-empty"><span class="font-bold">BGMがありません</span><span>「+ BGM追加」から曲を追加してください</span></div>'
+        : '';
       state.bgmList.forEach((tr, idx) => {
         const row = document.createElement('div');
         row.className = 'bgm-row';
         row.dataset.index = String(idx);
         row.setAttribute('role', 'option');
-        const durKnown = tr.type !== 'file' || tr.durationSec > 0;
+        const durKnown = tr.durationSec > 0;
         row.innerHTML = `
           <span class="bgm-row-icon"></span>
           <span class="bgm-row-name">${escapeHtml(tr.name)}</span>
-          <span class="bgm-row-dur font-mono-num">${durKnown ? fmtTime(tr.durationSec || 24) : '--:--'}</span>
+          <span class="bgm-row-dur font-mono-num">${durKnown ? fmtTime(tr.durationSec) : '--:--'}</span>
           ${!state.perfLock ? `<span class="bgm-handle" title="ドラッグで並び替え">${GRIP_SVG}</span>` : ''}`;
         bindBgmRow(row, idx);
         list.appendChild(row);
@@ -2366,8 +2311,8 @@
 
       const del = $('bgmMenuDelete');
       del.classList.remove('is-confirm');
-      del.disabled = tr.type !== 'file';
-      $('bgmMenuDeleteLabel').textContent = tr.type === 'file' ? '削除' : '内蔵曲は削除できません';
+      del.disabled = false;
+      $('bgmMenuDeleteLabel').textContent = '削除';
 
       const menu = $('bgmMenu');
       menu.classList.remove('hidden');
@@ -2424,8 +2369,11 @@
         : 'w-9 h-8 rounded-lg bg-gradient-to-b from-accent-500 to-accent-600 text-slate-950 flex items-center justify-center shadow-md shadow-accent-500/20 active:scale-95';
       if (btnPlay.className !== playCls) btnPlay.className = playCls;
 
-      const durKnown = track && (track.type !== 'file' || track.durationSec > 0);
-      const dur = track ? (track.durationSec || 24) : 0;
+      const empty = state.bgmList.length === 0;
+      ['btnBgmPrev', 'btnBgmPlay', 'btnBgmNext', 'bgmSeek'].forEach(id => { $(id).disabled = empty; });
+
+      const durKnown = !!track && track.durationSec > 0;
+      const dur = durKnown ? track.durationSec : 0;
       if (!seekDragging) {
         $('bgmElapsed').textContent = fmtTime(state.bgm.elapsedSec);
         setSeekValue(durKnown && dur > 0 ? Math.min(1000, Math.round((state.bgm.elapsedSec / dur) * 1000)) : 0);
@@ -3051,20 +2999,11 @@
 
       if (state.bgm.isPlaying) {
         const track = state.bgmList[state.bgm.trackIndex];
-        const dur = track ? (track.durationSec || 24) : 24;
+        const dur = track ? (track.durationSec || 0) : 0;
         state.bgm.elapsedSec += dt;
-        if (state.bgm.elapsedSec >= dur) {
-          if (state.bgm.repeat === 'one') {
-            // 1曲リピート：ファイルは src.loop で自動的に頭へ戻る。内蔵曲は鳴り続ける
-            state.bgm.elapsedSec = 0;
-          } else if (track && track.type === 'synth') {
-            // 内蔵曲は終わりが無いので、長さ（24秒）で区切って次へ進む
-            state.bgm.elapsedSec = dur;
-            audioEngine.onTrackFinished();
-          } else {
-            // ファイルは再生終了（onended）で次へ進むので、ここでは止めておくだけ
-            state.bgm.elapsedSec = dur;
-          }
+        if (dur > 0 && state.bgm.elapsedSec >= dur) {
+          // 1曲リピートは src.loop で自動的に頭へ戻る。それ以外は再生終了（onended）で次へ進む
+          state.bgm.elapsedSec = state.bgm.repeat === 'one' ? 0 : dur;
         }
         updateBgmUI();
       }
@@ -3264,7 +3203,7 @@
       const seek = $('bgmSeek');
       const seekTargetSec = () => {
         const track = state.bgmList[state.bgm.trackIndex];
-        const dur = track ? (track.durationSec || 24) : 0;
+        const dur = track ? (track.durationSec || 0) : 0;
         return (Number(seek.value) / 1000) * dur;
       };
       seek.addEventListener('pointerdown', () => { seekDragging = true; });
@@ -3615,7 +3554,7 @@
       const saved = await storage.loadState();
       if (saved) {
         if (saved.banks) state.banks = saved.banks;
-        if (saved.bgmList) state.bgmList = saved.bgmList;
+        if (saved.bgmList) state.bgmList = saved.bgmList.filter(t => t.type === 'file');   // 旧版の内蔵シンセBGMは除外
         if (typeof saved.masterVolume === 'number') state.masterVolume = saved.masterVolume;
         if (typeof saved.seVolume === 'number') state.seVolume = saved.seVolume;
         if (typeof saved.bgmVolume === 'number') state.bgm.volume = saved.bgmVolume;
