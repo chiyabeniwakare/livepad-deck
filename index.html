@@ -7,6 +7,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>LIVEPAD DECK - Streamer Sampler & BGM</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Googleログイン（Google Identity Services） -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script>
     // テーマカラー：accent / accent2 の色を CSS変数（--ac-* / --ac2-*）で切り替える
     const acShade = (p, shades) => Object.fromEntries(shades.map(s => [s, `rgb(var(--${p}-${s}) / <alpha-value>)`]));
@@ -645,13 +647,22 @@
       配信向けポン出しサンプラー＆BGMデッキ。<br>
       手持ちのMP3/WAV音源を割り当ててブラウザ内に自動保存できます。
     </p>
-    <button id="btnStartDeck" type="button" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-accent-500 to-accent2-500 hover:from-accent-400 hover:to-accent2-400 text-slate-950 font-black text-base tracking-wider shadow-xl shadow-accent-500/30 active:scale-95 transition-all flex items-center gap-3 cursor-pointer">
-      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-        <polygon points="6 4 20 12 6 20 6 4"></polygon>
-      </svg>
-      START DECK
-    </button>
-    <p class="text-[11px] text-slate-500 mt-4">※ タップしてオーディオエンジンを有効化します（横向き推奨）</p>
+    <div class="flex flex-col items-center gap-3">
+      <button id="btnStartGoogle" type="button" class="hidden px-7 py-4 rounded-2xl bg-gradient-to-r from-accent-500 to-accent2-500 hover:from-accent-400 hover:to-accent2-400 text-slate-950 font-black text-base tracking-wider shadow-xl shadow-accent-500/30 active:scale-95 transition-all flex items-center gap-3 cursor-pointer">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+        </svg>
+        Googleでログインして開始
+      </button>
+      <button id="btnStartDeck" type="button" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-accent-500 to-accent2-500 hover:from-accent-400 hover:to-accent2-400 text-slate-950 font-black text-base tracking-wider shadow-xl shadow-accent-500/30 active:scale-95 transition-all flex items-center gap-3 cursor-pointer">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+          <polygon points="6 4 20 12 6 20 6 4"></polygon>
+        </svg>
+        START DECK
+      </button>
+      <button id="btnStartLocal" type="button" class="text-[12px] font-bold text-slate-400 hover:text-slate-200 underline underline-offset-4 cursor-pointer">ログインせずに開始</button>
+    </div>
+    <p id="startSyncNote" class="text-[11px] text-slate-500 mt-4 max-w-md leading-relaxed">※ タップしてオーディオエンジンを有効化します（横向き推奨）</p>
   </div>
 
   <!-- メインデバイスコンテナ -->
@@ -713,6 +724,12 @@
           <span class="hidden md:inline">PERFORMANCE LOCK</span>
           <span class="md:hidden">LOCK</span>
           <span id="lockStatePill" class="px-1.5 py-0.5 rounded text-[9px] font-mono-num bg-slate-800 text-slate-400">OFF</span>
+        </button>
+
+        <!-- Googleドライブ同期（ログイン・同期状態の表示） -->
+        <button id="btnAccount" type="button" title="Googleドライブ同期" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#2c3445] bg-[#1a1f2b] hover:bg-[#222838] transition-all text-[11px] font-bold text-slate-300">
+          <span id="accountIcon" class="flex items-center justify-center"></span>
+          <span id="accountLabel" class="hidden sm:inline whitespace-nowrap">ログイン</span>
         </button>
 
         <!-- 設定ボタン -->
@@ -1012,10 +1029,11 @@
         </div>
 
         <div class="bg-[#10131b] border border-[#262c3a] rounded-xl p-3 text-xs text-slate-300 space-y-1">
-          <div class="font-bold text-accent-300">IndexedDB 自動保存</div>
+          <div class="font-bold text-accent-300">保存と同期</div>
           <p class="text-slate-400 leading-relaxed">
-            登録した音声ファイル・パッド設定・BGMプレイリストはブラウザ内に自動保存され、リロード後も維持されます。
+            登録した音声ファイル・パッド設定・BGMプレイリストはブラウザ内に自動保存されます。Googleでログインすると、Googleドライブの「LIVEPAD DECK」フォルダにも保存され、別の端末やブラウザのデータを消したあとでも、ログインするだけで元に戻せます。
           </p>
+          <a href="privacy.html" target="_blank" rel="noopener" class="inline-block text-accent-300 hover:text-accent-200 underline underline-offset-2">プライバシーポリシー</a>
         </div>
 
         <div class="border-t border-[#262c3a] pt-3">
@@ -1082,6 +1100,52 @@
       <span id="bgmMenuDeleteLabel">削除</span>
     </button>
   </div>
+  <!-- Googleドライブ同期：アカウントメニュー -->
+  <div id="accountMenuShield" class="fixed inset-0 z-40 hidden"></div>
+  <div id="accountMenu" class="fixed z-50 hidden w-[270px] bg-[#1b202b] border border-[#30384b] rounded-xl shadow-2xl shadow-black/60 p-1" role="menu">
+    <div class="px-2.5 pt-2 pb-2 border-b border-[#262c3a] mb-1">
+      <div id="accountName" class="text-[12px] font-bold text-slate-100 truncate">Googleアカウント</div>
+      <div id="accountEmail" class="text-[10px] font-mono-num text-slate-400 truncate"></div>
+      <div id="accountStatusText" class="text-[10px] text-slate-400 mt-1.5 leading-relaxed"></div>
+    </div>
+    <button id="btnSyncNow" type="button" class="ctx-item" role="menuitem">
+      <svg class="w-3.5 h-3.5 text-accent-300" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+        <path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"></path><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"></path>
+        <path d="M21 3v5h-5"></path><path d="M3 21v-5h5"></path>
+      </svg>
+      今すぐ同期
+    </button>
+    <button id="btnSignOut" type="button" class="ctx-item is-danger" role="menuitem">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path>
+      </svg>
+      ログアウト（この端末のデータは残ります）
+    </button>
+  </div>
+
+  <!-- Googleドライブ同期：端末とドライブの両方にデータがある時の確認 -->
+  <div id="syncConflictBackdrop" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-[#181c26] border border-[#30384b] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden" role="dialog" aria-modal="true">
+      <div class="px-4 py-3 bg-[#14171f] border-b border-[#262c3a]">
+        <h3 class="text-sm font-bold text-slate-100">どちらのデータを使いますか？</h3>
+      </div>
+      <div class="p-4 space-y-3">
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Googleドライブとこの端末の両方に、LIVEPAD DECK のデータがあります。<br>
+          <span class="text-slate-500">ドライブの最終更新：<span id="conflictRemoteTime" class="font-mono-num"></span></span>
+        </p>
+        <button id="btnConflictDrive" type="button" class="w-full text-left px-3.5 py-3 rounded-xl bg-accent-500/15 hover:bg-accent-500/25 border border-accent-500/50 transition-colors">
+          <div class="text-[13px] font-bold text-accent-200">ドライブの内容を使う</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">この端末のパッドの割り当て・BGMリストは、ドライブの内容に置き換わります</div>
+        </button>
+        <button id="btnConflictLocal" type="button" class="w-full text-left px-3.5 py-3 rounded-xl bg-[#10131b] hover:bg-[#1a1f2b] border border-[#2a3242] transition-colors">
+          <div class="text-[13px] font-bold text-slate-100">この端末の内容でドライブを上書きする</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">ドライブの設定は、この端末の内容に置き換わります（ドライブにある音声ファイル自体は消えません）</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- トースト通知 -->
   <div id="toastBox" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-200 translate-y-2">
     <div class="px-4 py-2 rounded-xl bg-[#1b202b] border border-accent-500/40 text-xs font-bold text-slate-100 shadow-2xl flex items-center gap-2">
@@ -1236,6 +1300,7 @@
       constructor() {
         this.dbName = 'LivePadDeckDB_v1';
         this.db = null;
+        this.listener = null;   // Googleドライブ同期（変更があったら知らせる先）
       }
 
       async open() {
@@ -1280,9 +1345,59 @@
             panels: state.panels
           };
           store.put(payload);
+          if (this.listener) this.listener.onLocalChange();
         } catch (err) {
           console.error('saveState error:', err);
         }
+      }
+
+      /** 同期情報などの小さなデータを保存・読み込み */
+      async saveMeta(key, value) {
+        try {
+          const db = await this.open();
+          const tx = db.transaction('meta', 'readwrite');
+          tx.objectStore('meta').put({ key, value });
+        } catch (err) {
+          console.error('saveMeta error:', err);
+        }
+      }
+
+      async loadMeta(key) {
+        try {
+          const db = await this.open();
+          return new Promise((resolve) => {
+            const req = db.transaction('meta', 'readonly').objectStore('meta').get(key);
+            req.onsuccess = () => resolve(req.result ? req.result.value : null);
+            req.onerror = () => resolve(null);
+          });
+        } catch (err) {
+          return null;
+        }
+      }
+
+      /** 保存されている音声ファイルのID一覧 */
+      async listAudioIds() {
+        try {
+          const db = await this.open();
+          return new Promise((resolve) => {
+            const req = db.transaction('audioFiles', 'readonly').objectStore('audioFiles').getAllKeys();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = () => resolve([]);
+          });
+        } catch (err) {
+          return [];
+        }
+      }
+
+      /** ドライブから取ってきた音声を、元と同じIDで保存（同期の通知はしない） */
+      async putAudioRecord(record) {
+        const db = await this.open();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction('audioFiles', 'readwrite');
+          tx.objectStore('audioFiles').put(record);
+          tx.oncomplete = () => resolve(record);
+          tx.onerror = (e) => reject(e.target.error);
+        });
       }
 
       async loadState() {
@@ -1308,7 +1423,10 @@
         return new Promise((resolve, reject) => {
           const tx = db.transaction('audioFiles', 'readwrite');
           tx.objectStore('audioFiles').put(record);
-          tx.oncomplete = () => resolve(record);
+          tx.oncomplete = () => {
+            if (this.listener) this.listener.onLocalFileAdded(record);
+            resolve(record);
+          };
           tx.onerror = (e) => reject(e.target.error);
         });
       }
@@ -1328,6 +1446,7 @@
         const db = await this.open();
         const tx = db.transaction('audioFiles', 'readwrite');
         tx.objectStore('audioFiles').delete(id);
+        if (this.listener) this.listener.onLocalFileDeleted(id);
       }
 
       async clearAll() {
@@ -1343,6 +1462,562 @@
     }
 
     const storage = new DeckStorage();
+
+    // =========================================================================
+    // Googleログイン ＋ Googleドライブ同期
+    //   - 音は常にブラウザ内（IndexedDB）のコピーから鳴らす。ドライブは「原本の保管庫」
+    //   - マイドライブの「LIVEPAD DECK」フォルダに、音声ファイルと設定ファイルを保存
+    //   - 権限は drive.file（このアプリが作ったファイル／ユーザーが選んだファイルだけ）
+    // =========================================================================
+    const GOOGLE_CLIENT_ID = '147770525490-vl7anha9qcntrd3m4t8k7evsch26fujp.apps.googleusercontent.com';
+    const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+    const DRIVE_FOLDER_NAME = 'LIVEPAD DECK';
+    const DRIVE_SETTINGS_NAME = 'livepad-settings.json';
+    const DRIVE_API = 'https://www.googleapis.com/drive/v3';
+    const DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
+    const MULTIPART_LIMIT = 5 * 1024 * 1024;   // これより大きいファイルは分割可能なアップロード方式を使う
+
+    class DriveAuthError extends Error {}
+
+    function createDefaultSyncMeta() {
+      return {
+        linked: false,          // この端末でドライブ同期を使っているか
+        email: '',
+        name: '',
+        folderId: null,
+        settingsId: null,
+        lastSyncedAt: 0,        // 最後に同期した設定の更新時刻
+        dirty: false,           // まだドライブに送っていない変更があるか
+        fileMap: {},            // 端末内の音声ID → { driveId, name, type }
+        pendingTrash: []        // ドライブのゴミ箱に移す予定のファイルID
+      };
+    }
+
+    class DriveSync {
+      constructor() {
+        this.meta = createDefaultSyncMeta();
+        this.token = null;
+        this.tokenExpiresAt = 0;
+        this.tokenClient = null;
+        this.status = 'off';    // off / connecting / syncing / synced / reauth / error
+        this.progress = '';
+        this.busy = false;
+        this.again = false;
+        this.suppress = false;  // ドライブの内容を反映している間は「変更あり」にしない
+        this.changeSeq = 0;
+        this.flushTimer = null;
+        this.expireTimer = null;
+      }
+
+      // ---- 保存されている同期情報 ----------------------------------------
+      async load() {
+        const saved = await storage.loadMeta('sync');
+        if (saved) this.meta = { ...createDefaultSyncMeta(), ...saved };
+        if (this.meta.linked) this.status = 'reauth';
+      }
+
+      async saveMeta() {
+        await storage.saveMeta('sync', this.meta);
+      }
+
+      async forgetLocal() {
+        // データ初期化：この端末の同期情報だけ消す（ドライブの中身はそのまま）
+        this.meta = createDefaultSyncMeta();
+        this.token = null;
+        this.tokenExpiresAt = 0;
+        await this.saveMeta();
+        this.setStatus('off');
+      }
+
+      // ---- Googleログイン ------------------------------------------------
+      initGoogle() {
+        const tryInit = () => {
+          if (!(window.google && google.accounts && google.accounts.oauth2)) return false;
+          this.tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CLIENT_ID,
+            scope: DRIVE_SCOPE,
+            callback: (resp) => this.onToken(resp),
+            error_callback: (err) => this.onTokenError(err)
+          });
+          return true;
+        };
+        if (tryInit()) return;
+        let tries = 0;
+        const timer = setInterval(() => {
+          if (tryInit() || ++tries > 80) clearInterval(timer);
+        }, 250);
+      }
+
+      hasValidToken() {
+        return !!this.token && Date.now() < this.tokenExpiresAt;
+      }
+
+      /** ログイン（ボタンを押した直後に呼ぶこと。そうしないとポップアップがブロックされる） */
+      signIn() {
+        if (!this.tokenClient) {
+          showToast('Googleに接続できません。ネット接続を確認してください');
+          this.setStatus(this.meta.linked ? 'reauth' : 'off');
+          return false;
+        }
+        this.setStatus('connecting');
+        const opts = { prompt: '' };
+        if (this.meta.email) opts.login_hint = this.meta.email;
+        this.tokenClient.requestAccessToken(opts);
+        return true;
+      }
+
+      onToken(resp) {
+        if (!resp || resp.error) {
+          this.onTokenError(resp);
+          return;
+        }
+        if (!google.accounts.oauth2.hasGrantedAllScopes(resp, DRIVE_SCOPE)) {
+          showToast('Googleドライブへのアクセスが許可されませんでした');
+          this.setStatus(this.meta.linked ? 'reauth' : 'off');
+          return;
+        }
+        this.token = resp.access_token;
+        this.tokenExpiresAt = Date.now() + (Number(resp.expires_in || 3600) - 60) * 1000;
+        clearTimeout(this.expireTimer);
+        this.expireTimer = setTimeout(() => {
+          if (!this.busy) this.setStatus('reauth');
+        }, Math.max(0, this.tokenExpiresAt - Date.now()));
+        this.sync();
+      }
+
+      onTokenError(err) {
+        console.warn('Google login error:', err);
+        this.setStatus(this.meta.linked ? 'reauth' : 'off');
+        showToast('Googleログインが完了しませんでした');
+      }
+
+      signOut() {
+        // この端末での同期をやめる（ドライブの中身・この端末のデータはどちらも残る）
+        this.meta = createDefaultSyncMeta();
+        this.token = null;
+        this.tokenExpiresAt = 0;
+        clearTimeout(this.expireTimer);
+        clearTimeout(this.flushTimer);
+        this.saveMeta();
+        this.setStatus('off');
+        showToast('ログアウトしました（この端末のデータはそのまま残ります）');
+      }
+
+      // ---- ドライブAPI ---------------------------------------------------
+      async api(url, opts = {}) {
+        if (!this.hasValidToken()) throw new DriveAuthError('token expired');
+        const res = await fetch(url, {
+          ...opts,
+          headers: { ...(opts.headers || {}), Authorization: `Bearer ${this.token}` }
+        });
+        if (res.status === 401) {
+          this.token = null;
+          throw new DriveAuthError('unauthorized');
+        }
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          const e = new Error(`Drive API ${res.status}: ${text.slice(0, 200)}`);
+          e.status = res.status;
+          throw e;
+        }
+        return res;
+      }
+
+      async fetchProfile() {
+        try {
+          const res = await this.api(`${DRIVE_API}/about?fields=user(displayName,emailAddress)`);
+          const j = await res.json();
+          return { email: (j.user && j.user.emailAddress) || '', name: (j.user && j.user.displayName) || '' };
+        } catch (e) {
+          if (e instanceof DriveAuthError) throw e;
+          return { email: '', name: '' };
+        }
+      }
+
+      async ensureFolder() {
+        if (this.meta.folderId) {
+          try {
+            const res = await this.api(`${DRIVE_API}/files/${this.meta.folderId}?fields=id,trashed`);
+            const j = await res.json();
+            if (!j.trashed) return this.meta.folderId;
+          } catch (e) {
+            if (e instanceof DriveAuthError) throw e;
+          }
+          this.meta.folderId = null;
+          this.meta.settingsId = null;
+        }
+        const q = encodeURIComponent(`mimeType='application/vnd.google-apps.folder' and name='${DRIVE_FOLDER_NAME}' and trashed=false`);
+        const found = await (await this.api(`${DRIVE_API}/files?q=${q}&fields=files(id)&spaces=drive`)).json();
+        if (found.files && found.files.length) {
+          this.meta.folderId = found.files[0].id;
+        } else {
+          const created = await (await this.api(`${DRIVE_API}/files?fields=id`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+            body: JSON.stringify({ name: DRIVE_FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' })
+          })).json();
+          this.meta.folderId = created.id;
+        }
+        return this.meta.folderId;
+      }
+
+      async readRemoteSettings() {
+        const q = encodeURIComponent(`name='${DRIVE_SETTINGS_NAME}' and '${this.meta.folderId}' in parents and trashed=false`);
+        const found = await (await this.api(`${DRIVE_API}/files?q=${q}&fields=files(id)&spaces=drive`)).json();
+        if (!found.files || !found.files.length) {
+          this.meta.settingsId = null;
+          return null;
+        }
+        this.meta.settingsId = found.files[0].id;
+        const res = await this.api(`${DRIVE_API}/files/${this.meta.settingsId}?alt=media`);
+        try {
+          return await res.json();
+        } catch (e) {
+          return null;
+        }
+      }
+
+      async uploadMultipart(metadata, data, type) {
+        const boundary = 'livepad' + Math.random().toString(36).slice(2);
+        const body = new Blob([
+          `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`,
+          `--${boundary}\r\nContent-Type: ${type}\r\n\r\n`,
+          data,
+          `\r\n--${boundary}--`
+        ]);
+        const res = await this.api(`${DRIVE_UPLOAD}/files?uploadType=multipart&fields=id`, {
+          method: 'POST',
+          headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
+          body
+        });
+        return (await res.json()).id;
+      }
+
+      async uploadAudio(rec) {
+        const type = rec.type || 'audio/mpeg';
+        const metadata = { name: rec.name, parents: [this.meta.folderId], mimeType: type, appProperties: { livepadId: rec.id } };
+        const size = rec.data.byteLength;
+        if (size > MULTIPART_LIMIT) {
+          // 大きいファイル：分割可能なアップロード（失敗したら通常の方式で再挑戦）
+          try {
+            const init = await this.api(`${DRIVE_UPLOAD}/files?uploadType=resumable&fields=id`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json; charset=UTF-8',
+                'X-Upload-Content-Type': type
+              },
+              body: JSON.stringify(metadata)
+            });
+            const location = init.headers.get('Location');
+            if (location) {
+              const put = await fetch(location, { method: 'PUT', headers: { 'Content-Type': type }, body: rec.data });
+              if (put.status === 401) throw new DriveAuthError('unauthorized');
+              if (put.ok) return (await put.json()).id;
+            }
+          } catch (e) {
+            if (e instanceof DriveAuthError) throw e;
+            console.warn('resumable upload failed, retry multipart', e);
+          }
+        }
+        return this.uploadMultipart(metadata, rec.data, type);
+      }
+
+      async downloadAudio(driveId) {
+        const res = await this.api(`${DRIVE_API}/files/${driveId}?alt=media`);
+        return res.arrayBuffer();
+      }
+
+      async trashFile(driveId) {
+        try {
+          await this.api(`${DRIVE_API}/files/${driveId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+            body: JSON.stringify({ trashed: true })
+          });
+        } catch (e) {
+          if (e instanceof DriveAuthError) throw e;
+          if (e.status !== 404) throw e;   // もう無いファイルは気にしない
+        }
+      }
+
+      async pushSettings() {
+        const seq = this.changeSeq;
+        const body = {
+          app: 'livepad-deck',
+          version: 1,
+          updatedAt: Date.now(),
+          data: pickSyncData(),
+          files: this.meta.fileMap
+        };
+        const json = JSON.stringify(body);
+        if (this.meta.settingsId) {
+          try {
+            await this.api(`${DRIVE_UPLOAD}/files/${this.meta.settingsId}?uploadType=media`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+              body: json
+            });
+          } catch (e) {
+            if (e instanceof DriveAuthError || e.status !== 404) throw e;
+            this.meta.settingsId = null;
+          }
+        }
+        if (!this.meta.settingsId) {
+          this.meta.settingsId = await this.uploadMultipart(
+            { name: DRIVE_SETTINGS_NAME, parents: [this.meta.folderId], mimeType: 'application/json' },
+            json, 'application/json'
+          );
+        }
+        this.meta.lastSyncedAt = body.updatedAt;
+        if (seq === this.changeSeq) this.meta.dirty = false;
+        await this.saveMeta();
+      }
+
+      /** 参照されているのにまだドライブに無い音声をアップロードし、削除予定をゴミ箱へ */
+      async flushFiles() {
+        const refs = referencedFileIds();
+        const toUpload = refs.filter(id => !this.meta.fileMap[id]);
+        for (let i = 0; i < toUpload.length; i++) {
+          const id = toUpload[i];
+          const rec = await storage.getAudioFile(id);
+          if (!rec) continue;
+          this.setStatus('syncing', `アップロード ${i + 1}/${toUpload.length}`);
+          const driveId = await this.uploadAudio(rec);
+          this.meta.fileMap[id] = { driveId, name: rec.name, type: rec.type || 'audio/mpeg' };
+          this.meta.dirty = true;
+          await this.saveMeta();
+        }
+        while (this.meta.pendingTrash.length) {
+          await this.trashFile(this.meta.pendingTrash[0]);
+          this.meta.pendingTrash.shift();
+          await this.saveMeta();
+        }
+      }
+
+      /** ドライブの設定と音声を、この端末に反映 */
+      async pull(remote) {
+        if (state.bgm.isPlaying) audioEngine.stopBgm(0.1);
+        this.suppress = true;
+        try {
+          applySyncData(remote.data || {});
+          this.meta.fileMap = { ...(remote.files || {}) };
+          const have = new Set(await storage.listAudioIds());
+          const need = referencedFileIds().filter(id => !have.has(id) && this.meta.fileMap[id]);
+          for (let i = 0; i < need.length; i++) {
+            const id = need[i];
+            const info = this.meta.fileMap[id];
+            this.setStatus('syncing', `ダウンロード ${i + 1}/${need.length}`);
+            try {
+              const data = await this.downloadAudio(info.driveId);
+              await storage.putAudioRecord({ id, name: info.name, type: info.type || 'audio/mpeg', data });
+              audioEngine.bufferCache.delete(id);
+            } catch (e) {
+              if (e instanceof DriveAuthError) throw e;
+              console.warn('download failed', id, e);
+            }
+          }
+          await storage.saveState();
+          refreshAllFromState();
+        } finally {
+          this.suppress = false;
+        }
+        this.meta.lastSyncedAt = remote.updatedAt || Date.now();
+        this.meta.dirty = false;
+        await this.saveMeta();
+      }
+
+      /** ログイン直後・「今すぐ同期」で呼ぶ：ドライブとこの端末の新しい方に合わせる */
+      async sync() {
+        if (!this.hasValidToken()) {
+          this.setStatus(this.meta.linked ? 'reauth' : 'off');
+          return;
+        }
+        if (this.busy) {
+          this.again = true;
+          return;
+        }
+        this.busy = true;
+        this.setStatus('syncing', '確認中');
+        try {
+          const profile = await this.fetchProfile();
+          const sameAccount = !!this.meta.email && profile.email === this.meta.email;
+          if (!sameAccount) {
+            // 初めて、または別のアカウントでログイン
+            this.meta.lastSyncedAt = 0;
+            this.meta.folderId = null;
+            this.meta.settingsId = null;
+            this.meta.fileMap = {};
+            this.meta.pendingTrash = [];
+          }
+          this.meta.email = profile.email;
+          this.meta.name = profile.name;
+
+          await this.ensureFolder();
+          const remote = await this.readRemoteSettings();
+
+          let action;
+          if (!remote) {
+            // ドライブにまだ設定が無い（初回、またはフォルダが消された）→ この端末の内容を送る
+            this.meta.fileMap = {};
+            action = 'push';
+          } else if (!this.meta.lastSyncedAt) {
+            action = (await localHasContent()) ? await askSyncConflict(remote) : 'pull';
+          } else {
+            const remoteChanged = (remote.updatedAt || 0) > this.meta.lastSyncedAt;
+            if (this.meta.dirty && remoteChanged) action = await askSyncConflict(remote);
+            else if (remoteChanged) action = 'pull';
+            else action = 'push';
+          }
+
+          if (action === 'pull') {
+            await this.pull(remote);
+            showToast('Googleドライブの内容を読み込みました');
+          } else {
+            await this.flushFiles();
+            if (this.meta.dirty || !remote || action === 'push-force') await this.pushSettings();
+          }
+          this.meta.linked = true;
+          await this.saveMeta();
+          this.setStatus('synced');
+        } catch (e) {
+          this.handleError(e);
+        } finally {
+          this.busy = false;
+          if (this.again) {
+            this.again = false;
+            this.scheduleFlush(500);
+          }
+        }
+      }
+
+      /** 端末側の変更をドライブへ送る（ログイン中だけ） */
+      async flush() {
+        if (!this.meta.linked) return;
+        if (!this.hasValidToken()) {
+          this.setStatus('reauth');
+          return;
+        }
+        if (this.busy) {
+          this.again = true;
+          return;
+        }
+        this.busy = true;
+        this.setStatus('syncing', '保存中');
+        try {
+          await this.ensureFolder();
+          await this.flushFiles();
+          if (this.meta.dirty) await this.pushSettings();
+          this.setStatus('synced');
+        } catch (e) {
+          this.handleError(e);
+        } finally {
+          this.busy = false;
+          if (this.again) {
+            this.again = false;
+            this.scheduleFlush(500);
+          }
+        }
+      }
+
+      scheduleFlush(delay = 2000) {
+        if (!this.meta.linked) return;
+        clearTimeout(this.flushTimer);
+        this.flushTimer = setTimeout(() => this.flush(), delay);
+      }
+
+      handleError(e) {
+        if (e instanceof DriveAuthError) {
+          this.setStatus('reauth');
+        } else {
+          console.error('Drive sync error:', e);
+          this.setStatus('error');
+        }
+      }
+
+      // ---- 端末側の変化の通知（DeckStorage から呼ばれる） ------------------
+      onLocalChange() {
+        if (this.suppress) return;
+        this.changeSeq++;
+        if (!this.meta.dirty) {
+          this.meta.dirty = true;
+          this.saveMeta();
+        }
+        this.scheduleFlush(2000);
+      }
+
+      onLocalFileAdded() {
+        if (this.suppress) return;
+        this.scheduleFlush(1500);
+      }
+
+      onLocalFileDeleted(id) {
+        if (this.suppress) return;
+        const info = this.meta.fileMap[id];
+        if (!info) return;
+        if (!info.picked) this.meta.pendingTrash.push(info.driveId);   // アプリがアップロードした物だけゴミ箱へ
+        delete this.meta.fileMap[id];
+        this.meta.dirty = true;
+        this.saveMeta();
+        this.scheduleFlush(1500);
+      }
+
+      // ---- 表示 ----------------------------------------------------------
+      setStatus(status, progress = '') {
+        this.status = status;
+        this.progress = progress;
+        renderSyncStatus();
+      }
+    }
+
+    const driveSync = new DriveSync();
+
+    /** ドライブに保存する設定（端末ごとに違うもの＝パッドの数・パネル位置は含めない） */
+    function pickSyncData() {
+      return {
+        banks: state.banks,
+        bgmList: state.bgmList,
+        masterVolume: state.masterVolume,
+        seVolume: state.seVolume,
+        bgmVolume: state.bgm.volume,
+        bgmRepeat: state.bgm.repeat,
+        bgmCrossfade: state.bgm.crossfade,
+        duckingEnabled: state.ducking.enabled,
+        duckAmount: state.duckAmount,
+        themeColor: state.themeColor
+      };
+    }
+
+    function applySyncData(d) {
+      if (Array.isArray(d.banks) && d.banks.length) state.banks = d.banks;
+      if (Array.isArray(d.bgmList)) state.bgmList = d.bgmList.filter(t => t.type === 'file');
+      if (typeof d.masterVolume === 'number') state.masterVolume = d.masterVolume;
+      if (typeof d.seVolume === 'number') state.seVolume = d.seVolume;
+      if (typeof d.bgmVolume === 'number') state.bgm.volume = d.bgmVolume;
+      if (REPEAT_ORDER.includes(d.bgmRepeat)) state.bgm.repeat = d.bgmRepeat;
+      if (typeof d.bgmCrossfade === 'boolean') state.bgm.crossfade = d.bgmCrossfade;
+      if (typeof d.duckingEnabled === 'boolean') state.ducking.enabled = d.duckingEnabled;
+      if (typeof d.duckAmount === 'number') state.duckAmount = d.duckAmount;
+      if (d.themeColor && THEMES[d.themeColor]) state.themeColor = d.themeColor;
+      state.activeBankIndex = Math.min(state.activeBankIndex, state.banks.length - 1);
+      state.bgm.trackIndex = 0;
+      state.bgm.elapsedSec = 0;
+    }
+
+    /** パッドとBGMリストが使っている音声ファイルのID */
+    function referencedFileIds() {
+      const ids = new Set();
+      state.banks.forEach(b => b.pads.forEach(p => { if (p.sourceType === 'file' && p.fileId) ids.add(p.fileId); }));
+      state.bgmList.forEach(t => { if (t.fileId) ids.add(t.fileId); });
+      return Array.from(ids);
+    }
+
+    /** この端末に「自分で入れた内容」があるか（音声ファイル、またはパッド・タブの変更） */
+    async function localHasContent() {
+      if ((await storage.listAudioIds()).length > 0) return true;
+      return JSON.stringify(state.banks) !== JSON.stringify(createDefaultBanks());
+    }
+
+    storage.listener = driveSync;
 
     // =========================================================================
     // Web Audio API オーディオエンジン
@@ -3100,12 +3775,188 @@
       $('masterVolValue').textContent = `${Math.round(state.masterVolume * 100)}%`;
     }
 
-    function bindEvents() {
-      document.getElementById('btnStartDeck').addEventListener('click', () => {
+    // =========================================================================
+    // Googleドライブ同期：画面まわり（ヘッダーの状態表示・メニュー・確認画面・起動画面）
+    // =========================================================================
+    const SYNC_ICONS = {
+      cloud: '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>',
+      check: '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path><path d="M9.5 14.5l2 2 3.5-3.5"></path></svg>',
+      alert: '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path><path d="M12 11v3"></path><path d="M12 17h.01"></path></svg>',
+      off: '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path><path d="M4 4l16 16"></path></svg>',
+      spin: '<svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" opacity=".25"></circle><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path></svg>'
+    };
+
+    function renderSyncStatus() {
+      const btn = document.getElementById('btnAccount');
+      if (!btn) return;
+      const s = driveSync.status;
+      const base = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all text-[11px] font-bold';
+      let cls;
+      let icon;
+      let label;
+      let sentence;
+      switch (s) {
+        case 'connecting':
+          cls = 'border-accent-500/40 bg-accent-500/10 text-accent-300';
+          icon = SYNC_ICONS.spin;
+          label = '接続中…';
+          sentence = 'Googleにログインしています';
+          break;
+        case 'syncing':
+          cls = 'border-accent-500/40 bg-accent-500/10 text-accent-300';
+          icon = SYNC_ICONS.spin;
+          label = driveSync.progress ? `同期中 ${driveSync.progress}` : '同期中…';
+          sentence = 'Googleドライブと同期しています';
+          break;
+        case 'synced':
+          cls = 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20';
+          icon = SYNC_ICONS.check;
+          label = '同期済み';
+          sentence = driveSync.meta.lastSyncedAt
+            ? `最終同期：${new Date(driveSync.meta.lastSyncedAt).toLocaleString('ja-JP')}`
+            : 'Googleドライブと同期しています';
+          break;
+        case 'reauth':
+          cls = 'border-amber-400/60 bg-amber-500/15 text-amber-200 hover:bg-amber-500/25';
+          icon = SYNC_ICONS.alert;
+          label = '再接続';
+          sentence = 'ログインの期限が切れました。押すと再接続して同期します（再生には影響ありません）';
+          break;
+        case 'error':
+          cls = 'border-red-500/50 bg-red-500/15 text-red-300 hover:bg-red-500/25';
+          icon = SYNC_ICONS.off;
+          label = '同期エラー';
+          sentence = 'Googleドライブに接続できませんでした。ネット接続を確認して「今すぐ同期」を押してください';
+          break;
+        default:
+          cls = 'border-[#2c3445] bg-[#1a1f2b] hover:bg-[#222838] text-slate-300';
+          icon = SYNC_ICONS.cloud;
+          label = 'ログイン';
+          sentence = 'Googleでログインすると、音源と設定がGoogleドライブに保存されます';
+      }
+      btn.className = `${base} ${cls}`;
+      btn.title = sentence;
+      document.getElementById('accountIcon').innerHTML = icon;
+      document.getElementById('accountLabel').textContent = label;
+
+      document.getElementById('accountName').textContent = driveSync.meta.name || 'Googleアカウント';
+      document.getElementById('accountEmail').textContent = driveSync.meta.email || '';
+      document.getElementById('accountStatusText').textContent = sentence;
+    }
+
+    function openAccountMenu() {
+      const btn = document.getElementById('btnAccount');
+      const menu = document.getElementById('accountMenu');
+      const r = btn.getBoundingClientRect();
+      menu.classList.remove('hidden');
+      menu.style.top = `${Math.round(r.bottom + 6)}px`;
+      menu.style.left = `${Math.round(Math.max(8, Math.min(r.right - menu.offsetWidth, window.innerWidth - menu.offsetWidth - 8)))}px`;
+      document.getElementById('accountMenuShield').classList.remove('hidden');
+    }
+
+    function closeAccountMenu() {
+      document.getElementById('accountMenu').classList.add('hidden');
+      document.getElementById('accountMenuShield').classList.add('hidden');
+    }
+
+    /** 端末とドライブの両方にデータがある時：どちらを使うか選んでもらう */
+    function askSyncConflict(remote) {
+      return new Promise((resolve) => {
+        const bd = document.getElementById('syncConflictBackdrop');
+        document.getElementById('conflictRemoteTime').textContent = remote && remote.updatedAt
+          ? new Date(remote.updatedAt).toLocaleString('ja-JP')
+          : '不明';
+        bd.classList.remove('hidden');
+        bd.classList.add('flex');
+        const done = (v) => {
+          bd.classList.add('hidden');
+          bd.classList.remove('flex');
+          resolve(v);
+        };
+        document.getElementById('btnConflictDrive').onclick = () => done('pull');
+        document.getElementById('btnConflictLocal').onclick = () => done('push-force');
+      });
+    }
+
+    /** ドライブの内容を反映したあと、画面全体を描き直す */
+    function refreshAllFromState() {
+      applyTheme();
+      if (faderApi.se) faderApi.se.set(Math.round(state.seVolume * 100));
+      if (faderApi.bgm) faderApi.bgm.set(Math.round(state.bgm.volume * 100));
+      if (faderApi.master) faderApi.master.set(Math.round(state.masterVolume * 100));
+      document.getElementById('seVolValue').textContent = `${Math.round(state.seVolume * 100)}%`;
+      document.getElementById('masterVolValue').textContent = `${Math.round(state.masterVolume * 100)}%`;
+      audioEngine.setSeVolume(state.seVolume);
+      audioEngine.setBgmVolume(state.bgm.volume);
+      audioEngine.setMasterVolume(state.masterVolume);
+      updateRepeatUI();
+      updateXfadeUI();
+      updateDuckingVisuals();
+      updateDuckAmountUI();
+      renderBgmList();
+      renderBankTabs();
+      renderPads();
+    }
+
+    /** 起動画面：ログイン済みの端末かどうかでボタンを切り替える */
+    function configureStartupOverlay() {
+      const linked = driveSync.meta.linked;
+      document.getElementById('btnStartGoogle').classList.toggle('hidden', linked);
+      document.getElementById('btnStartDeck').classList.toggle('hidden', !linked);
+      document.getElementById('btnStartLocal').textContent = linked
+        ? 'ログインせずに開始'
+        : 'ログインせずに開始（この端末のデータだけで使う）';
+      document.getElementById('startSyncNote').textContent = linked
+        ? `Googleドライブと同期します${driveSync.meta.email ? `（${driveSync.meta.email}）` : ''}。※ タップしてオーディオエンジンを有効化します（横向き推奨）`
+        : 'Googleでログインすると、音源と設定がGoogleドライブに保存され、別の端末やデータを消したあとでも元に戻せます。（横向き推奨）';
+    }
+
+    function bindSyncEvents() {
+      // 起動画面
+      const startDeck = (withLogin) => {
         audioEngine.ensureInit();
         document.getElementById('startupOverlay').classList.add('hidden');
+        if (withLogin) driveSync.signIn();   // ボタンを押した流れのまま呼ぶ（ポップアップがブロックされないように）
         showToast('LIVEPAD DECK 起動完了');
+      };
+      document.getElementById('btnStartGoogle').addEventListener('click', () => startDeck(true));
+      document.getElementById('btnStartDeck').addEventListener('click', () => startDeck(driveSync.meta.linked));
+      document.getElementById('btnStartLocal').addEventListener('click', () => startDeck(false));
+
+      // ヘッダーの状態ボタン
+      document.getElementById('btnAccount').addEventListener('click', () => {
+        const s = driveSync.status;
+        if (s === 'off' || s === 'reauth') {
+          driveSync.signIn();
+          return;
+        }
+        if (s === 'connecting') return;
+        openAccountMenu();
       });
+      document.getElementById('accountMenuShield').addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        closeAccountMenu();
+      });
+      document.getElementById('btnSyncNow').addEventListener('click', () => {
+        closeAccountMenu();
+        if (driveSync.hasValidToken()) driveSync.sync();
+        else driveSync.signIn();
+      });
+      document.getElementById('btnSignOut').addEventListener('click', () => {
+        closeAccountMenu();
+        driveSync.signOut();
+        configureStartupOverlay();
+      });
+
+      // 画面を閉じる・裏に回る時、ネットが戻った時に未送信の変更を送る
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden' && driveSync.meta.dirty) driveSync.flush();
+      });
+      window.addEventListener('online', () => driveSync.scheduleFlush(500));
+    }
+
+    function bindEvents() {
+      bindSyncEvents();
 
       document.getElementById('btnLayoutIpad').addEventListener('click', () => {
         state.layoutMode = 'ipad';
@@ -3435,7 +4286,12 @@
         renderBankTabs();
         renderPads();
         closeSettings();
-        showToast('すべてのデータを初期状態に戻しました');
+        const wasLinked = driveSync.meta.linked;
+        await driveSync.forgetLocal();
+        configureStartupOverlay();
+        showToast(wasLinked
+          ? 'この端末のデータを初期化しました（Googleドライブの内容は残っています）'
+          : 'すべてのデータを初期状態に戻しました');
       });
 
       // ---- 手動DUCK（押している間だけBGMを下げる。離すと元に戻る） ----
@@ -3551,6 +4407,7 @@
 
     async function boot() {
       initLevelMeters();
+      await driveSync.load();
       const saved = await storage.loadState();
       if (saved) {
         if (saved.banks) state.banks = saved.banks;
@@ -3584,6 +4441,9 @@
       updateDuckAmountUI();
       initPanels();
       bindEvents();
+      configureStartupOverlay();
+      renderSyncStatus();
+      driveSync.initGoogle();
       requestAnimationFrame(animateLoop);
     }
 
