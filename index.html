@@ -697,6 +697,102 @@
     .eq-knob svg { display: block; width: 100%; height: 100%; }
     .eq-knob.is-dragging .knob-body { fill: #283041; }
 
+    /* ===== レイアウト：右下の段（FX PAD ＋ MIXER）と、狭い画面のタブ表示 ===== */
+    .deck-bottom { display: flex; gap: 8px; flex-shrink: 0; height: clamp(230px, 40%, 380px); }
+    .mixer-slot.in-row { flex: none; width: clamp(320px, 40%, 400px); }
+    .mixer-slot.in-row #panel-mixer .mixer-grid,
+    #deviceShell.is-compact #panel-mixer .mixer-grid { grid-template-rows: auto minmax(80px, 1fr) auto; }
+    /* FX PADが細いとき：表示窓と横のボタンを小さく、FXボタンの番号を省く */
+    #panel-fx { container-type: inline-size; }
+    @container (max-width: 520px) {
+      #panel-fx .fx-display { width: 92px; font-size: 12px; letter-spacing: .04em; }
+      #panel-fx .fx-btn-num { display: none; }
+      #panel-fx .fx-side-btn { width: 50px; font-size: 9px; }
+    }
+
+    /* 狭い画面（iPhone横向きなど）：左右の列それぞれ、タブで選んだパネルを1つだけ大きく表示 */
+    .col-tabs { display: none; }
+    #deviceShell.is-compact .col-tabs {
+      display: flex; flex-shrink: 0; gap: 2px; padding: 2px;
+      border-radius: 8px; background: #0b0d11; border: 1px solid #262c3a;
+    }
+    .col-tabs button {
+      flex: 1; padding: 5px 0; border-radius: 6px;
+      font-size: 10px; font-weight: 800; letter-spacing: .06em; color: #64748b;
+      transition: color .12s ease, background-color .12s ease;
+    }
+    .col-tabs button:hover { color: #cbd5e1; }
+    .col-tabs button.is-active { color: rgb(var(--ac-300)); background: rgb(var(--ac-500) / .16); box-shadow: inset 0 0 0 1px rgb(var(--ac-500) / .45); }
+    #deviceShell.is-compact .dock-slot { display: none !important; }
+    #deviceShell.is-compact .dock-slot.is-shown {
+      display: flex !important; flex: 1 1 auto !important; min-height: 0 !important; height: auto !important; width: auto !important;
+    }
+    #deviceShell.is-compact .dock-slot.is-shown > .deck-panel { flex: 1 1 auto; min-height: 0; }
+    #deviceShell.is-compact .deck-bottom { height: auto; flex: 1 1 auto; min-height: 0; }
+    #deviceShell.is-compact .deck-bottom:not(:has(.dock-slot.is-shown)) { display: none; }
+    #deviceShell.is-compact #panel-eq .eq-curve-box { flex: 1; min-height: 40px; }
+    #deviceShell.is-compact .panel-grip,
+    #deviceShell.is-compact .panel-pin,
+    #deviceShell.is-compact .panel-resize { display: none !important; }
+    #deviceShell.is-compact .panel-head { cursor: default !important; }
+    .compact-only { display: none !important; }
+    #deviceShell.is-compact .compact-only { display: flex !important; }
+    .panic-mini {
+      align-items: center; gap: 5px; padding: 6px 10px; border-radius: 8px;
+      font-size: 11px; font-weight: 900; letter-spacing: .06em; color: #fff;
+      background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
+      border: 1px solid rgba(248,113,113,.5);
+      box-shadow: 0 0 12px rgba(239,68,68,.35);
+    }
+    .panic-mini:active { transform: scale(.96); }
+
+    /* ===== PITCH DECK（BGMの速さ・音程） ===== */
+    .pitch-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .pitch-label { width: 40px; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 800; letter-spacing: .06em; color: #94a3b8; }
+    .pitch-value { width: 46px; flex-shrink: 0; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: #cbd5e1; }
+    .pitch-value.is-on { color: rgb(var(--ac-300)); }
+    .pitch-mini {
+      flex-shrink: 0; height: 24px; min-width: 26px; padding: 0 6px; border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 800; color: #94a3b8;
+      border: 1px solid #2a3242; background: #10131b;
+    }
+    .pitch-mini:hover { color: #fff; border-color: rgb(var(--ac-500) / .6); }
+    .tempo-wrap { position: relative; flex: 1; min-width: 60px; height: 24px; display: flex; align-items: center; }
+    .tempo-wrap::after { content: ''; position: absolute; left: 50%; top: 3px; bottom: 3px; width: 1px; background: #475569; pointer-events: none; }
+    input[type="range"].tempo-fader {
+      -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 3px; margin: 0;
+      background: linear-gradient(to right, #0d1016 var(--a, 50%), rgb(var(--ac-500)) var(--a, 50%), rgb(var(--ac-500)) var(--b, 50%), #0d1016 var(--b, 50%));
+      border: 1px solid #262c3a; cursor: pointer;
+    }
+    input[type="range"].tempo-fader::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none; width: 12px; height: 18px; border-radius: 3px;
+      background: linear-gradient(180deg, rgb(var(--ac-300)) 0%, rgb(var(--ac-600)) 100%);
+      border: 1px solid rgba(255,255,255,.25); box-shadow: 0 0 10px rgb(var(--ac-500) / .45);
+    }
+    input[type="range"].tempo-fader::-moz-range-thumb {
+      width: 12px; height: 18px; border-radius: 3px;
+      background: linear-gradient(180deg, rgb(var(--ac-300)) 0%, rgb(var(--ac-600)) 100%);
+      border: 1px solid rgba(255,255,255,.25);
+    }
+    .key-pads { flex: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+    .key-pad {
+      height: 30px; border-radius: 7px; border: 1px solid #2a3242;
+      background: linear-gradient(180deg, #1b202b 0%, #141821 100%);
+      color: #94a3b8; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 2px 4px rgba(0,0,0,.35);
+      transition: transform .06s ease, background .12s ease, border-color .12s ease, color .12s ease, box-shadow .12s ease;
+      touch-action: manipulation;
+    }
+    .key-pad:hover { border-color: #3a4458; color: #e2e8f0; }
+    .key-pad:active { transform: scale(.95); }
+    .key-pad.is-zero { color: #cbd5e1; }
+    .key-pad.is-active {
+      color: #fff; border-color: rgb(var(--ac-400) / .8);
+      background: linear-gradient(180deg, rgb(var(--ac-500) / .32) 0%, rgb(var(--ac-600) / .14) 100%);
+      box-shadow: 0 0 12px rgb(var(--ac-500) / .3), inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    #deviceShell.is-compact #panel-pitch .key-pad { height: 40px; }
+
     /* ===== 使い方（？ボタンと図解） ===== */
     .help-btn {
       position: relative;
@@ -758,10 +854,7 @@
     .hf-dot { fill: rgb(var(--ac-300)); }
 
     /* ===== FX PAD（指でなぞってエフェクトをかけるXYパッド） ===== */
-    .fx-slot { flex: none; height: clamp(230px, 40%, 380px); }
-    /* iPhone 4×2：SEパッドが潰れないよう SE DECK を優先し、FX PAD は下にスクロールして使う */
-    .device-shell.mode-iphone .fx-slot { height: 200px; }
-    .device-shell.mode-iphone #slot-se { min-height: 250px; }
+    .fx-slot { flex: 1 1 0; min-width: 0; }
     .device-shell.mode-iphone .fx-btn,
     .device-shell.mode-iphone .fx-display { height: 36px; }
     #panel-fx:not(.is-floating) { width: 100%; max-width: 1240px; margin: 0 auto; }
@@ -829,6 +922,8 @@
     /* そのFXのHOLDがONのときだけ「HOLD」の札を出す */
     .fx-btn-hold { display: none; margin-left: 2px; padding: 0 3px; border-radius: 3px; font-size: 7px; line-height: 10px; letter-spacing: .04em; color: #1a1205; background: #fbbf24; }
     .fx-btn.is-held .fx-btn-hold { display: inline-block; }
+    /* BGM以外にかけているFXは「ALL」「SE」の札を出す */
+    .fx-btn-tgt { margin-left: 2px; padding: 0 3px; border-radius: 3px; font-size: 7px; line-height: 10px; letter-spacing: .04em; color: #0b0d11; background: #94a3b8; }
     .fx-btn.is-active {
       color: #fff;
       border-color: rgb(var(--ac-400) / .75);
@@ -1012,6 +1107,11 @@
 
       <!-- 右：Wake Lock / Performance Lock / Settings -->
       <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <!-- 狭い画面用：MIXERがタブの中に入るので、PANIC STOPをここにも置く -->
+        <button id="btnPanicMini" type="button" class="compact-only panic-mini" title="全SE・BGMを即フェード停止 [Esc]">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><rect x="9" y="9" width="6" height="6" fill="currentColor"></rect></svg>
+          PANIC
+        </button>
         <!-- Screen Wake Lock トグル -->
         <button id="btnWakeLock" type="button" title="画面スリープ防止 (Wake Lock)" class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-[#2c3445] bg-[#1a1f2b] hover:bg-[#222838] transition-all text-[11px] font-bold text-slate-400">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
@@ -1062,8 +1162,14 @@
          BGM DECK / MIXER / SE DECK は「パネル」。タイトル部分をドラッグすると浮遊し、好きな位置に置ける -->
     <main class="flex-1 min-h-0 flex flex-row overflow-hidden">
 
-      <!-- 左カラム：PANIC STOP + BGM DECK + MIXER -->
-      <aside class="w-[34%] min-w-[280px] max-w-[440px] bg-[#14171f] border-r border-[#262c3a] p-2.5 flex flex-col gap-2 min-h-0 overflow-y-auto no-scrollbar">
+      <!-- 左カラム：BGM DECK + EQ DECK + PITCH DECK（狭い画面ではタブで1つずつ表示し、MIXERもここに入る） -->
+      <aside id="leftCol" class="w-[34%] min-w-[280px] max-w-[440px] bg-[#14171f] border-r border-[#262c3a] p-2.5 flex flex-col gap-2 min-h-0 overflow-y-auto no-scrollbar">
+        <div class="col-tabs" role="tablist" aria-label="左の列に表示するパネル">
+          <button type="button" data-col-tab="bgm">BGM</button>
+          <button type="button" data-col-tab="eq">EQ</button>
+          <button type="button" data-col-tab="pitch">PITCH</button>
+          <button type="button" data-col-tab="mixer">MIXER</button>
+        </div>
 
         <!-- BGM DECK の定位置 -->
         <div id="slot-bgm" class="dock-slot flex-1 min-h-[230px] flex flex-col" data-slot="bgm">
@@ -1188,71 +1294,59 @@
           </div>
         </div>
 
-        <!-- MIXER の定位置 -->
-        <div id="slot-mixer" class="dock-slot shrink-0 flex flex-col sticky -bottom-2.5 z-10" data-slot="mixer">
-          <section id="panel-mixer" data-panel="mixer" class="deck-panel bg-[#181c26] rounded-xl border border-[#282f3d] p-2.5 flex flex-col">
-            <div class="panel-head flex items-center justify-between gap-1 mb-1.5">
-              <div class="flex items-center gap-1.5">
+        <!-- PITCH DECK の定位置（BGMの速さ・音程） -->
+        <div id="slot-pitch" class="dock-slot shrink-0 flex flex-col" data-slot="pitch">
+          <section id="panel-pitch" data-panel="pitch" class="deck-panel bg-[#181c26] rounded-xl border border-[#282f3d] p-2.5 flex flex-col gap-2">
+            <div class="panel-head flex items-center justify-between gap-1">
+              <div class="flex items-center gap-1.5 min-w-0">
                 <span class="panel-grip"></span>
-                <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">MIXER</span>
-                <button type="button" class="help-btn" data-help="mixer" title="MIXERの使い方" aria-label="MIXERの使い方">?</button>
+                <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] shrink-0"></span>
+                <span class="text-[11px] font-bold tracking-wider text-slate-200 whitespace-nowrap">PITCH DECK</span>
+                <span class="text-[9px] font-mono-num text-slate-500 whitespace-nowrap">BGM</span>
+                <button type="button" class="help-btn" data-help="pitch" title="PITCH DECKの使い方" aria-label="PITCH DECKの使い方">?</button>
               </div>
-              <div class="flex items-center gap-1">
-                <span id="peakBadge" class="text-[9px] font-mono-num font-bold px-1.5 py-0.5 rounded bg-[#0d1016] text-slate-500 border border-[#262c3a]">PEAK</span>
-                <button type="button" class="panel-pin" data-pin="mixer" title="元の位置に戻す" aria-label="MIXERを元の位置に戻す"></button>
-              </div>
-            </div>
-            <div class="mixer-grid flex-1 min-h-0">
-              <span class="strip-label">SE</span>
-              <span class="strip-label text-accent-300">BGM</span>
-              <span class="strip-label text-emerald-300">MASTER</span>
-              <span class="strip-label">L&nbsp;R</span>
-
-              <div id="faderSe" class="vfader" aria-label="SE全体の音量"></div>
-              <div id="faderBgm" class="vfader is-accent" aria-label="BGMの音量"></div>
-              <div id="faderMaster" class="vfader is-emerald" aria-label="全体の音量"></div>
-              <div class="vmeter-box">
-                <div id="meterL" class="vmeter"></div>
-                <div id="meterR" class="vmeter"></div>
-              </div>
-
-              <span id="seVolValue" class="strip-value text-slate-300">100%</span>
-              <span id="bgmVolValue" class="strip-value text-accent-300">70%</span>
-              <span id="masterVolValue" class="strip-value text-emerald-300">50%</span>
-              <span class="strip-value text-slate-500">OUT</span>
-
-              <!-- 右側：PANIC STOP（上）と DUCK（下）。押しやすい正方形ボタン -->
-              <div class="mixer-actions">
-                <button id="btnPanicStop" type="button" title="全SE・BGMを即フェード停止 [Esc]" class="panic-btn square-btn border border-red-400/40 cursor-pointer">
-                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
-                    <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon>
-                    <rect x="9" y="9" width="6" height="6" fill="currentColor"></rect>
-                  </svg>
-                  <span class="text-[11px] font-black tracking-wider text-white leading-none">PANIC</span>
-                  <span class="text-[11px] font-black tracking-wider text-white leading-none">STOP</span>
-                  <span class="pc-only text-[8px] font-mono-num font-bold text-red-100/80 leading-none">Esc</span>
-                </button>
-                <button id="btnManualDuck" type="button" aria-pressed="false" title="DUCK：押している間だけBGMを下げる（離すと元に戻る）" class="duck-pad square-btn is-off">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                    <path d="M17 7v9"></path><path d="M14 13l3 3 3-3"></path>
-                  </svg>
-                  <span class="text-[12px] font-black tracking-wider leading-none">DUCK</span>
-                  <span class="text-[8px] font-bold leading-none opacity-80">BGM↓</span>
-                </button>
+              <div class="flex items-center gap-1 shrink-0">
+                <button type="button" class="panel-pin" data-pin="pitch" title="元の位置に戻す" aria-label="PITCH DECKを元の位置に戻す"></button>
               </div>
             </div>
-            <div class="panel-resize" data-resize="mixer" title="ドラッグで大きさを変更"></div>
+            <!-- TEMPO：レコードの回転のように、速さと音程を一緒に変える -->
+            <div class="pitch-row">
+              <span class="pitch-label">TEMPO</span>
+              <div class="tempo-wrap">
+                <input id="tempoFader" type="range" min="-8" max="8" step="0.1" value="0" class="tempo-fader" aria-label="TEMPO（BGMの速さと音程を一緒に変える）" title="BGMの速さと音程を一緒に変えます。ダブルクリックで0に戻る">
+              </div>
+              <span id="tempoValue" class="pitch-value">0.0%</span>
+              <button id="btnTempoRange" type="button" class="pitch-mini" title="TEMPOの範囲を切り替える">±8%</button>
+              <button id="btnTempoReset" type="button" class="pitch-mini" title="TEMPOを0に戻す">0</button>
+            </div>
+            <!-- KEY：速さはそのままで音程だけを半音ずつ変える -->
+            <div class="pitch-row">
+              <span class="pitch-label">KEY</span>
+              <div id="keyPads" class="key-pads">
+                <button type="button" class="key-pad" data-key="-3">−3</button>
+                <button type="button" class="key-pad" data-key="-2">−2</button>
+                <button type="button" class="key-pad" data-key="-1">−1</button>
+                <button type="button" class="key-pad is-zero" data-key="0">0</button>
+                <button type="button" class="key-pad" data-key="1">+1</button>
+                <button type="button" class="key-pad" data-key="2">+2</button>
+                <button type="button" class="key-pad" data-key="3">+3</button>
+              </div>
+            </div>
+            <div class="panel-resize" data-resize="pitch" title="ドラッグで大きさを変更"></div>
           </section>
-          <div class="slot-placeholder is-short" data-placeholder="mixer">
-            <span class="placeholder-title">MIXER IS FLOATING</span>
+          <div class="slot-placeholder is-short" data-placeholder="pitch">
+            <span class="placeholder-title">PITCH DECK IS FLOATING</span>
             <span class="placeholder-sub">Drag it back here, or tap 📌</span>
           </div>
         </div>
       </aside>
 
-      <!-- 右カラム：上に SE DECK、下に FX PAD の定位置（縦が狭い画面ではスクロール） -->
-      <section class="flex-1 min-w-0 bg-[#0f1115] p-2.5 flex flex-col gap-2 min-h-0 overflow-y-auto no-scrollbar">
+      <!-- 右カラム：上に SE DECK、下の段に FX PAD と MIXER（狭い画面ではタブで SE / FX を切り替え） -->
+      <section id="rightCol" class="flex-1 min-w-0 bg-[#0f1115] p-2.5 flex flex-col gap-2 min-h-0 overflow-y-auto no-scrollbar">
+        <div class="col-tabs" role="tablist" aria-label="右の列に表示するパネル">
+          <button type="button" data-col-tab="se">SE</button>
+          <button type="button" data-col-tab="fx">FX</button>
+        </div>
         <div id="slot-se" class="dock-slot flex-1 min-h-[200px] flex flex-col" data-slot="se">
           <section id="panel-se" data-panel="se" class="deck-panel se-panel flex-1 min-h-0 flex flex-col gap-2">
             <!-- タイトル（ドラッグで浮遊）＋バンクタブ -->
@@ -1283,6 +1377,8 @@
           </div>
         </div>
 
+        <!-- 下の段：FX PAD ＋ MIXER -->
+        <div id="deckBottomRow" class="deck-bottom">
         <!-- FX PAD の定位置（指でなぞってエフェクトをかけるXYパッド） -->
         <div id="slot-fx" class="dock-slot fx-slot flex flex-col" data-slot="fx">
           <section id="panel-fx" data-panel="fx" class="deck-panel bg-[#181c26] rounded-xl border border-[#282f3d] p-2.5 flex flex-col gap-2 flex-1 min-h-0">
@@ -1294,9 +1390,10 @@
                   <span class="text-[11px] font-bold tracking-wider text-slate-200 whitespace-nowrap">FX PAD</span>
                   <button type="button" class="help-btn" data-help="fx" title="FX PADの使い方" aria-label="FX PADの使い方">?</button>
                 </div>
-                <div class="fx-target" role="group" aria-label="エフェクトをかける対象">
+                <div class="fx-target" role="group" aria-label="選んでいるFXをかける対象（FXごと）">
                   <button type="button" data-fx-target="bgm" title="BGMだけにかける（SEはそのままはっきり聞こえる）">BGM</button>
                   <button type="button" data-fx-target="all" title="BGMとSEの両方にかける">ALL</button>
+                  <button type="button" data-fx-target="se" title="SEだけにかける（BGMはそのまま）">SE</button>
                 </div>
               </div>
               <div class="flex items-center gap-1.5 shrink-0">
@@ -1308,18 +1405,21 @@
             <!-- 表示窓 ＋ FX 1〜4（エフェクトの選択） -->
             <div class="flex items-stretch gap-2 shrink-0">
               <div id="fxDisplay" class="fx-display">FILTER</div>
-              <div class="grid grid-cols-4 gap-1.5 flex-1 min-w-0">
+              <div class="grid grid-cols-5 gap-1.5 flex-1 min-w-0">
                 <button type="button" class="fx-btn" data-fx="filter" style="--fx-color:#22d3ee" title="FILTER：左でこもった音、右でシャリシャリした音（真ん中は元の音）。上ほどクセが強くなります。長押しで外す">
-                  <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 1<span class="fx-btn-hold">HOLD</span></span><span class="fx-btn-name">FILTER</span>
+                  <span class="fx-btn-top"><span class="fx-btn-led"></span><span class="fx-btn-num">FX 1</span><span class="fx-btn-hold">HOLD</span><span class="fx-btn-tgt hidden">ALL</span></span><span class="fx-btn-name">FILTER</span>
                 </button>
                 <button type="button" class="fx-btn" data-fx="echo" style="--fx-color:#a78bfa" title="ECHO：横で繰り返しの間隔（曲のテンポに合わせる）、上ほど長く響きます。指を離すと残響が自然に消えます。長押しで外す">
-                  <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 2<span class="fx-btn-hold">HOLD</span></span><span class="fx-btn-name">ECHO</span>
+                  <span class="fx-btn-top"><span class="fx-btn-led"></span><span class="fx-btn-num">FX 2</span><span class="fx-btn-hold">HOLD</span><span class="fx-btn-tgt hidden">ALL</span></span><span class="fx-btn-name">ECHO</span>
                 </button>
                 <button type="button" class="fx-btn" data-fx="gate" style="--fx-color:#fbbf24" title="GATE：音を細かく刻みます。右ほど細かく、上ほど深く刻みます。長押しで外す">
-                  <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 3<span class="fx-btn-hold">HOLD</span></span><span class="fx-btn-name">GATE</span>
+                  <span class="fx-btn-top"><span class="fx-btn-led"></span><span class="fx-btn-num">FX 3</span><span class="fx-btn-hold">HOLD</span><span class="fx-btn-tgt hidden">ALL</span></span><span class="fx-btn-name">GATE</span>
                 </button>
                 <button type="button" class="fx-btn" data-fx="tape" style="--fx-color:#fb7185" title="TAPE STOP：レコードを手で止めたように音程が下がります。右ほどすぐ止まり、上ほど遅くなります。長押しで外す">
-                  <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 4<span class="fx-btn-hold">HOLD</span></span><span class="fx-btn-name">TAPE STOP</span>
+                  <span class="fx-btn-top"><span class="fx-btn-led"></span><span class="fx-btn-num">FX 4</span><span class="fx-btn-hold">HOLD</span><span class="fx-btn-tgt hidden">ALL</span></span><span class="fx-btn-name">TAPE STOP</span>
+                </button>
+                <button type="button" class="fx-btn" data-fx="pitch" style="--fx-color:#34d399" title="PITCH：速さはそのままで音程だけを変えます。真ん中が元の音程で、上で高く・下で低く（±12半音）。右半分は半音ずつ動きます。長押しで外す">
+                  <span class="fx-btn-top"><span class="fx-btn-led"></span><span class="fx-btn-num">FX 5</span><span class="fx-btn-hold">HOLD</span><span class="fx-btn-tgt hidden">ALL</span></span><span class="fx-btn-name">PITCH</span>
                 </button>
               </div>
             </div>
@@ -1350,6 +1450,69 @@
           <div class="slot-placeholder" data-placeholder="fx">
             <span class="placeholder-title">FX PAD IS FLOATING</span>
             <span class="placeholder-sub">Drag it back here, or tap 📌</span>
+          </div>
+        </div>
+
+          <!-- MIXER の定位置（広い画面：FX PADの右／狭い画面：左の列。placeMixerSlot が場所を決める） -->
+          <div id="slot-mixer" class="dock-slot mixer-slot flex flex-col" data-slot="mixer">
+            <section id="panel-mixer" data-panel="mixer" class="deck-panel bg-[#181c26] rounded-xl border border-[#282f3d] p-2.5 flex flex-col flex-1 min-h-0">
+              <div class="panel-head flex items-center justify-between gap-1 mb-1.5">
+                <div class="flex items-center gap-1.5">
+                  <span class="panel-grip"></span>
+                  <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">MIXER</span>
+                  <button type="button" class="help-btn" data-help="mixer" title="MIXERの使い方" aria-label="MIXERの使い方">?</button>
+                </div>
+                <div class="flex items-center gap-1">
+                  <span id="peakBadge" class="text-[9px] font-mono-num font-bold px-1.5 py-0.5 rounded bg-[#0d1016] text-slate-500 border border-[#262c3a]">PEAK</span>
+                  <button type="button" class="panel-pin" data-pin="mixer" title="元の位置に戻す" aria-label="MIXERを元の位置に戻す"></button>
+                </div>
+              </div>
+              <div class="mixer-grid flex-1 min-h-0">
+                <span class="strip-label">SE</span>
+                <span class="strip-label text-accent-300">BGM</span>
+                <span class="strip-label text-emerald-300">MASTER</span>
+                <span class="strip-label">L&nbsp;R</span>
+
+                <div id="faderSe" class="vfader" aria-label="SE全体の音量"></div>
+                <div id="faderBgm" class="vfader is-accent" aria-label="BGMの音量"></div>
+                <div id="faderMaster" class="vfader is-emerald" aria-label="全体の音量"></div>
+                <div class="vmeter-box">
+                  <div id="meterL" class="vmeter"></div>
+                  <div id="meterR" class="vmeter"></div>
+                </div>
+
+                <span id="seVolValue" class="strip-value text-slate-300">100%</span>
+                <span id="bgmVolValue" class="strip-value text-accent-300">70%</span>
+                <span id="masterVolValue" class="strip-value text-emerald-300">50%</span>
+                <span class="strip-value text-slate-500">OUT</span>
+
+                <!-- 右側：PANIC STOP（上）と DUCK（下）。押しやすい正方形ボタン -->
+                <div class="mixer-actions">
+                  <button id="btnPanicStop" type="button" title="全SE・BGMを即フェード停止 [Esc]" class="panic-btn square-btn border border-red-400/40 cursor-pointer">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                      <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon>
+                      <rect x="9" y="9" width="6" height="6" fill="currentColor"></rect>
+                    </svg>
+                    <span class="text-[11px] font-black tracking-wider text-white leading-none">PANIC</span>
+                    <span class="text-[11px] font-black tracking-wider text-white leading-none">STOP</span>
+                    <span class="pc-only text-[8px] font-mono-num font-bold text-red-100/80 leading-none">Esc</span>
+                  </button>
+                  <button id="btnManualDuck" type="button" aria-pressed="false" title="DUCK：押している間だけBGMを下げる（離すと元に戻る）" class="duck-pad square-btn is-off">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M17 7v9"></path><path d="M14 13l3 3 3-3"></path>
+                    </svg>
+                    <span class="text-[12px] font-black tracking-wider leading-none">DUCK</span>
+                    <span class="text-[8px] font-bold leading-none opacity-80">BGM↓</span>
+                  </button>
+                </div>
+              </div>
+              <div class="panel-resize" data-resize="mixer" title="ドラッグで大きさを変更"></div>
+            </section>
+            <div class="slot-placeholder is-short" data-placeholder="mixer">
+              <span class="placeholder-title">MIXER IS FLOATING</span>
+              <span class="placeholder-sub">Drag it back here, or tap 📌</span>
+            </div>
           </div>
         </div>
       </section>
@@ -1434,6 +1597,19 @@
             <span id="editPadVolVal" class="font-mono-num text-accent-300">100%</span>
           </div>
           <input id="editPadVol" type="range" min="0" max="150" value="100" class="pro-fader accent-cyan w-full">
+        </div>
+
+        <!-- ピッチ（半音単位） -->
+        <div>
+          <div class="flex items-center justify-between text-xs font-bold mb-1">
+            <span class="text-slate-400">ピッチ (PITCH)</span>
+            <span class="flex items-center gap-2">
+              <span id="editPadPitchVal" class="font-mono-num text-accent-300">0</span>
+              <button id="btnPadPitchReset" type="button" class="px-1.5 py-0.5 rounded text-[10px] font-bold text-slate-400 border border-[#2a3242] hover:text-white">0に戻す</button>
+            </span>
+          </div>
+          <input id="editPadPitch" type="range" min="-12" max="12" step="1" value="0" class="pro-fader accent-cyan w-full">
+          <p class="text-[10px] text-slate-500 mt-1">半音単位（±12で1オクターブ）。音声ファイルは高くすると短く、低くすると長くなります</p>
         </div>
       </div>
 
@@ -1742,6 +1918,7 @@
       duckAmount: 0.8,        // 手動DUCKの下げ幅（今のBGM音量の何倍にするか）
       eq: createDefaultEq(),  // BGM専用EQ（EQ DECK）
       fx: createDefaultFx(),  // FX PAD（XYパッドのエフェクト）
+      pitch: { tempo: 0, range: 8, key: 0 },   // PITCH DECK（TEMPO：速さと音程％／KEY：音程だけ半音）
       panels: createDefaultPanels(),   // パネルの浮遊状態と位置
       themeColor: DEFAULT_THEME,
       banks: createDefaultBanks(),
@@ -1814,6 +1991,7 @@
             duckAmount: state.duckAmount,
             eq: state.eq,
             fx: state.fx,
+            pitch: state.pitch,
             panels: state.panels
           };
           store.put(payload);
@@ -2261,13 +2439,15 @@
     //   横（X）と縦（Y）で2つの値を同時に動かす。縦は「上ほど強く」で統一
     //   指を置いている間だけかかる（HOLD中は指を離してもかかったまま）
     // =========================================================================
-    // かかる順番（重ねたとき）：ゲート → フィルター → エコー → テープストップ
-    const FX_ORDER = ['gate', 'filter', 'echo', 'tape'];
+    // かかる順番（重ねたとき）：ゲート → フィルター → ピッチ → エコー → テープストップ
+    const FX_ORDER = ['gate', 'filter', 'pitch', 'echo', 'tape'];
+    const FX_TARGETS = ['bgm', 'all', 'se'];
     const FX_INFO = {
       filter: { name: 'FILTER', short: 'FLT', label: 'FILTER', color: '#22d3ee', x0: 'DARK', x1: 'BRIGHT', y: 'RESONANCE' },
       echo: { name: 'ECHO', short: 'ECHO', label: 'ECHO', color: '#a78bfa', x0: 'SHORT', x1: 'LONG', y: 'FEEDBACK' },
       gate: { name: 'GATE', short: 'GATE', label: 'GATE', color: '#fbbf24', x0: 'SLOW', x1: 'FAST', y: 'DEPTH' },
-      tape: { name: 'TAPE STOP', short: 'TAPE', label: 'TAPE STOP', color: '#fb7185', x0: 'SLOW STOP', x1: 'QUICK STOP', y: 'SLOWER' }
+      tape: { name: 'TAPE STOP', short: 'TAPE', label: 'TAPE STOP', color: '#fb7185', x0: 'SLOW STOP', x1: 'QUICK STOP', y: 'SLOWER' },
+      pitch: { name: 'PITCH', short: 'PITCH', label: 'PITCH', color: '#34d399', x0: 'SMOOTH', x1: 'STEP', y: 'HIGHER' }
     };
     // エコーの間隔（拍）とゲートの刻み（1拍をいくつに分けるか）。横の位置で段階的に切り替える
     const ECHO_STEPS = [
@@ -2282,7 +2462,11 @@
 
     // state の初期化時（この行より前）にも呼ばれるので、ここでは定数を使わず値を直接書く
     function createDefaultFx() {
-      return { effect: 'filter', depth: 0.85, bpm: 120, holds: { filter: false, echo: false, gate: false, tape: false }, target: 'bgm' };
+      return {
+        effect: 'filter', depth: 0.85, bpm: 120,
+        holds: { filter: false, echo: false, gate: false, tape: false, pitch: false },          // HOLD（FXごと）
+        targets: { filter: 'bgm', echo: 'bgm', gate: 'bgm', tape: 'bgm', pitch: 'bgm' }        // かける対象（FXごと）
+      };
     }
 
     function normalizeFx(f) {
@@ -2292,13 +2476,11 @@
         effect: FX_ORDER.includes(f.effect) ? f.effect : d.effect,
         depth: typeof f.depth === 'number' && isFinite(f.depth) ? Math.max(0, Math.min(1, f.depth)) : d.depth,
         bpm: typeof f.bpm === 'number' && isFinite(f.bpm) ? Math.round(Math.max(50, Math.min(220, f.bpm))) : d.bpm,
-        holds: {
-          filter: !!(f.holds && f.holds.filter),
-          echo: !!(f.holds && f.holds.echo),
-          gate: !!(f.holds && f.holds.gate),
-          tape: !!(f.holds && f.holds.tape)
-        },
-        target: f.target === 'all' ? 'all' : 'bgm'
+        holds: Object.fromEntries(FX_ORDER.map(k => [k, !!(f.holds && f.holds[k])])),
+        targets: Object.fromEntries(FX_ORDER.map(k => {
+          const t = f.targets && f.targets[k];
+          return [k, FX_TARGETS.includes(t) ? t : (f.target === 'all' ? 'all' : 'bgm')];
+        }))
       };
     }
 
@@ -2308,6 +2490,11 @@
 
     function fxStepIndex(x, n) {
       return Math.max(0, Math.min(n - 1, Math.floor(x * n)));
+    }
+
+    /** 半音の表示（+3 / 0 / −2） */
+    function fmtSemitone(st) {
+      return st > 0 ? `+${st}` : st < 0 ? `−${Math.abs(st)}` : '0';
     }
 
     function fmtHz(f) {
@@ -2325,6 +2512,19 @@
         const s = GATE_STEPS[fxStepIndex(x, GATE_STEPS.length)];
         const rate = (1 / beat) * s.perBeat;
         return { rate, depth: 0.35 + y * 0.65, label: `GATE ${s.label}`, period: 1 / rate };
+      }
+      if (effect === 'pitch') {
+        // 縦：真ん中が元の音程、上で高く・下で低く（±12半音）。横：左はなめらか、右は半音ずつ
+        let st = (y - 0.5) * 24;
+        if (Math.abs(y - 0.5) < 0.03) st = 0;
+        const step = x >= 0.5;
+        if (step) st = Math.round(st);
+        const flat = Math.abs(st) < 0.05;
+        const shown = step ? String(Math.abs(st)) : Math.abs(st).toFixed(1);
+        return {
+          ratio: Math.pow(2, st / 12), semitones: st, flat, glide: step ? 0.008 : 0.03,
+          label: flat ? 'PITCH 0' : `PITCH ${st > 0 ? '+' : '−'}${shown}`
+        };
       }
       if (effect === 'tape') {
         const speed = 0.75 * (1 - y);
@@ -2345,8 +2545,10 @@
       return { lpf: 20000, hpf: 10, lpfQ: -3, hpfQ: -3, comp: 1, label: 'FILTER FLAT' };
     }
 
-    // テープストップ用の AudioWorklet（入ってきた音をためておき、ゆっくり読み出す）
-    const TAPE_WORKLET_SRC = `
+    // TAPE STOP と PITCH 用の AudioWorklet
+    //   livepad-tape ：入ってきた音をためておき、ゆっくり読み出す（音程も一緒に下がる）
+    //   livepad-pitch：少しずつずらした2つの読み出しを重ねて、速さはそのまま音程だけを変える
+    const FX_WORKLET_SRC = `
 class LivepadTape extends AudioWorkletProcessor {
   constructor() {
     super();
@@ -2405,6 +2607,75 @@ class LivepadTape extends AudioWorkletProcessor {
   }
 }
 registerProcessor('livepad-tape', LivepadTape);
+
+class LivepadPitch extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this.win = Math.round(sampleRate * 0.07);
+    this.size = 1 << Math.ceil(Math.log2(this.win * 2 + 16));
+    this.mask = this.size - 1;
+    this.bufL = new Float32Array(this.size);
+    this.bufR = new Float32Array(this.size);
+    this.w = 0;
+    this.phase = 0;
+    this.ratio = 1;
+    this.target = 1;
+    this.coef = 1 - Math.exp(-1 / (0.03 * sampleRate));
+    this.port.onmessage = (e) => {
+      const d = e.data || {};
+      if (typeof d.ratio === 'number') this.target = Math.max(0.25, Math.min(4, d.ratio));
+      if (typeof d.glide === 'number') this.coef = 1 - Math.exp(-1 / (Math.max(0.002, d.glide) * sampleRate));
+      if (d.reset) { this.ratio = this.target; this.phase = 0; }
+    };
+  }
+  process(inputs, outputs) {
+    const input = inputs[0] || [];
+    const out = outputs[0];
+    const outL = out[0];
+    const outR = out[1] || out[0];
+    const inL = input[0];
+    const inR = input[1] || input[0];
+    const n = outL.length;
+    const mask = this.mask;
+    const win = this.win;
+    const bL = this.bufL;
+    const bR = this.bufR;
+    const target = this.target;
+    const coef = this.coef;
+    const TAU = Math.PI * 2;
+    let w = this.w;
+    let phase = this.phase;
+    let ratio = this.ratio;
+    for (let i = 0; i < n; i++) {
+      bL[w] = inL ? inL[i] : 0;
+      bR[w] = inR ? inR[i] : 0;
+      ratio += (target - ratio) * coef;
+      phase += (1 - ratio) / win;
+      phase -= Math.floor(phase);
+      const p2 = phase < 0.5 ? phase + 0.5 : phase - 0.5;
+      const g1 = 0.5 - 0.5 * Math.cos(TAU * phase);
+      const g2 = 1 - g1;
+      const r1 = w - (phase * win + 2);
+      const r2 = w - (p2 * win + 2);
+      const a0 = Math.floor(r1);
+      const f1 = r1 - a0;
+      const a1 = a0 & mask;
+      const a2 = (a0 + 1) & mask;
+      const b0 = Math.floor(r2);
+      const f2 = r2 - b0;
+      const b1 = b0 & mask;
+      const b2 = (b0 + 1) & mask;
+      outL[i] = (bL[a1] + (bL[a2] - bL[a1]) * f1) * g1 + (bL[b1] + (bL[b2] - bL[b1]) * f2) * g2;
+      if (outR !== outL) outR[i] = (bR[a1] + (bR[a2] - bR[a1]) * f1) * g1 + (bR[b1] + (bR[b2] - bR[b1]) * f2) * g2;
+      w = (w + 1) & mask;
+    }
+    this.w = w;
+    this.phase = phase;
+    this.ratio = ratio;
+    return true;
+  }
+}
+registerProcessor('livepad-pitch', LivepadPitch);
 `;
 
     // ---- FX PAD：画面の更新と操作 --------------------------------------------
@@ -2465,10 +2736,17 @@ registerProcessor('livepad-tape', LivepadTape);
         btn.setAttribute('aria-pressed', String(on));
       });
       updateFxLamps();
+      // BGM / ALL / SE は、今選んでいるFXの対象を表示。BGM以外にしたFXはボタンに札を出す
       document.querySelectorAll('[data-fx-target]').forEach(btn => {
-        const on = btn.dataset.fxTarget === f.target;
+        const on = btn.dataset.fxTarget === f.targets[f.effect];
         btn.classList.toggle('is-active', on);
         btn.setAttribute('aria-pressed', String(on));
+      });
+      document.querySelectorAll('.fx-btn').forEach(btn => {
+        const t = f.targets[btn.dataset.fx];
+        const tag = btn.querySelector('.fx-btn-tgt');
+        tag.textContent = t === 'all' ? 'ALL' : 'SE';
+        tag.classList.toggle('hidden', t === 'bgm');
       });
       const hold = document.getElementById('btnFxHold');
       // HOLDボタンは、今選んでいるFXのHOLDの状態を表示
@@ -2548,6 +2826,32 @@ registerProcessor('livepad-tape', LivepadTape);
       } else if (sel === 'tape') {
         g.fillStyle = 'rgba(100,116,139,0.6)';
         g.fillText('STOP', w / 2, 6);
+      } else if (sel === 'pitch') {
+        // 真ん中の横帯＝元の音程。右半分は半音ずつの目盛り
+        const y0 = h * 0.47;
+        const y1 = h * 0.53;
+        g.fillStyle = 'rgba(148,163,184,0.05)';
+        g.fillRect(0, y0, w, y1 - y0);
+        g.strokeStyle = 'rgba(148,163,184,0.12)';
+        g.setLineDash([3, 4]);
+        line(Math.round(w / 2) + 0.5, 0, Math.round(w / 2) + 0.5, h);
+        g.setLineDash([]);
+        g.strokeStyle = 'rgba(148,163,184,0.16)';
+        for (let st = -12; st <= 12; st++) {
+          const yy = Math.round(h * (0.5 - st / 24)) + 0.5;
+          const len = st % 12 === 0 ? 14 : (st % 6 === 0 ? 9 : 5);
+          line(w - len, yy, w, yy);
+        }
+        g.fillStyle = 'rgba(100,116,139,0.6)';
+        g.fillText('SMOOTH', w / 4, 6);
+        g.fillText('STEP', (w * 3) / 4, 6);
+        g.textAlign = 'right';
+        g.textBaseline = 'middle';
+        g.fillText('+12', w - 18, 10);
+        g.fillText('0', w - 18, h / 2);
+        g.fillText('−12', w - 18, h - 24);
+        g.textAlign = 'center';
+        g.textBaseline = 'top';
       }
 
       // なぞった軌跡（動かしているFXの色）
@@ -2743,10 +3047,11 @@ registerProcessor('livepad-tape', LivepadTape);
         });
       });
 
-      // BGMだけ／全体
+      // BGM / ALL / SE：今選んでいるFXをどこにかけるか（FXごと）
       document.querySelectorAll('[data-fx-target]').forEach(btn => {
         btn.addEventListener('click', () => {
-          state.fx.target = btn.dataset.fxTarget === 'all' ? 'all' : 'bgm';
+          const t = btn.dataset.fxTarget;
+          state.fx.targets[state.fx.effect] = FX_TARGETS.includes(t) ? t : 'bgm';
           audioEngine.fxApplyRouting(0.03);
           renderFxPad();
           storage.saveState();
@@ -2825,6 +3130,72 @@ registerProcessor('livepad-tape', LivepadTape);
         new ResizeObserver(() => { fxUi.dirty = true; }).observe(pad);
       }
       renderFxPad();
+    }
+
+    // =========================================================================
+    // PITCH DECK（BGMの TEMPO：速さと音程を一緒に／KEY：音程だけ半音ずつ）
+    // =========================================================================
+    function normalizePitch(p) {
+      const d = { tempo: 0, range: 8, key: 0 };
+      if (!p || typeof p !== 'object') return d;
+      const range = p.range === 16 ? 16 : 8;
+      const tempo = typeof p.tempo === 'number' && isFinite(p.tempo) ? Math.max(-range, Math.min(range, p.tempo)) : 0;
+      const key = typeof p.key === 'number' && isFinite(p.key) ? Math.max(-3, Math.min(3, Math.round(p.key))) : 0;
+      return { tempo: Math.round(tempo * 10) / 10, range, key };
+    }
+
+    function renderPitchDeck() {
+      const p = state.pitch;
+      const fader = document.getElementById('tempoFader');
+      fader.min = String(-p.range);
+      fader.max = String(p.range);
+      fader.value = String(p.tempo);
+      const pos = ((p.tempo + p.range) / (2 * p.range)) * 100;
+      fader.style.setProperty('--a', `${Math.min(50, pos)}%`);
+      fader.style.setProperty('--b', `${Math.max(50, pos)}%`);
+      const tv = document.getElementById('tempoValue');
+      tv.textContent = `${p.tempo > 0 ? '+' : p.tempo < 0 ? '−' : ''}${Math.abs(p.tempo).toFixed(1)}%`;
+      tv.classList.toggle('is-on', p.tempo !== 0);
+      document.getElementById('btnTempoRange').textContent = `±${p.range}%`;
+      document.querySelectorAll('.key-pad').forEach(btn => {
+        const on = Number(btn.dataset.key) === p.key;
+        btn.classList.toggle('is-active', on);
+        btn.setAttribute('aria-pressed', String(on));
+      });
+    }
+
+    function initPitchDeck() {
+      let saveTimer = null;
+      const saveSoon = () => {
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => storage.saveState(), 400);
+      };
+      const setTempo = (v) => {
+        const r = state.pitch.range;
+        let t = Math.max(-r, Math.min(r, Number(v) || 0));
+        if (Math.abs(t) < r * 0.025) t = 0;   // 0の近くは0に吸い付く
+        state.pitch.tempo = Math.round(t * 10) / 10;
+        audioEngine.applyTempo();
+        renderPitchDeck();
+        saveSoon();
+      };
+      const fader = document.getElementById('tempoFader');
+      fader.addEventListener('input', () => setTempo(fader.value));
+      fader.addEventListener('dblclick', () => setTempo(0));
+      document.getElementById('btnTempoReset').addEventListener('click', () => setTempo(0));
+      document.getElementById('btnTempoRange').addEventListener('click', () => {
+        state.pitch.range = state.pitch.range === 8 ? 16 : 8;
+        setTempo(state.pitch.tempo);
+      });
+      document.querySelectorAll('.key-pad').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.pitch.key = Number(btn.dataset.key);
+          audioEngine.applyKey();
+          renderPitchDeck();
+          saveSoon();
+        });
+      });
+      renderPitchDeck();
     }
 
     // =========================================================================
@@ -2952,19 +3323,50 @@ registerProcessor('livepad-tape', LivepadTape);
         return HF.svg(300, 128, b);
       },
       flow() {
-        const xs = [2, 52, 102, 152, 202, 252];
-        const box = (x, y, label, cls = 'hf-box') => HF.r(x, y, 44, 22, cls, 4) + HF.t(x + 22, y + 11, label, 'hf-tb', 'middle');
+        const step = 42.5;
+        const bw = 38;
+        const xs = [0, 1, 2, 3, 4, 5, 6].map(i => 1 + i * step);
+        const box = (x, y, label, cls = 'hf-box') => HF.r(x, y, bw, 22, cls, 4) + HF.t(x + bw / 2, y + 11, label, 'hf-tb', 'middle');
         let b = '';
-        ['BGM', 'DUCK', 'EQ', 'BGM VOL', 'FX PAD', 'MASTER'].forEach((label, i) => {
-          b += box(xs[i], 8, label, i === 5 ? 'hf-boxa' : 'hf-box');
-          if (i < 5) b += HF.a(xs[i] + 44, 19, xs[i + 1], 19, 'hf-arw', 'hf-arwh', 4);
+        ['BGM', 'DUCK', 'EQ', 'KEY', 'BGM VOL', 'FX PAD', 'MASTER'].forEach((label, i) => {
+          b += box(xs[i], 8, label, i === 6 ? 'hf-boxa' : 'hf-box');
+          if (i < 6) b += HF.a(xs[i] + bw, 19, xs[i + 1], 19, 'hf-arw', 'hf-arwh', 3.5);
         });
-        b += box(2, 56, 'SE') + box(152, 56, 'SE VOL');
-        b += HF.a(46, 67, 152, 67, 'hf-arw', 'hf-arwh', 4);
-        b += HF.p('M196,67 H274 V31', 'hf-arw') + HF.head(274, 30, -Math.PI / 2, 'hf-arwh', 4);
-        b += HF.p('M224,67 V31', 'hf-sub') + HF.head(224, 30, -Math.PI / 2, 'hf-arwh', 4);
-        b += HF.t(228, 49, 'ALL・SE', 'hf-ts');
+        b += box(xs[0], 56, 'SE') + box(xs[4], 56, 'SE VOL');
+        b += HF.a(xs[0] + bw, 67, xs[4], 67, 'hf-arw', 'hf-arwh', 4);
+        const fxC = xs[5] + bw / 2;
+        const mC = xs[6] + bw / 2;
+        b += HF.p(`M${xs[4] + bw},67 H${mC} V31`, 'hf-arw') + HF.head(mC, 30, -Math.PI / 2, 'hf-arwh', 4);
+        b += HF.p(`M${fxC},67 V31`, 'hf-sub') + HF.head(fxC, 30, -Math.PI / 2, 'hf-arwh', 4);
+        b += HF.t(fxC + 4, 49, 'ALL・SE', 'hf-ts');
+        b += HF.t(xs[0] + bw / 2, 38, 'TEMPO', 'hf-ts', 'middle');
         return HF.svg(300, 84, b);
+      },
+      tempo() {
+        const wave = (x0, y, w, period, amp) => {
+          let d = '';
+          for (let k = 0; k <= 80; k++) {
+            const x = x0 + (k / 80) * w;
+            d += `${k ? 'L' : 'M'}${x.toFixed(1)},${(y - Math.sin(((x - x0) / period) * Math.PI * 2) * amp).toFixed(1)}`;
+          }
+          return HF.p(d, 'hf-acc');
+        };
+        let b = '';
+        b += HF.t(8, 18, '−', 'hf-t hf-ta') + wave(24, 18, 150, 30, 8) + HF.t(184, 18, '遅く・低く・長く', 'hf-tj');
+        b += HF.t(8, 50, '0', 'hf-t') + HF.p('M24,50 H174', 'hf-sub') + HF.t(184, 50, '元の速さ', 'hf-tj');
+        b += HF.t(8, 82, '+', 'hf-t hf-ta') + wave(24, 82, 150, 18, 8) + HF.t(184, 82, '速く・高く・短く', 'hf-tj');
+        return HF.svg(300, 96, b);
+      },
+      key() {
+        let b = '';
+        ['−3', '−2', '−1', '0', '+1', '+2', '+3'].forEach((k, i) => {
+          const x = 4 + i * 30;
+          b += HF.r(x, 6, 26, 22, i === 5 ? 'hf-boxa' : 'hf-box', 5) + HF.t(x + 13, 17, k, 'hf-t', 'middle');
+        });
+        b += HF.t(218, 12, '音程だけ', 'hf-tj') + HF.t(218, 25, '半音ずつ変わる', 'hf-tj');
+        b += HF.p('M4,52 H206', 'hf-acc') + HF.t(8, 42, '曲の長さ・テンポはそのまま', 'hf-tj');
+        b += HF.head(206, 52, 0, 'hf-arwh', 5);
+        return HF.svg(300, 60, b);
       },
       duck() {
         let b = '';
@@ -2993,7 +3395,8 @@ registerProcessor('livepad-tape', LivepadTape);
           { k: 'filter', name: 'FILTER', y: 'RESONANCE', x0: 'DARK', x1: 'BRIGHT', mid: 'FLAT' },
           { k: 'echo', name: 'ECHO', y: 'FEEDBACK', x0: 'SHORT', x1: 'LONG', zones: ECHO_STEPS.map(z => z.label) },
           { k: 'gate', name: 'GATE', y: 'DEPTH', x0: 'SLOW', x1: 'FAST', zones: GATE_STEPS.map(z => z.label) },
-          { k: 'tape', name: 'TAPE STOP', y: 'SLOWER', x0: 'SLOW STOP', x1: 'QUICK STOP', top: 'STOP' }
+          { k: 'tape', name: 'TAPE STOP', y: 'SLOWER', x0: 'SLOW STOP', x1: 'QUICK STOP', top: 'STOP' },
+          { k: 'pitch', name: 'PITCH', y: 'HIGHER', x0: 'SMOOTH', x1: 'STEP', band: true }
         ];
         let b = '';
         cells.forEach((c, i) => {
@@ -3019,20 +3422,25 @@ registerProcessor('livepad-tape', LivepadTape);
             b += HF.t(px + pw / 2, py + 8, c.mid, 'hf-ts', 'middle');
           }
           if (c.top) b += HF.t(px + pw / 2, py + 8, c.top, 'hf-ts', 'middle');
+          if (c.band) {
+            b += HF.r(px, py + ph * 0.44, pw, ph * 0.12, 'hf-grid', 0, ' style="fill:rgba(148,163,184,.10);stroke:none"');
+            b += HF.l(px + pw / 2, py, px + pw / 2, py + ph, 'hf-grid', ' stroke-dasharray="2 3"');
+            b += HF.t(px + pw - 4, py + 8, '+12', 'hf-ts', 'end') + HF.t(px + pw - 4, py + ph / 2, '0', 'hf-ts', 'end');
+          }
           b += HF.t(px + 4, py + ph - 7, `← ${c.x0}`, 'hf-ts') + HF.t(px + pw - 4, py + ph - 7, `${c.x1} →`, 'hf-ts', 'end');
           b += HF.a(x + 6, py + ph - 4, x + 6, py + 6, 'hf-arw', 'hf-arwh', 4);
         });
-        return HF.svg(300, 158, b);
+        return HF.svg(300, 236, b);
       },
       fxHold() {
-        const btns = [['filter', 'FILTER', true], ['echo', 'ECHO', true], ['gate', 'GATE', false], ['tape', 'TAPE STOP', false]];
+        const btns = [['filter', 'FILTER', true], ['echo', 'ECHO', true], ['gate', 'GATE', false], ['tape', 'TAPE', false], ['pitch', 'PITCH', false]];
         let b = '';
         btns.forEach(([k, label, held], i) => {
-          const x = 4 + i * 74;
-          b += HF.r(x, 4, 68, 24, i === 1 ? 'hf-boxa' : 'hf-box', 5);
-          b += HF.c(x + 9, 11, 2.5, '', ` style="fill:${held ? FX_INFO[k].color : '#2a3242'}"`);
-          b += HF.t(x + 34, 21, label, 'hf-tb', 'middle');
-          if (held) b += HF.r(x + 40, 7, 22, 8, '', 2, ' style="fill:#fbbf24"') + HF.t(x + 51, 11, 'HOLD', 'hf-tag', 'middle');
+          const x = 4 + i * 59;
+          b += HF.r(x, 4, 55, 24, i === 1 ? 'hf-boxa' : 'hf-box', 5);
+          b += HF.c(x + 8, 11, 2.5, '', ` style="fill:${held ? FX_INFO[k].color : '#2a3242'}"`);
+          b += HF.t(x + 27.5, 21, label, 'hf-tb', 'middle');
+          if (held) b += HF.r(x + 29, 7, 22, 8, '', 2, ' style="fill:#fbbf24"') + HF.t(x + 40, 11, 'HOLD', 'hf-tag', 'middle');
         });
         const fc = FX_INFO.filter.color;
         const ec = FX_INFO.echo.color;
@@ -3045,13 +3453,13 @@ registerProcessor('livepad-tape', LivepadTape);
         return HF.svg(300, 112, b);
       },
       fxOrder() {
-        const items = [['IN', null], ['GATE', 'gate'], ['FILTER', 'filter'], ['ECHO', 'echo'], ['TAPE', 'tape'], ['MASTER', null]];
+        const items = [['IN', null], ['GATE', 'gate'], ['FILTER', 'filter'], ['PITCH', 'pitch'], ['ECHO', 'echo'], ['TAPE', 'tape'], ['MASTER', null]];
         let b = '';
         items.forEach(([label, k], i) => {
-          const x = 2 + i * 50;
-          b += HF.r(x, 6, 44, 22, i === 5 ? 'hf-boxa' : 'hf-box', 4, k ? ` style="stroke:${FX_INFO[k].color}"` : '');
-          b += HF.t(x + 22, 17, label, 'hf-tb', 'middle', k ? ` style="fill:${FX_INFO[k].color}"` : '');
-          if (i < items.length - 1) b += HF.a(x + 44, 17, x + 50, 17, 'hf-arw', 'hf-arwh', 4);
+          const x = 1 + i * 42.5;
+          b += HF.r(x, 6, 37, 22, i === items.length - 1 ? 'hf-boxa' : 'hf-box', 4, k ? ` style="stroke:${FX_INFO[k].color}"` : '');
+          b += HF.t(x + 18.5, 17, label, 'hf-tb', 'middle', k ? ` style="fill:${FX_INFO[k].color}"` : '');
+          if (i < items.length - 1) b += HF.a(x + 37, 17, x + 42.5, 17, 'hf-arw', 'hf-arwh', 3.5);
         });
         return HF.svg(300, 34, b);
       }
@@ -3109,32 +3517,49 @@ registerProcessor('livepad-tape', LivepadTape);
             '上下にドラッグ（PCはホイールでも）。ダブルクリックで初期値（SE 100%・BGM 70%・MASTER 50%）に戻ります',
             '<b>L / R</b> は出ている音の大きさ。<b>PEAK</b> は音割れ寸前のときに赤く光ります'
           ] },
-          { name: 'SIGNAL FLOW', fig: 'flow', text: '音はこの順に流れます。DUCK（AUTO DUCKINGとDUCKボタン）とEQはBGMだけにかかります。FX PADは、FXごとに BGM・ALL・SE のどれにかけるかを選べます。' },
+          { name: 'SIGNAL FLOW', fig: 'flow', text: '音はこの順に流れます。DUCK（AUTO DUCKINGとDUCKボタン）・EQ・PITCH DECK（TEMPO・KEY）はBGMだけにかかります。FX PADは、FXごとに BGM・ALL・SE のどれにかけるかを選べます。' },
           { name: 'DUCK', fig: 'duck', text: '押している間だけ、BGMを今の音量の80%に下げます（下げ幅は設定の「DUCKの下げ幅」で変えられます）。離すと元に戻ります。' },
           { name: 'PANIC STOP', text: 'SE・BGM・FXの残響まで、全部の音をすぐに止めます。PCでは Esc キーでも押せます。' }
+        ]
+      },
+      pitch: {
+        title: 'PITCH DECK',
+        intro: 'BGMの速さと音程を変えるデッキです（SEにはかかりません）。',
+        sections: [
+          { name: 'TEMPO', fig: 'tempo', text: [
+            'レコードの回転を変えるのと同じで、<b>速さと音程が一緒に</b>変わります。右へ動かすと速く・高く、左へ動かすと遅く・低くなります',
+            '<b>±8%</b> のボタンで範囲を ±8% と ±16% に切り替え。<b>0</b> のボタンかダブルクリックで元に戻ります',
+            '音の加工をしないので、音質はそのままです'
+          ] },
+          { name: 'KEY', fig: 'key', text: [
+            '押したパッドの高さに、<b>音程だけ</b>を半音ずつ変えます（−3〜+3）。速さや曲の長さは変わりません',
+            '音程だけを変える加工をするので、大きく変えると少し揺れたような音になります。<b>0</b> で元に戻ります',
+            'TEMPOと組み合わせることもできます'
+          ] }
         ]
       },
       fx: {
         title: 'FX PAD',
         intro: 'パッドを指でなぞってエフェクトをかけます。',
         sections: [
-          { name: 'BASICS', fig: 'fxBasics', text: '指を置いている間だけかかり、離すと元の音に戻ります。縦はどのFXも「上ほど強く」。横の意味はFXごとに違います。表示窓に今の値が出ます。' },
-          { name: 'FX 1–4', fig: 'fxEach', text: [
+          { name: 'BASICS', fig: 'fxBasics', text: '指を置いている間だけかかり、離すと元の音に戻ります。縦はどのFXも「上ほど強く」（PITCHだけは真ん中が元の音程で、上で高く・下で低く）。横の意味はFXごとに違います。表示窓に今の値が出ます。' },
+          { name: 'FX 1–5', fig: 'fxEach', text: [
             '<b>FILTER</b>：左でこもった音（DARK）、右でシャリシャリした音（BRIGHT）、真ん中は元の音。上ほどクセ（RESONANCE）が強い',
             '<b>ECHO</b>：横で繰り返しの間隔（曲のテンポに合わせる。D は付点で1.5倍の長さ）。上ほど長く響く。指を離しても残響は自然に消える',
             '<b>GATE</b>：音を細かく刻む。右ほど細かく、上ほど深く',
-            '<b>TAPE STOP</b>：レコードを手で止めたように音程が下がる。右ほどすぐ止まり、上ほど遅く（一番上で停止）'
+            '<b>TAPE STOP</b>：レコードを手で止めたように音程が下がる。右ほどすぐ止まり、上ほど遅く（一番上で停止）',
+            '<b>PITCH</b>：速さはそのままで音程だけを変える。真ん中が元の音程で、上で高く・下で低く（±12半音＝1オクターブ）。左半分はなめらかに、右半分は半音ずつ動く。大きく変えると少し揺れたような音になります'
           ] },
           { name: 'HOLD・重ねがけ', fig: 'fxHold', text: [
             '<b>HOLD</b> はFXごとにON／OFFします。ONのFXは指を離してもかかったまま（ボタンに HOLD の札が付きます）',
             'そのまま別のFXに切り替えてパッドを触ると、重ねてかけられます',
             'HOLDをOFFにするか、FXボタンを長押しすると、そのFXが外れます'
           ] },
-          { name: 'ORDER', fig: 'fxOrder', text: '重ねたときは <b>GATE → FILTER → ECHO → TAPE STOP</b> の順にかかります。' },
+          { name: 'ORDER', fig: 'fxOrder', text: '重ねたときは <b>GATE → FILTER → PITCH → ECHO → TAPE STOP</b> の順にかかります。' },
           { name: 'DEPTH・TEMPO・BGM / ALL / SE', text: [
             '<b>FX DEPTH</b>：かかり具合（元の音とエフェクト音の混ぜ具合）。重ねたもの全部に共通',
             '<b>TEMPO</b>：曲に合わせて4回ほどタップすると、ECHOとGATEの間隔が曲に揃います（ランプが拍に合わせて点滅）',
-            '<b>BGM / ALL / SE</b>：そのFXをBGMだけ・全体・SEだけのどれにかけるか。HOLDと同じくFXごとに選べます'
+            '<b>BGM / ALL / SE</b>：選んでいるFXを、BGMだけ・全体・SEだけのどれにかけるか。HOLDと同じくFXごとに選べ、BGM以外にしたFXはボタンに ALL・SE の札が付きます'
           ] }
         ]
       }
@@ -3701,6 +4126,7 @@ registerProcessor('livepad-tape', LivepadTape);
         duckAmount: state.duckAmount,
         eq: state.eq,
         fx: state.fx,
+        pitch: state.pitch,
         themeColor: state.themeColor
       };
     }
@@ -3717,6 +4143,7 @@ registerProcessor('livepad-tape', LivepadTape);
       if (typeof d.duckAmount === 'number') state.duckAmount = d.duckAmount;
       if (d.eq) state.eq = normalizeEq(d.eq);
       if (d.fx) state.fx = normalizeFx(d.fx);
+      if (d.pitch) state.pitch = normalizePitch(d.pitch);
       if (d.themeColor && THEMES[d.themeColor]) state.themeColor = d.themeColor;
       state.activeBankIndex = Math.min(state.activeBankIndex, state.banks.length - 1);
       state.bgm.trackIndex = 0;
@@ -3795,7 +4222,14 @@ registerProcessor('livepad-tape', LivepadTape);
           const eqChain = EQ_CHAIN.map(c => this.eqNodes[c.key]);
           this.bgmManualGain.connect(eqChain[0]);
           for (let i = 0; i < eqChain.length - 1; i++) eqChain[i].connect(eqChain[i + 1]);
-          eqChain[eqChain.length - 1].connect(this.bgmVolumeGain);
+          // KEY（PITCH DECK）：速さはそのままで音程だけ変える段。0のときは素通り（Workletの読み込み後につなぐ）
+          const kg = (v) => { const n = this.ctx.createGain(); n.gain.value = v; return n; };
+          this.keyStage = { in: kg(1), dry: kg(1), wet: kg(0), out: kg(1), node: null, on: false };
+          this.keyStage.in.connect(this.keyStage.dry);
+          this.keyStage.dry.connect(this.keyStage.out);
+          this.keyStage.wet.connect(this.keyStage.out);
+          eqChain[eqChain.length - 1].connect(this.keyStage.in);
+          this.keyStage.out.connect(this.bgmVolumeGain);
           this.applyEq(true);
           // BGMフェーダー・SEフェーダーの後ろに FX PAD をつなぐ（ここからマスターへ）
           this.buildFx();
@@ -3872,9 +4306,35 @@ registerProcessor('livepad-tape', LivepadTape);
         setP(n.high.gain, t.high);
       }
 
+      // ---- PITCH DECK ------------------------------------------------------------
+      getTempoRate() {
+        return 1 + state.pitch.tempo / 100;
+      }
+
+      /** TEMPO：再生中のBGMの速さ（と音程）を変える */
+      applyTempo() {
+        if (!this.ctx || !this.currentBgmSource) return;
+        this.currentBgmSource.playbackRate.setTargetAtTime(this.getTempoRate(), this.ctx.currentTime, 0.05);
+      }
+
+      /** KEY：速さはそのままで音程だけを変える（0なら素通り） */
+      applyKey(immediate = false) {
+        const ks = this.keyStage;
+        if (!ks) return;
+        const key = state.pitch.key;
+        const on = key !== 0 && !!ks.node;
+        if (ks.node) ks.node.port.postMessage({ ratio: Math.pow(2, key / 12), glide: 0.015, reset: immediate || !ks.on });
+        const now = this.ctx.currentTime;
+        const tc = immediate ? 0.002 : 0.03;
+        ks.dry.gain.setTargetAtTime(on ? 0 : 1, now, tc);
+        ks.wet.gain.setTargetAtTime(on ? 1 : 0, now, tc);
+        ks.on = on;
+        if (key !== 0 && this.fx && this.fx.workletFailed) showToast('このブラウザではKEYを使えません');
+      }
+
       // ---- FX PAD（XYパッドのエフェクト） --------------------------------------
-      /** 音の通り道を作る：BGM（全体のときはSEも）を「ゲート → フィルター → エコー → テープ」の順に通してマスターへ。
-       *  かかっていないエフェクトは素通りするので、何もしなければ元の音のまま。HOLDで固定したものは重ねてかけられる */
+      /** 音の通り道を作る。BGM用とSE用に同じ並び「ゲート → フィルター → ピッチ → エコー → テープ」を1本ずつ持ち、
+       *  FXごとに BGM／ALL／SE のどちらの通り道で効かせるかを切り替える。かかっていない段は素通り */
       buildFx() {
         const ctx = this.ctx;
         const gain = (v) => { const n = ctx.createGain(); n.gain.value = v; return n; };
@@ -3885,13 +4345,6 @@ registerProcessor('livepad-tape', LivepadTape);
           n.Q.value = q;
           return n;
         };
-        const fx = {
-          active: { gate: null, filter: null, echo: null, tape: null },   // かかっているエフェクトと、その指の位置
-          resetTimers: {},
-          echoMuted: false,
-          tapeFailed: false,
-          seDirect: gain(1), seSend: gain(0)
-        };
         // 各段：入口 → 素通り（dry）＋ 加工（wet）→ 出口
         const stage = () => {
           const st = { in: gain(1), dry: gain(1), wet: gain(0), out: gain(1) };
@@ -3900,153 +4353,189 @@ registerProcessor('livepad-tape', LivepadTape);
           st.wet.connect(st.out);
           return st;
         };
+        const makeChain = () => {
+          // ゲート（四角い波で音量を細かく上げ下げする。角を少し丸めてプチプチ音を防ぐ）
+          const gate = stage();
+          gate.vca = gain(1);
+          gate.lfoSmooth = biquad('lowpass', 180, -3);
+          gate.lfoAmt = gain(0);
+          gate.lfo = null;
+          gate.in.connect(gate.vca); gate.vca.connect(gate.wet);
+          gate.lfoSmooth.connect(gate.lfoAmt); gate.lfoAmt.connect(gate.vca.gain);
+          // フィルター（左半分：ローパスでこもらせる／右半分：ハイパスで薄くする）
+          const filter = stage();
+          filter.lpf = biquad('lowpass', 20000, -3);
+          filter.hpf = biquad('highpass', 10, -3);
+          filter.comp = gain(1);   // クセ（共振）を強くしたときに音が大きくなりすぎないように下げる
+          filter.in.connect(filter.lpf); filter.lpf.connect(filter.hpf);
+          filter.hpf.connect(filter.comp); filter.comp.connect(filter.wet);
+          // ピッチ（AudioWorkletで音程だけを変える。読み込みが終わったらつなぐ）
+          const pitch = stage();
+          pitch.node = null;
+          // エコー（元の音に足す。繰り返すたびに少しこもらせる。指を離しても残響は自然に消える）
+          const echo = stage();
+          echo.feed = gain(0);
+          echo.delay = ctx.createDelay(2.0);
+          echo.delay.delayTime.value = 0.25;
+          echo.tone = biquad('lowpass', 4200, -3);
+          echo.fb = gain(0);
+          echo.in.connect(echo.feed); echo.feed.connect(echo.delay);
+          echo.delay.connect(echo.tone); echo.tone.connect(echo.fb); echo.fb.connect(echo.delay);
+          echo.delay.connect(echo.wet);
+          echo.wet.gain.value = state.fx.depth;
+          // テープストップ（AudioWorkletで読み出す速さを落とす。最後の段なのでエコーも止まる）
+          const tape = stage();
+          tape.hp = biquad('highpass', 25, -3);   // 止まりかけの低いうなりを消す
+          tape.node = null;
+          tape.hp.connect(tape.wet);
 
-        // ゲート（四角い波で音量を細かく上げ下げする。角を少し丸めてプチプチ音を防ぐ）
-        const gate = stage();
-        gate.vca = gain(1);
-        gate.lfoSmooth = biquad('lowpass', 180, -3);
-        gate.lfoAmt = gain(0);
-        gate.lfo = null;
-        gate.in.connect(gate.vca); gate.vca.connect(gate.wet);
-        gate.lfoSmooth.connect(gate.lfoAmt); gate.lfoAmt.connect(gate.vca.gain);
+          gate.out.connect(filter.in);
+          filter.out.connect(pitch.in);
+          pitch.out.connect(echo.in);
+          echo.out.connect(tape.in);
+          return { in: gate.in, out: tape.out, stages: { gate, filter, pitch, echo, tape } };
+        };
 
-        // フィルター（左半分：ローパスでこもらせる／右半分：ハイパスで薄くする）
-        const filter = stage();
-        filter.lpf = biquad('lowpass', 20000, -3);
-        filter.hpf = biquad('highpass', 10, -3);
-        filter.comp = gain(1);   // クセ（共振）を強くしたときに音が大きくなりすぎないように下げる
-        filter.in.connect(filter.lpf); filter.lpf.connect(filter.hpf);
-        filter.hpf.connect(filter.comp); filter.comp.connect(filter.wet);
-
-        // エコー（元の音に足す。繰り返すたびに少しこもらせる。指を離しても残響は自然に消える）
-        const echo = stage();
-        echo.feed = gain(0);
-        echo.delay = ctx.createDelay(2.0);
-        echo.delay.delayTime.value = 0.25;
-        echo.tone = biquad('lowpass', 4200, -3);
-        echo.fb = gain(0);
-        echo.in.connect(echo.feed); echo.feed.connect(echo.delay);
-        echo.delay.connect(echo.tone); echo.tone.connect(echo.fb); echo.fb.connect(echo.delay);
-        echo.delay.connect(echo.wet);
-        echo.wet.gain.value = state.fx.depth;
-
-        // テープストップ（AudioWorkletで読み出す速さを落とす。読み込みが終わったらつなぐ。最後の段なのでエコーも止まる）
-        const tape = stage();
-        tape.hp = biquad('highpass', 25, -3);   // 止まりかけの低いうなりを消す
-        tape.node = null;
-        tape.hp.connect(tape.wet);
-
-        fx.stages = { gate, filter, echo, tape };
-        gate.out.connect(filter.in);
-        filter.out.connect(echo.in);
-        echo.out.connect(tape.in);
-        tape.out.connect(this.mainGain);
-        fx.chainIn = gate.in;
-
-        // BGMはいつもこの通り道を通る。SEは「全体」のときだけ
-        this.bgmVolumeGain.connect(fx.chainIn);
-        this.seMasterGain.connect(fx.seDirect); fx.seDirect.connect(this.mainGain);
-        this.seMasterGain.connect(fx.seSend); fx.seSend.connect(fx.chainIn);
-
+        const fx = {
+          active: { gate: null, filter: null, pitch: null, echo: null, tape: null },   // かかっているFXと、その指の位置
+          resetTimers: {},
+          echoMuted: false,
+          workletFailed: false,
+          chains: { bgm: makeChain(), se: makeChain() }
+        };
+        this.bgmVolumeGain.connect(fx.chains.bgm.in);
+        fx.chains.bgm.out.connect(this.mainGain);
+        this.seMasterGain.connect(fx.chains.se.in);
+        fx.chains.se.out.connect(this.mainGain);
         this.fx = fx;
         this.fxApplyRouting(0);
-        this.loadTapeWorklet();
+        this.loadFxWorklets();
       }
 
-      async loadTapeWorklet() {
+      /** そのFXを、その通り道（'bgm'／'se'）で効かせるか */
+      fxIncludes(eff, chain) {
+        const t = state.fx.targets[eff];
+        return t === 'all' || t === chain;
+      }
+
+      fxEachStage(eff, fn) {
+        ['bgm', 'se'].forEach(c => fn(this.fx.chains[c].stages[eff], c));
+      }
+
+      async loadFxWorklets() {
         const ctx = this.ctx;
-        const tape = this.fx.stages.tape;
+        const fx = this.fx;
         if (!ctx.audioWorklet || typeof AudioWorkletNode === 'undefined') {
-          this.fx.tapeFailed = true;
+          fx.workletFailed = true;
           return;
         }
         const urls = [];
-        try { urls.push(URL.createObjectURL(new Blob([TAPE_WORKLET_SRC], { type: 'text/javascript' }))); } catch (e) { /* Blob が使えない環境 */ }
-        urls.push('data:text/javascript;charset=utf-8,' + encodeURIComponent(TAPE_WORKLET_SRC));
+        try { urls.push(URL.createObjectURL(new Blob([FX_WORKLET_SRC], { type: 'text/javascript' }))); } catch (e) { /* Blob が使えない環境 */ }
+        urls.push('data:text/javascript;charset=utf-8,' + encodeURIComponent(FX_WORKLET_SRC));
         for (const url of urls) {
           try {
             await ctx.audioWorklet.addModule(url);
-            const node = new AudioWorkletNode(ctx, 'livepad-tape', {
+            const opts = {
               numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2],
               channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'speakers'
+            };
+            ['bgm', 'se'].forEach(c => {
+              const { tape, pitch } = fx.chains[c].stages;
+              tape.node = new AudioWorkletNode(ctx, 'livepad-tape', opts);
+              tape.in.connect(tape.node);
+              tape.node.connect(tape.hp);
+              pitch.node = new AudioWorkletNode(ctx, 'livepad-pitch', opts);
+              pitch.in.connect(pitch.node);
+              pitch.node.connect(pitch.wet);
             });
-            tape.in.connect(node);
-            node.connect(tape.hp);
-            tape.node = node;
+            const ks = this.keyStage;
+            ks.node = new AudioWorkletNode(ctx, 'livepad-pitch', opts);
+            ks.in.connect(ks.node);
+            ks.node.connect(ks.wet);
+            this.applyKey(true);
+            this.fxApplyRouting(0.01);
             return;
           } catch (e) {
-            console.warn('テープストップの読み込みに失敗:', e);
+            console.warn('エフェクト（Worklet）の読み込みに失敗:', e);
           } finally {
             if (url.startsWith('blob:')) URL.revokeObjectURL(url);
           }
         }
-        this.fx.tapeFailed = true;
+        fx.workletFailed = true;
       }
 
-      /** かかっているエフェクト・BGM／全体・かかり具合（FX DEPTH）に合わせて、各段の素通りと加工の量を決める */
+      /** かかっているFX・BGM／ALL／SE・かかり具合（FX DEPTH）に合わせて、各段の素通りと加工の量を決める */
       fxApplyRouting(tc = 0.015) {
         const fx = this.fx;
         if (!fx) return;
         const now = this.ctx.currentTime;
         const set = (param, v) => (tc > 0 ? param.setTargetAtTime(v, now, tc) : param.setValueAtTime(v, now));
         const depth = state.fx.depth;
-        const withSe = state.fx.target === 'all';
-        set(fx.seDirect.gain, withSe ? 0 : 1);
-        set(fx.seSend.gain, withSe ? 1 : 0);
-        FX_ORDER.forEach(k => {
-          const st = fx.stages[k];
-          const on = !!fx.active[k];
-          if (k === 'echo') {
-            // エコーは元の音に足す（素通りはいつも1）。入口だけ開け閉めし、残響は出口から自然に消えていく
-            set(st.feed.gain, on ? 1 : 0);
-            set(st.wet.gain, fx.echoMuted ? 0 : depth);
-          } else {
-            // フィルター・ゲート・テープは元の音と入れ替える
-            set(st.dry.gain, on ? 1 - depth : 1);
-            set(st.wet.gain, on ? depth : 0);
-          }
+        ['bgm', 'se'].forEach(c => {
+          const stages = fx.chains[c].stages;
+          FX_ORDER.forEach(k => {
+            const st = stages[k];
+            const a = fx.active[k];
+            let on = !!a && this.fxIncludes(k, c);
+            if ((k === 'tape' || k === 'pitch') && !st.node) on = false;
+            if (k === 'pitch' && a && a.params && a.params.flat) on = false;   // 音程0のときは素通り
+            if (k === 'echo') {
+              // エコーは元の音に足す（素通りはいつも1）。入口だけ開け閉めし、残響は出口から自然に消えていく
+              set(st.feed.gain, on ? 1 : 0);
+              set(st.wet.gain, fx.echoMuted ? 0 : depth);
+            } else {
+              // ほかは元の音と入れ替える
+              set(st.dry.gain, on ? 1 - depth : 1);
+              set(st.wet.gain, on ? depth : 0);
+            }
+          });
         });
       }
 
-      /** そのエフェクトの指の位置から値を計算して音に反映 */
+      /** そのFXの指の位置から値を計算して音に反映（BGM用・SE用の両方に同じ値を入れておく） */
       fxUpdate(eff, starting = false) {
         const fx = this.fx;
         const a = fx && fx.active[eff];
         if (!a) return null;
         const now = this.ctx.currentTime;
         const set = (param, v, tc) => param.setTargetAtTime(v, now, tc);
+        const wasFlat = !!(a.params && a.params.flat);
         const p = computeFxParams(eff, a.x, a.y, state.fx.bpm);
         a.params = p;
-        const st = fx.stages[eff];
-        if (eff === 'filter') {
-          set(st.lpf.frequency, Math.min(p.lpf, this.ctx.sampleRate * 0.45), 0.012);
-          set(st.hpf.frequency, p.hpf, 0.012);
-          set(st.lpf.Q, p.lpfQ, 0.03);
-          set(st.hpf.Q, p.hpfQ, 0.03);
-          set(st.comp.gain, p.comp, 0.03);
-        } else if (eff === 'echo') {
-          set(st.delay.delayTime, p.time, starting ? 0.002 : 0.06);
-          set(st.fb.gain, p.feedback, 0.03);
-        } else if (eff === 'gate') {
-          if (!st.lfo) {
-            const o = this.ctx.createOscillator();
-            o.type = 'square';
-            o.frequency.value = p.rate;
-            o.connect(st.lfoSmooth);
-            o.start();
-            st.lfo = o;
-          } else {
-            set(st.lfo.frequency, p.rate, 0.01);
+        this.fxEachStage(eff, (st) => {
+          if (eff === 'filter') {
+            set(st.lpf.frequency, Math.min(p.lpf, this.ctx.sampleRate * 0.45), 0.012);
+            set(st.hpf.frequency, p.hpf, 0.012);
+            set(st.lpf.Q, p.lpfQ, 0.03);
+            set(st.hpf.Q, p.hpfQ, 0.03);
+            set(st.comp.gain, p.comp, 0.03);
+          } else if (eff === 'echo') {
+            set(st.delay.delayTime, p.time, starting ? 0.002 : 0.06);
+            set(st.fb.gain, p.feedback, 0.03);
+          } else if (eff === 'gate') {
+            if (!st.lfo) {
+              const o = this.ctx.createOscillator();
+              o.type = 'square';
+              o.frequency.value = p.rate;
+              o.connect(st.lfoSmooth);
+              o.start(now);   // BGM用とSE用で同じ瞬間に始めて、刻みをそろえる
+              st.lfo = o;
+            } else {
+              set(st.lfo.frequency, p.rate, 0.01);
+            }
+            set(st.lfoAmt.gain, p.depth / 2, 0.01);
+            set(st.vca.gain, 1 - p.depth / 2, 0.01);
+          } else if (eff === 'tape') {
+            if (st.node) {
+              st.node.port.postMessage(starting
+                ? { reset: true, target: p.speed, glide: p.glide }
+                : { target: p.speed, glide: p.glide });
+            }
+          } else if (eff === 'pitch') {
+            if (st.node) st.node.port.postMessage({ ratio: p.ratio, glide: p.glide, reset: starting });
           }
-          set(st.lfoAmt.gain, p.depth / 2, 0.01);
-          set(st.vca.gain, 1 - p.depth / 2, 0.01);
-        } else if (eff === 'tape') {
-          if (st.node) {
-            st.node.port.postMessage(starting
-              ? { reset: true, target: p.speed, glide: p.glide }
-              : { target: p.speed, glide: p.glide });
-          }
-        }
+        });
+        if (eff === 'pitch' && wasFlat !== !!p.flat) this.fxApplyRouting(0.02);
         return p;
       }
 
@@ -4055,7 +4544,7 @@ registerProcessor('livepad-tape', LivepadTape);
         FX_ORDER.forEach(k => this.fxUpdate(k));
       }
 
-      /** 指を置いた：そのエフェクトをかけ始める（すでにかかっていれば位置を動かす） */
+      /** 指を置いた：そのFXをかけ始める（すでにかかっていれば位置を動かす） */
       fxEngage(eff, x, y) {
         this.ensureInit();
         const fx = this.fx;
@@ -4065,9 +4554,10 @@ registerProcessor('livepad-tape', LivepadTape);
           fx.resetTimers[eff] = null;
         }
         const was = fx.active[eff];
-        fx.active[eff] = { x, y, engagedAt: was ? was.engagedAt : performance.now(), params: null };
+        fx.active[eff] = { x, y, engagedAt: performance.now(), params: null };
+        if (was) fx.active[eff].engagedAt = was.engagedAt;
         if (eff === 'echo') fx.echoMuted = false;
-        if (eff === 'tape' && fx.tapeFailed) showToast('このブラウザではTAPE STOPを使えません');
+        if ((eff === 'tape' || eff === 'pitch') && fx.workletFailed) showToast(`このブラウザでは${FX_INFO[eff].label}を使えません`);
         this.fxUpdate(eff, !was);
         this.fxApplyRouting(0.008);
       }
@@ -4081,7 +4571,7 @@ registerProcessor('livepad-tape', LivepadTape);
         this.fxUpdate(eff);
       }
 
-      /** そのエフェクトを外す（エコーの残響はそのまま自然に消える） */
+      /** そのFXを外す（エコーの残響はそのまま自然に消える） */
       fxRelease(eff) {
         const fx = this.fx;
         if (!fx || !fx.active[eff]) return;
@@ -4099,19 +4589,20 @@ registerProcessor('livepad-tape', LivepadTape);
         FX_ORDER.forEach(k => { if (k !== except) this.fxRelease(k); });
       }
 
-      /** エフェクトを元の状態に戻す（ゲートの波を止める・テープの位置を戻す） */
+      /** FXを元の状態に戻す（ゲートの波を止める・テープの位置を戻す） */
       fxResetUnit(eff) {
-        const st = this.fx.stages[eff];
         const now = this.ctx.currentTime;
-        if (eff === 'gate' && st.lfo) {
-          try { st.lfo.stop(); } catch (e) { /* 停止済み */ }
-          st.lfo.disconnect();
-          st.lfo = null;
-          st.lfoAmt.gain.setTargetAtTime(0, now, 0.01);
-          st.vca.gain.setTargetAtTime(1, now, 0.01);
-        } else if (eff === 'tape' && st.node) {
-          st.node.port.postMessage({ reset: true });
-        }
+        this.fxEachStage(eff, (st) => {
+          if (eff === 'gate' && st.lfo) {
+            try { st.lfo.stop(); } catch (e) { /* 停止済み */ }
+            st.lfo.disconnect();
+            st.lfo = null;
+            st.lfoAmt.gain.setTargetAtTime(0, now, 0.01);
+            st.vca.gain.setTargetAtTime(1, now, 0.01);
+          } else if (eff === 'tape' && st.node) {
+            st.node.port.postMessage({ reset: true });
+          }
+        });
       }
 
       /** PANIC STOP：全部外し、エコーの残響も止める */
@@ -4121,7 +4612,7 @@ registerProcessor('livepad-tape', LivepadTape);
         fx.echoMuted = true;
         this.fxReleaseAll();
         this.fxApplyRouting(0.03);
-        fx.stages.echo.fb.gain.setTargetAtTime(0, this.ctx.currentTime, 0.02);
+        this.fxEachStage('echo', (st) => st.fb.gain.setTargetAtTime(0, this.ctx.currentTime, 0.02));
       }
 
       async getDecodedBuffer(fileId) {
@@ -4225,11 +4716,13 @@ registerProcessor('livepad-tape', LivepadTape);
             const cur = this.activeVoices.get(pad.id);
             if (!cur || !cur.includes(voice)) return;
 
-            voice.durationMs = audioBuffer.duration * 1000;
+            const rate = Math.pow(2, (pad.pitch || 0) / 12);   // パッドのピッチ（再生速度ごと変える）
+            voice.durationMs = (audioBuffer.duration * 1000) / rate;
             voice.startTime = performance.now();
 
             const src = this.ctx.createBufferSource();
             src.buffer = audioBuffer;
+            src.playbackRate.value = rate;
             src.loop = isLooping;
             src.connect(voiceGain);
             src.start(0);
@@ -4262,7 +4755,11 @@ registerProcessor('livepad-tape', LivepadTape);
 
         const fireSynth = () => {
           if (!this.ctx) return;
-          nodes.push(...this.synthesizeSE(pad.synthType || 'pon', voiceGain, pad.duration || 0.8));
+          const made = this.synthesizeSE(pad.synthType || 'pon', voiceGain, pad.duration || 0.8);
+          // パッドのピッチ：発振器・ノイズ・フィルターの高さをまとめてずらす（長さは変わらない）
+          const cents = (pad.pitch || 0) * 100;
+          if (cents) made.forEach(n => { if (n.detune) n.detune.value = cents; });
+          nodes.push(...made);
         };
 
         fireSynth();
@@ -4524,6 +5021,7 @@ registerProcessor('livepad-tape', LivepadTape);
             const src = this.ctx.createBufferSource();
             src.buffer = buf;
             src.loop = state.bgm.repeat === 'one';
+            src.playbackRate.value = this.getTempoRate();   // PITCH DECK の TEMPO
             src.connect(deckGain);
             src.start(0, offset);
             this.currentBgmSource = src;
@@ -5217,7 +5715,7 @@ registerProcessor('livepad-tape', LivepadTape);
           </div>
 
           <div class="relative z-10 flex items-center justify-between text-[9px] font-mono-num text-slate-400">
-            <span class="flex items-center"><span class="kbd" title="キーボードの ${KEY_LABELS[padIndex]} キーで鳴らせます">${KEY_LABELS[padIndex]}</span><span class="pad-vol whitespace-nowrap">${isEmpty ? '' : `VOL ${pad.volume}%`}</span></span>
+            <span class="flex items-center"><span class="kbd" title="キーボードの ${KEY_LABELS[padIndex]} キーで鳴らせます">${KEY_LABELS[padIndex]}</span><span class="pad-vol whitespace-nowrap">${isEmpty ? '' : `VOL ${pad.volume}%${pad.pitch ? ` P${fmtSemitone(pad.pitch)}` : ''}`}</span></span>
             <span class="pad-status-dot flex items-center gap-1 ${isPlaying ? 'text-white font-bold' : 'opacity-40'}">
               ${!isEmpty ? `<span class="w-1.5 h-1.5 rounded-full" style="background-color: ${isPlaying ? palette.hex : '#64748b'};"></span>${isPlaying ? 'PLAY' : 'IDLE'}` : ''}
             </span>
@@ -5314,6 +5812,7 @@ registerProcessor('livepad-tape', LivepadTape);
         retrigger: pad.retrigger || 'OVERLAP',
         color: pad.color,
         volume: pad.volume,
+        pitch: pad.pitch || 0,
         sourceType: pad.sourceType,
         synthType: pad.synthType || pad.defaultSynth || 'pon',
         fileId: pad.fileId,
@@ -5324,6 +5823,8 @@ registerProcessor('livepad-tape', LivepadTape);
       document.getElementById('editPadName').value = state.editDraft.name;
       document.getElementById('editPadVol').value = state.editDraft.volume;
       document.getElementById('editPadVolVal').textContent = `${state.editDraft.volume}%`;
+      document.getElementById('editPadPitch').value = state.editDraft.pitch;
+      document.getElementById('editPadPitchVal').textContent = fmtSemitone(state.editDraft.pitch);
       document.getElementById('inputPadAudioFile').value = '';
 
       updateEditModalUI();
@@ -5469,14 +5970,14 @@ registerProcessor('livepad-tape', LivepadTape);
     // =========================================================================
     // パネル（BGM DECK / SE DECK / MIXER）の浮遊・移動・大きさ変更・元に戻す
     // =========================================================================
-    const PANEL_IDS = ['bgm', 'se', 'mixer', 'eq', 'fx'];
-    const PANEL_NAMES = { bgm: 'BGM DECK', se: 'SE DECK', mixer: 'MIXER', eq: 'EQ DECK', fx: 'FX PAD' };
-    const PANEL_MIN = { bgm: { w: 240, h: 280 }, se: { w: 360, h: 240 }, mixer: { w: 300, h: 250 }, eq: { w: 260, h: 260 }, fx: { w: 360, h: 240 } };
+    const PANEL_IDS = ['bgm', 'se', 'mixer', 'eq', 'fx', 'pitch'];
+    const PANEL_NAMES = { bgm: 'BGM DECK', se: 'SE DECK', mixer: 'MIXER', eq: 'EQ DECK', fx: 'FX PAD', pitch: 'PITCH DECK' };
+    const PANEL_MIN = { bgm: { w: 240, h: 280 }, se: { w: 360, h: 240 }, mixer: { w: 300, h: 250 }, eq: { w: 260, h: 260 }, fx: { w: 440, h: 240 }, pitch: { w: 280, h: 140 } };
     const PIN_SVG = `<svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 17v5"></path><path d="M9 4h6l-1 6 3 4H7l3-4z"></path></svg>`;
     let panelZ = 1;
 
     function createDefaultPanels() {
-      return { bgm: { floating: false }, se: { floating: false }, mixer: { floating: false }, eq: { floating: false }, fx: { floating: false } };
+      return { bgm: { floating: false }, se: { floating: false }, mixer: { floating: false }, eq: { floating: false }, fx: { floating: false }, pitch: { floating: false } };
     }
 
     function pointInRect(x, y, r) {
@@ -5529,10 +6030,11 @@ registerProcessor('livepad-tape', LivepadTape);
       bringPanelToFront(id);
     }
 
-    function dockPanel(id) {
+    /** 元の位置に戻す。keepState=true のときは見た目だけ戻し、浮遊の設定は残す（狭い画面で一時的に戻すとき） */
+    function dockPanel(id, keepState = false) {
       const p = $(`panel-${id}`);
       const slot = $(`slot-${id}`);
-      state.panels[id].floating = false;
+      if (!keepState) state.panels[id].floating = false;
       p.classList.remove('is-floating', 'is-moving');
       ['left', 'top', 'width', 'height', 'zIndex'].forEach(k => { p.style[k] = ''; });
       slot.insertBefore(p, slot.firstChild);
@@ -5551,7 +6053,7 @@ registerProcessor('livepad-tape', LivepadTape);
 
       // タイトル部分をドラッグ：少し動かすと浮遊 → 好きな位置へ。元の場所で離すと戻る
       head.addEventListener('pointerdown', (e) => {
-        if (state.perfLock) return;
+        if (state.perfLock || layoutUi.compact) return;   // 狭い画面ではパネルを浮かせない
         if (e.pointerType === 'mouse' && e.button !== 0) return;
         if (e.target.closest('button, input, select, label, a')) return;
         e.preventDefault();
@@ -5649,18 +6151,91 @@ registerProcessor('livepad-tape', LivepadTape);
       });
     }
 
+    // ---- 画面の大きさに合わせたレイアウト ----------------------------------------
+    //   広い画面：左＝BGM・EQ・PITCH／右＝SEの下に FX PAD と MIXER（右の列が狭ければ MIXER は左の列）
+    //   狭い画面（iPhone横向き・iPhone 4×2）：左右の列それぞれタブで1つずつ大きく表示。浮遊はしない
+    const layoutUi = { compact: false, ready: false, leftTab: 'bgm', rightTab: 'se' };
+
+    function isCompactLayout() {
+      return state.layoutMode === 'iphone' || window.innerHeight < 600 || window.innerWidth < 700;
+    }
+
+    function placeMixerSlot() {
+      const slot = $('slot-mixer');
+      const inRow = !layoutUi.compact && $('rightCol').clientWidth >= 760;
+      const parent = inRow ? $('deckBottomRow') : $('leftCol');
+      if (slot.parentElement !== parent) parent.appendChild(slot);
+      slot.classList.toggle('in-row', inRow);
+    }
+
+    function applyColTabs() {
+      ['bgm', 'eq', 'pitch', 'mixer'].forEach(id => {
+        $(`slot-${id}`).classList.toggle('is-shown', layoutUi.compact && layoutUi.leftTab === id);
+      });
+      ['se', 'fx'].forEach(id => {
+        $(`slot-${id}`).classList.toggle('is-shown', layoutUi.compact && layoutUi.rightTab === id);
+      });
+      document.querySelectorAll('[data-col-tab]').forEach(btn => {
+        const id = btn.dataset.colTab;
+        const on = id === layoutUi.leftTab || id === layoutUi.rightTab;
+        btn.classList.toggle('is-active', on);
+        btn.setAttribute('aria-selected', String(on));
+      });
+      fxUi.dirty = true;
+      drawEqCurve();
+    }
+
+    function applyResponsiveLayout() {
+      if (!layoutUi.ready) return;
+      const compact = isCompactLayout();
+      const changed = compact !== layoutUi.compact;
+      layoutUi.compact = compact;
+      $('deviceShell').classList.toggle('is-compact', compact);
+      if (changed) {
+        if (compact) {
+          // 浮いているパネルは見た目だけ元の位置へ（設定は残すので、広い画面に戻ると元の位置に浮く）
+          PANEL_IDS.forEach(id => { if ($(`panel-${id}`).parentElement === $('floatLayer')) dockPanel(id, true); });
+        } else {
+          PANEL_IDS.forEach(id => {
+            const st = state.panels[id];
+            if (st.floating && $(`panel-${id}`).parentElement !== $('floatLayer')) floatPanel(id, { x: st.x, y: st.y, w: st.w, h: st.h });
+          });
+        }
+      }
+      placeMixerSlot();
+      applyColTabs();
+    }
+
     function initPanels() {
       document.querySelectorAll('.panel-pin').forEach(btn => { btn.innerHTML = PIN_SVG; });
       PANEL_IDS.forEach(bindPanel);
-      // 保存されていた浮遊位置を復元
+      // 保存されていた浮遊位置を復元（狭い画面では浮かせない）
+      layoutUi.compact = isCompactLayout();
       PANEL_IDS.forEach(id => {
         const st = state.panels[id];
-        if (st && st.floating) floatPanel(id, { x: st.x, y: st.y, w: st.w, h: st.h });
+        if (st && st.floating && !layoutUi.compact) floatPanel(id, { x: st.x, y: st.y, w: st.w, h: st.h });
       });
-      // ウィンドウの大きさが変わったら、画面外に出たパネルを戻す
+      layoutUi.ready = true;
+      applyResponsiveLayout();
+      // ウィンドウの大きさ・向きが変わったら、レイアウトを選び直し、画面外に出たパネルを戻す
+      let resizeTimer = null;
       window.addEventListener('resize', () => {
-        PANEL_IDS.forEach(id => { if (state.panels[id].floating) applyPanelGeometry(id); });
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          applyResponsiveLayout();
+          PANEL_IDS.forEach(id => { if (state.panels[id].floating && !layoutUi.compact) applyPanelGeometry(id); });
+        }, 80);
       });
+      // 狭い画面のタブ
+      document.querySelectorAll('[data-col-tab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.colTab;
+          if (id === 'se' || id === 'fx') layoutUi.rightTab = id;
+          else layoutUi.leftTab = id;
+          applyColTabs();
+        });
+      });
+      $('btnPanicMini').addEventListener('click', () => $('btnPanicStop').click());
     }
 
     function dockAllPanels() {
@@ -5689,7 +6264,7 @@ registerProcessor('livepad-tape', LivepadTape);
       if (state.bgm.isPlaying) {
         const track = state.bgmList[state.bgm.trackIndex];
         const dur = track ? (track.durationSec || 0) : 0;
-        state.bgm.elapsedSec += dt;
+        state.bgm.elapsedSec += dt * (1 + state.pitch.tempo / 100);   // TEMPOで速さを変えているぶんも数える
         if (dur > 0 && state.bgm.elapsedSec >= dur) {
           // 1曲リピートは src.loop で自動的に頭へ戻る。それ以外は再生終了（onended）で次へ進む
           state.bgm.elapsedSec = state.bgm.repeat === 'one' ? 0 : dur;
@@ -5751,6 +6326,8 @@ registerProcessor('livepad-tape', LivepadTape);
         btnIphone.className = 'px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-bold transition-all bg-accent-500/20 text-accent-300 border border-accent-500/40';
         btnIpad.className = 'px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-bold transition-all text-slate-400 hover:text-slate-200 border border-transparent';
       }
+      applyResponsiveLayout();
+      setTimeout(applyResponsiveLayout, 320);   // 枠の大きさが変わるアニメーションの後にもう一度
     }
 
     /** MIXERの縦フェーダーを作成（保存済みの音量で初期化。ダブルクリックで戻る初期値つき） */
@@ -5913,6 +6490,9 @@ registerProcessor('livepad-tape', LivepadTape);
       renderFxPad();
       audioEngine.fxApplyRouting();
       audioEngine.fxUpdateAll();
+      renderPitchDeck();
+      audioEngine.applyTempo();
+      audioEngine.applyKey();
       renderBgmList();
       renderBankTabs();
       renderPads();
@@ -6192,6 +6772,15 @@ registerProcessor('livepad-tape', LivepadTape);
         document.getElementById('editPadVolVal').textContent = `${e.target.value}%`;
       });
 
+      const setDraftPitch = (v) => {
+        if (!state.editDraft) return;
+        state.editDraft.pitch = Math.max(-12, Math.min(12, Math.round(Number(v) || 0)));
+        document.getElementById('editPadPitch').value = state.editDraft.pitch;
+        document.getElementById('editPadPitchVal').textContent = fmtSemitone(state.editDraft.pitch);
+      };
+      document.getElementById('editPadPitch').addEventListener('input', (e) => setDraftPitch(e.target.value));
+      document.getElementById('btnPadPitchReset').addEventListener('click', () => setDraftPitch(0));
+
       document.getElementById('btnTestPadSound').addEventListener('click', () => {
         if (!state.editDraft || state.editDraft.sourceType === 'empty') {
           showToast('音源が設定されていません');
@@ -6202,6 +6791,9 @@ registerProcessor('livepad-tape', LivepadTape);
           const url = URL.createObjectURL(state.editDraft.pendingFile);
           const a = new Audio(url);
           a.volume = Math.min(1, state.editDraft.volume / 100);
+          a.preservesPitch = false;
+          a.webkitPreservesPitch = false;
+          a.playbackRate = Math.pow(2, (state.editDraft.pitch || 0) / 12);
           a.play();
           a.onended = () => URL.revokeObjectURL(url);
         } else {
@@ -6233,6 +6825,7 @@ registerProcessor('livepad-tape', LivepadTape);
         pad.retrigger = d.retrigger;
         pad.color = d.color;
         pad.volume = d.volume;
+        pad.pitch = d.pitch || 0;
         const rawName = document.getElementById('editPadName').value.trim();
         pad.name = rawName || (pad.sourceType === 'empty' ? '空きパッド' : 'サウンド');
 
@@ -6301,6 +6894,10 @@ registerProcessor('livepad-tape', LivepadTape);
         state.duckAmount = 0.8;
         state.eq = createDefaultEq();
         state.fx = createDefaultFx();
+        state.pitch = normalizePitch(null);
+        audioEngine.applyTempo();
+        audioEngine.applyKey();
+        renderPitchDeck();
         audioEngine.applyManualDuck();
         audioEngine.applyEq();
         audioEngine.fxApplyRouting();
@@ -6451,6 +7048,7 @@ registerProcessor('livepad-tape', LivepadTape);
         if (typeof saved.duckAmount === 'number') state.duckAmount = saved.duckAmount;
         if (saved.eq) state.eq = normalizeEq(saved.eq);
         if (saved.fx) state.fx = normalizeFx(saved.fx);
+        if (saved.pitch) state.pitch = normalizePitch(saved.pitch);
         if (saved.panels) {
           state.panels = createDefaultPanels();
           PANEL_IDS.forEach(id => { if (saved.panels[id]) state.panels[id] = { ...saved.panels[id] }; });
@@ -6470,6 +7068,7 @@ registerProcessor('livepad-tape', LivepadTape);
       updateDuckAmountUI();
       initEqDeck();
       initFxPad();
+      initPitchDeck();
       initHelp();
       initPanels();
       bindEvents();
