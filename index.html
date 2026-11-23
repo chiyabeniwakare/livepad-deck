@@ -624,6 +624,79 @@
       cursor: not-allowed;
     }
 
+    /* ---- EQ DECK（BGM専用イコライザー） ---- */
+    .eq-toggle {
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .05em;
+      transition: all .12s ease;
+    }
+    .eq-toggle.is-on { color: rgb(var(--ac-300)); border-color: rgb(var(--ac-500) / .5); background: rgb(var(--ac-500) / .15); }
+    .eq-toggle.is-off { color: #64748b; border-color: #2a3242; background: #0d1016; }
+
+    .eq-pad {
+      position: relative;
+      height: 44px;
+      padding: 5px 2px 2px;
+      border-radius: 10px;
+      border: 1px solid #2a3242;
+      background: linear-gradient(180deg, #1b202b 0%, #141821 100%);
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 2px 4px rgba(0,0,0,.35);
+      transition: transform .06s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease, color .12s ease, opacity .12s ease;
+      touch-action: manipulation;
+      cursor: pointer;
+    }
+    .eq-pad:hover { border-color: #3a4458; color: #cbd5e1; }
+    .eq-pad:active { transform: scale(.96); }
+    .eq-pad-led {
+      position: absolute;
+      top: 4px;
+      left: 50%;
+      width: 16px;
+      height: 3px;
+      transform: translateX(-50%);
+      border-radius: 2px;
+      background: var(--eq-color);
+      opacity: .35;
+      transition: opacity .12s ease, box-shadow .12s ease;
+    }
+    .eq-pad-name { font-size: 10px; font-weight: 800; line-height: 1.2; }
+    .eq-pad.is-active {
+      color: #fff;
+      border-color: var(--eq-color);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--eq-color) 30%, #1b202b) 0%, color-mix(in srgb, var(--eq-color) 12%, #141821) 100%);
+      box-shadow: 0 0 14px color-mix(in srgb, var(--eq-color) 45%, transparent), inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    .eq-pad.is-active .eq-pad-led { opacity: 1; box-shadow: 0 0 8px var(--eq-color); }
+    #panel-eq.is-bypassed .eq-pad.is-active { opacity: .45; box-shadow: none; }
+
+    .eq-curve-box {
+      position: relative;
+      height: 46px;
+      flex-shrink: 0;
+      border-radius: 8px;
+      background: #0b0d11;
+      border: 1px solid #222836;
+      overflow: hidden;
+    }
+    #panel-eq.is-floating .eq-curve-box { flex: 1; min-height: 46px; }
+    .eq-curve-box canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+    .eq-knob-wrap { display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .eq-knob { width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%; touch-action: none; cursor: ns-resize; }
+    .eq-knob:focus-visible { outline: 2px solid rgb(var(--ac-400)); outline-offset: 2px; }
+    .eq-knob svg { display: block; width: 100%; height: 100%; }
+    .eq-knob.is-dragging .knob-body { fill: #283041; }
+
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
@@ -807,6 +880,66 @@
           </section>
           <div class="slot-placeholder" data-placeholder="bgm">
             <span class="placeholder-title">BGM DECK はフロート中</span>
+            <span class="placeholder-sub">ここへドラッグ、または 📌 で元に戻せます</span>
+          </div>
+        </div>
+
+        <!-- EQ DECK の定位置（BGM専用イコライザー） -->
+        <div id="slot-eq" class="dock-slot shrink-0 flex flex-col" data-slot="eq">
+          <section id="panel-eq" data-panel="eq" class="deck-panel bg-[#181c26] rounded-xl border border-[#282f3d] p-2.5 flex flex-col gap-2">
+            <div class="panel-head flex items-center justify-between gap-1">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="panel-grip"></span>
+                <span class="w-2 h-2 rounded-full bg-violet-400 shadow-[0_0_8px_#a78bfa] shrink-0"></span>
+                <span class="text-[11px] font-bold tracking-wider text-slate-200 whitespace-nowrap">EQ DECK</span>
+                <span class="text-[9px] font-mono-num text-slate-500 whitespace-nowrap">BGM</span>
+              </div>
+              <div class="flex items-center gap-1 shrink-0">
+                <button id="btnEqToggle" type="button" aria-pressed="true" title="EQ全体のON/OFF（かけた音とかけない音を聞き比べられます）" class="eq-toggle is-on">EQ ON</button>
+                <button type="button" class="panel-pin" data-pin="eq" title="元の位置に戻す" aria-label="EQ DECKを元の位置に戻す"></button>
+              </div>
+            </div>
+
+            <!-- EQパッド：押すとON（点灯）／もう一度押すとOFF。複数同時にONにできる -->
+            <div class="grid grid-cols-4 gap-1.5">
+              <button type="button" class="eq-pad" data-preset="voice" style="--eq-color:#22d3ee" title="声とかぶる中音域（2kHz付近）を下げて、しゃべり声を聞きやすくします">
+                <span class="eq-pad-led"></span><span class="eq-pad-name">声を<br>聞きやすく</span>
+              </button>
+              <button type="button" class="eq-pad" data-preset="mud" style="--eq-color:#a78bfa" title="濁りやすい低めの中音域（300Hz付近）を下げて、すっきりさせます">
+                <span class="eq-pad-led"></span><span class="eq-pad-name">こもり<br>除去</span>
+              </button>
+              <button type="button" class="eq-pad" data-preset="bass" style="--eq-color:#f59e0b" title="低音（100Hz付近）を持ち上げます">
+                <span class="eq-pad-led"></span><span class="eq-pad-name">低音<br>ブースト</span>
+              </button>
+              <button type="button" class="eq-pad" data-preset="radio" style="--eq-color:#34d399" title="高音と低音を削って、ラジオから流れているような音にします">
+                <span class="eq-pad-led"></span><span class="eq-pad-name">ラジオ<br>風</span>
+              </button>
+            </div>
+
+            <!-- EQカーブ（今どの高さの音をどれだけ上げ下げしているか） -->
+            <div class="eq-curve-box" title="EQのかかり方（左が低音、右が高音。線が上なら持ち上げ、下なら削っています）">
+              <canvas id="eqCurve"></canvas>
+            </div>
+
+            <!-- 細かい調整用のつまみ（上下にドラッグ／ダブルクリックで0に戻る） -->
+            <div class="grid grid-cols-3 gap-1">
+              <div class="eq-knob-wrap">
+                <div id="knobEqLow" class="eq-knob" aria-label="LOW（低音）"></div>
+                <div class="flex flex-col leading-tight"><span class="strip-label">LOW</span><span id="eqLowValue" class="strip-value text-slate-300">0.0dB</span></div>
+              </div>
+              <div class="eq-knob-wrap">
+                <div id="knobEqMid" class="eq-knob" aria-label="MID（中音）"></div>
+                <div class="flex flex-col leading-tight"><span class="strip-label">MID</span><span id="eqMidValue" class="strip-value text-slate-300">0.0dB</span></div>
+              </div>
+              <div class="eq-knob-wrap">
+                <div id="knobEqHigh" class="eq-knob" aria-label="HIGH（高音）"></div>
+                <div class="flex flex-col leading-tight"><span class="strip-label">HIGH</span><span id="eqHighValue" class="strip-value text-slate-300">0.0dB</span></div>
+              </div>
+            </div>
+            <div class="panel-resize" data-resize="eq" title="ドラッグで大きさを変更"></div>
+          </section>
+          <div class="slot-placeholder is-short" data-placeholder="eq">
+            <span class="placeholder-title">EQ DECK はフロート中</span>
             <span class="placeholder-sub">ここへドラッグ、または 📌 で元に戻せます</span>
           </div>
         </div>
@@ -1272,6 +1405,7 @@
       masterVolume: 0.90,
       seVolume: 1.0,          // MIXERのSEフェーダー（全SE共通の音量）
       duckAmount: 0.8,        // 手動DUCKの下げ幅（今のBGM音量の何倍にするか）
+      eq: createDefaultEq(),  // BGM専用EQ（EQ DECK）
       panels: createDefaultPanels(),   // パネルの浮遊状態と位置
       themeColor: DEFAULT_THEME,
       banks: createDefaultBanks(),
@@ -1342,6 +1476,7 @@
             layoutMode: state.layoutMode,
             themeColor: state.themeColor,
             duckAmount: state.duckAmount,
+            eq: state.eq,
             panels: state.panels
           };
           store.put(payload);
@@ -1459,6 +1594,329 @@
           tx.onerror = (e) => reject(e.target.error);
         });
       }
+    }
+
+    // =========================================================================
+    // EQ DECK（BGM専用イコライザー）
+    //   音の通り道：BGM → AUTO DUCKING → 手動DUCK → 【EQ】 → BGMフェーダー → 全体
+    // =========================================================================
+    function createDefaultEq() {
+      return { enabled: true, low: 0, mid: 0, high: 0, presets: { voice: false, mud: false, bass: false, radio: false } };
+    }
+
+    function normalizeEq(e) {
+      const d = createDefaultEq();
+      if (!e || typeof e !== 'object') return d;
+      const num = (v) => (typeof v === 'number' && isFinite(v) ? Math.max(-12, Math.min(12, v)) : 0);
+      return {
+        enabled: typeof e.enabled === 'boolean' ? e.enabled : true,
+        low: num(e.low),
+        mid: num(e.mid),
+        high: num(e.high),
+        presets: {
+          voice: !!(e.presets && e.presets.voice),
+          mud: !!(e.presets && e.presets.mud),
+          bass: !!(e.presets && e.presets.bass),
+          radio: !!(e.presets && e.presets.radio)
+        }
+      };
+    }
+
+    /** EQフィルターの構成（実際の音用と、カーブ表示用で同じ物を作る） */
+    const EQ_CHAIN = [
+      { key: 'hpf', type: 'highpass', freq: 10, q: 0.8 },     // ラジオ風：低音を削る
+      { key: 'low', type: 'lowshelf', freq: 110 },            // LOWつまみ・低音ブースト
+      { key: 'mud', type: 'peaking', freq: 320, q: 1.1 },     // こもり除去
+      { key: 'mid', type: 'peaking', freq: 1000, q: 0.9 },    // MIDつまみ
+      { key: 'voice', type: 'peaking', freq: 2200, q: 0.75 }, // 声を聞きやすく
+      { key: 'high', type: 'highshelf', freq: 7500 },         // HIGHつまみ
+      { key: 'lpf', type: 'lowpass', freq: 20000, q: 0.8 }    // ラジオ風：高音を削る
+    ];
+
+    function buildEqNodes(ctx) {
+      const nodes = {};
+      EQ_CHAIN.forEach(c => {
+        const f = ctx.createBiquadFilter();
+        f.type = c.type;
+        f.frequency.value = c.key === 'lpf' ? Math.min(20000, ctx.sampleRate / 2 - 100) : c.freq;
+        if (c.q) f.Q.value = c.q;
+        nodes[c.key] = f;
+      });
+      return nodes;
+    }
+
+    /** 今の設定から、各フィルターの目標値を計算 */
+    function computeEqTargets(sampleRate = 48000) {
+      const e = state.eq;
+      const nyq = Math.min(20000, sampleRate / 2 - 100);
+      if (!e.enabled) return { hpf: 10, lpf: nyq, low: 0, mud: 0, mid: 0, voice: 0, high: 0 };
+      const p = e.presets;
+      return {
+        hpf: p.radio ? 380 : 10,
+        lpf: p.radio ? 3200 : nyq,
+        low: e.low + (p.bass ? 6 : 0),
+        mud: p.mud ? -5 : 0,
+        mid: e.mid + (p.radio ? 3 : 0),
+        voice: p.voice ? -6 : 0,
+        high: e.high
+      };
+    }
+
+    // ---- つまみ（ノブ） ----------------------------------------------------
+    const KNOB_ANGLE = 135;   // 左右それぞれ135度ずつ回る
+
+    function knobPolar(angleDeg, r) {
+      const a = (angleDeg * Math.PI) / 180;
+      return { x: 20 + r * Math.sin(a), y: 20 - r * Math.cos(a) };
+    }
+
+    function knobArc(a0, a1, r) {
+      if (Math.abs(a1 - a0) < 0.5) return '';
+      const s = knobPolar(a0, r);
+      const e = knobPolar(a1, r);
+      const large = Math.abs(a1 - a0) > 180 ? 1 : 0;
+      const sweep = a1 > a0 ? 1 : 0;
+      return `M ${s.x.toFixed(2)} ${s.y.toFixed(2)} A ${r} ${r} 0 ${large} ${sweep} ${e.x.toFixed(2)} ${e.y.toFixed(2)}`;
+    }
+
+    function createKnob(el, { min = -12, max = 12, step = 0.5, value = 0, defaultValue = 0, onInput }) {
+      el.innerHTML = `
+        <svg viewBox="0 0 40 40" aria-hidden="true">
+          <path d="${knobArc(-KNOB_ANGLE, KNOB_ANGLE, 16)}" fill="none" stroke="#222836" stroke-width="3.5" stroke-linecap="round"></path>
+          <path class="knob-val" d="" fill="none" style="stroke: rgb(var(--ac-400))" stroke-width="3.5" stroke-linecap="round"></path>
+          <circle class="knob-body" cx="20" cy="20" r="11.5" fill="#1f2533" stroke="#3a4458" stroke-width="1"></circle>
+          <circle cx="20" cy="20" r="9" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="1"></circle>
+          <line class="knob-ptr" x1="20" y1="20" x2="20" y2="10.5" stroke="#e2e8f0" stroke-width="2" stroke-linecap="round"></line>
+        </svg>`;
+      el.setAttribute('role', 'slider');
+      el.setAttribute('aria-valuemin', String(min));
+      el.setAttribute('aria-valuemax', String(max));
+      el.tabIndex = 0;
+      const valPath = el.querySelector('.knob-val');
+      const ptr = el.querySelector('.knob-ptr');
+      let cur = value;
+
+      const angleOf = (v) => ((v - min) / (max - min)) * (2 * KNOB_ANGLE) - KNOB_ANGLE;
+      const paint = () => {
+        const a = angleOf(cur);
+        const a0 = angleOf(Math.max(min, Math.min(max, 0)));
+        valPath.setAttribute('d', a >= a0 ? knobArc(a0, a, 16) : knobArc(a, a0, 16));
+        ptr.setAttribute('transform', `rotate(${a.toFixed(1)} 20 20)`);
+        el.setAttribute('aria-valuenow', String(cur));
+      };
+      const set = (v, emit) => {
+        const snapped = Math.round(Math.max(min, Math.min(max, v)) / step) * step;
+        if (snapped === cur && !emit) { paint(); return; }
+        const changed = snapped !== cur;
+        cur = snapped;
+        paint();
+        if (emit && changed && onInput) onInput(cur);
+      };
+
+      let lastTap = 0;
+      el.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        e.preventDefault();
+        el.setPointerCapture(e.pointerId);
+        el.classList.add('is-dragging');
+        const startY = e.clientY;
+        const startVal = cur;
+        let moved = 0;
+        const move = (ev) => {
+          moved = Math.max(moved, Math.abs(ev.clientY - startY));
+          set(startVal + ((startY - ev.clientY) / 140) * (max - min), true);
+        };
+        const up = () => {
+          el.classList.remove('is-dragging');
+          el.removeEventListener('pointermove', move);
+          el.removeEventListener('pointerup', up);
+          el.removeEventListener('pointercancel', up);
+          // ほとんど動かさずに2回続けて押したら0に戻す（ダブルクリック／ダブルタップ）
+          if (moved < 4) {
+            const now = performance.now();
+            if (now - lastTap < 320) {
+              set(defaultValue, true);
+              lastTap = 0;
+            } else {
+              lastTap = now;
+            }
+          }
+        };
+        el.addEventListener('pointermove', move);
+        el.addEventListener('pointerup', up);
+        el.addEventListener('pointercancel', up);
+      });
+      el.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        set(cur + (e.deltaY < 0 ? step : -step), true);
+      }, { passive: false });
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { set(cur + step, true); e.preventDefault(); }
+        if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { set(cur - step, true); e.preventDefault(); }
+      });
+
+      paint();
+      return { set: (v) => set(v, false) };
+    }
+
+    // ---- EQカーブ表示 ------------------------------------------------------
+    let eqPreview = null;
+
+    function getEqPreview() {
+      if (eqPreview) return eqPreview;
+      try {
+        const OC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+        const oc = new OC(1, 128, 48000);
+        eqPreview = { ctx: oc, nodes: buildEqNodes(oc) };
+      } catch (e) {
+        eqPreview = { failed: true };
+      }
+      return eqPreview;
+    }
+
+    function accentRgba(alpha, shade = '400') {
+      const v = getComputedStyle(document.documentElement).getPropertyValue(`--ac-${shade}`).trim() || '34 211 238';
+      const [r, g, b] = v.split(/\s+/).map(Number);
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+
+    function drawEqCurve() {
+      const canvas = document.getElementById('eqCurve');
+      if (!canvas) return;
+      const box = canvas.parentElement;
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.max(1, box.clientWidth);
+      const h = Math.max(1, box.clientHeight);
+      if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+      }
+      const g = canvas.getContext('2d');
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, w, h);
+
+      const fMin = 20;
+      const fMax = 20000;
+      const dbRange = 18;
+      const xOf = (f) => (Math.log10(f / fMin) / Math.log10(fMax / fMin)) * w;
+      const yOf = (db) => h / 2 - (db / dbRange) * (h / 2 - 3);
+
+      // 目盛り（100Hz・1kHz・10kHz と 0dB）
+      g.strokeStyle = '#1c2230';
+      g.lineWidth = 1;
+      [100, 1000, 10000].forEach(f => {
+        g.beginPath(); g.moveTo(Math.round(xOf(f)) + 0.5, 0); g.lineTo(Math.round(xOf(f)) + 0.5, h); g.stroke();
+      });
+      g.beginPath(); g.moveTo(0, Math.round(h / 2) + 0.5); g.lineTo(w, Math.round(h / 2) + 0.5); g.stroke();
+      g.fillStyle = '#3b4559';
+      g.font = "8px 'JetBrains Mono', monospace";
+      g.fillText('100', xOf(100) + 2, h - 3);
+      g.fillText('1k', xOf(1000) + 2, h - 3);
+      g.fillText('10k', xOf(10000) + 2, h - 3);
+
+      // 今の設定でのEQカーブ
+      const pv = getEqPreview();
+      const n = Math.max(48, Math.round(w / 2));
+      const db = new Float32Array(n);
+      if (!pv.failed) {
+        const t = computeEqTargets(48000);
+        Object.entries(pv.nodes).forEach(([k, node]) => {
+          if (k === 'hpf' || k === 'lpf') node.frequency.value = t[k];
+          else node.gain.value = t[k];
+        });
+        const freqs = new Float32Array(n);
+        for (let i = 0; i < n; i++) freqs[i] = fMin * Math.pow(fMax / fMin, i / (n - 1));
+        const mag = new Float32Array(n);
+        const ph = new Float32Array(n);
+        Object.values(pv.nodes).forEach(node => {
+          node.getFrequencyResponse(freqs, mag, ph);
+          for (let i = 0; i < n; i++) db[i] += 20 * Math.log10(Math.max(1e-6, mag[i]));
+        });
+      }
+      const pts = [];
+      for (let i = 0; i < n; i++) {
+        pts.push([(i / (n - 1)) * w, yOf(Math.max(-dbRange * 1.4, Math.min(dbRange * 1.4, db[i])))]);
+      }
+      const on = state.eq.enabled;
+      g.beginPath();
+      g.moveTo(0, h / 2);
+      pts.forEach(([x, y]) => g.lineTo(x, y));
+      g.lineTo(w, h / 2);
+      g.closePath();
+      g.fillStyle = on ? accentRgba(0.16) : 'rgba(100,116,139,0.08)';
+      g.fill();
+      g.beginPath();
+      pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+      g.strokeStyle = on ? accentRgba(0.95) : 'rgba(100,116,139,0.6)';
+      g.lineWidth = 1.6;
+      g.setLineDash(on ? [] : [3, 3]);
+      g.stroke();
+      g.setLineDash([]);
+    }
+
+    // ---- 画面の更新と操作 --------------------------------------------------
+    const eqKnobs = {};
+
+    function fmtDb(v) {
+      return `${v > 0 ? '+' : ''}${v.toFixed(1)}dB`;
+    }
+
+    function renderEqDeck() {
+      const e = state.eq;
+      document.querySelectorAll('.eq-pad').forEach(btn => {
+        const on = !!e.presets[btn.dataset.preset];
+        btn.classList.toggle('is-active', on);
+        btn.setAttribute('aria-pressed', String(on));
+      });
+      const t = document.getElementById('btnEqToggle');
+      t.classList.toggle('is-on', e.enabled);
+      t.classList.toggle('is-off', !e.enabled);
+      t.textContent = e.enabled ? 'EQ ON' : 'EQ OFF';
+      t.setAttribute('aria-pressed', String(e.enabled));
+      document.getElementById('panel-eq').classList.toggle('is-bypassed', !e.enabled);
+      ['low', 'mid', 'high'].forEach(k => {
+        if (eqKnobs[k]) eqKnobs[k].set(e[k]);
+        const label = document.getElementById(`eq${k[0].toUpperCase()}${k.slice(1)}Value`);
+        label.textContent = fmtDb(e[k]);
+        label.classList.toggle('text-accent-300', e[k] !== 0);
+        label.classList.toggle('text-slate-300', e[k] === 0);
+      });
+      drawEqCurve();
+    }
+
+    function initEqDeck() {
+      const onKnob = (key) => (v) => {
+        state.eq[key] = v;
+        renderEqDeck();
+        audioEngine.applyEq();
+        storage.saveState();
+      };
+      eqKnobs.low = createKnob(document.getElementById('knobEqLow'), { value: state.eq.low, onInput: onKnob('low') });
+      eqKnobs.mid = createKnob(document.getElementById('knobEqMid'), { value: state.eq.mid, onInput: onKnob('mid') });
+      eqKnobs.high = createKnob(document.getElementById('knobEqHigh'), { value: state.eq.high, onInput: onKnob('high') });
+
+      document.querySelectorAll('.eq-pad').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const k = btn.dataset.preset;
+          state.eq.presets[k] = !state.eq.presets[k];
+          renderEqDeck();
+          audioEngine.applyEq();
+          storage.saveState();
+        });
+      });
+
+      document.getElementById('btnEqToggle').addEventListener('click', () => {
+        state.eq.enabled = !state.eq.enabled;
+        renderEqDeck();
+        audioEngine.applyEq();
+        storage.saveState();
+      });
+
+      // パネルを浮かせたり大きさを変えたりしたらカーブを描き直す
+      if (window.ResizeObserver) {
+        new ResizeObserver(() => drawEqCurve()).observe(document.querySelector('.eq-curve-box'));
+      }
+      renderEqDeck();
     }
 
     const storage = new DeckStorage();
@@ -1983,6 +2441,7 @@
         bgmCrossfade: state.bgm.crossfade,
         duckingEnabled: state.ducking.enabled,
         duckAmount: state.duckAmount,
+        eq: state.eq,
         themeColor: state.themeColor
       };
     }
@@ -1997,6 +2456,7 @@
       if (typeof d.bgmCrossfade === 'boolean') state.bgm.crossfade = d.bgmCrossfade;
       if (typeof d.duckingEnabled === 'boolean') state.ducking.enabled = d.duckingEnabled;
       if (typeof d.duckAmount === 'number') state.duckAmount = d.duckAmount;
+      if (d.eq) state.eq = normalizeEq(d.eq);
       if (d.themeColor && THEMES[d.themeColor]) state.themeColor = d.themeColor;
       state.activeBankIndex = Math.min(state.activeBankIndex, state.banks.length - 1);
       state.bgm.trackIndex = 0;
@@ -2070,7 +2530,13 @@
           this.bgmManualGain = this.ctx.createGain();
           this.bgmManualGain.gain.value = state.bgm.manualDuck ? state.duckAmount : 1.0;
           this.bgmDuckGain.connect(this.bgmManualGain);
-          this.bgmManualGain.connect(this.bgmVolumeGain);
+          // BGM専用EQ（手動DUCKの後、BGMフェーダーの手前）。SEはここを通らない
+          this.eqNodes = buildEqNodes(this.ctx);
+          const eqChain = EQ_CHAIN.map(c => this.eqNodes[c.key]);
+          this.bgmManualGain.connect(eqChain[0]);
+          for (let i = 0; i < eqChain.length - 1; i++) eqChain[i].connect(eqChain[i + 1]);
+          eqChain[eqChain.length - 1].connect(this.bgmVolumeGain);
+          this.applyEq(true);
           this.bgmVolumeGain.connect(this.mainGain);
 
           this.mainGain.connect(compressor);
@@ -2120,6 +2586,29 @@
         if (!this.ctx || !this.bgmManualGain) return;
         const target = state.bgm.manualDuck ? state.duckAmount : 1.0;
         this.bgmManualGain.gain.setTargetAtTime(target, this.ctx.currentTime, state.bgm.manualDuck ? 0.06 : 0.12);
+      }
+
+      /** EQの設定を音に反映（切り替え時に音が途切れないよう、なめらかに変える） */
+      applyEq(immediate = false) {
+        if (!this.ctx || !this.eqNodes) return;
+        const t = computeEqTargets(this.ctx.sampleRate);
+        const now = this.ctx.currentTime;
+        const setP = (param, v) => {
+          if (immediate) {
+            param.cancelScheduledValues(now);
+            param.setValueAtTime(v, now);
+          } else {
+            param.setTargetAtTime(v, now, 0.04);
+          }
+        };
+        const n = this.eqNodes;
+        setP(n.hpf.frequency, t.hpf);
+        setP(n.lpf.frequency, t.lpf);
+        setP(n.low.gain, t.low);
+        setP(n.mud.gain, t.mud);
+        setP(n.mid.gain, t.mid);
+        setP(n.voice.gain, t.voice);
+        setP(n.high.gain, t.high);
       }
 
       async getDecodedBuffer(fileId) {
@@ -2705,6 +3194,7 @@
       Object.entries(th.ac).forEach(([k, v]) => root.setProperty(`--ac-${k}`, v));
       Object.entries(th.ac2).forEach(([k, v]) => root.setProperty(`--ac2-${k}`, v));
       renderThemeGroup();
+      drawEqCurve();
     }
 
     function renderThemeGroup() {
@@ -3463,14 +3953,14 @@
     // =========================================================================
     // パネル（BGM DECK / SE DECK / MIXER）の浮遊・移動・大きさ変更・元に戻す
     // =========================================================================
-    const PANEL_IDS = ['bgm', 'se', 'mixer'];
-    const PANEL_NAMES = { bgm: 'BGM DECK', se: 'SE DECK', mixer: 'MIXER' };
-    const PANEL_MIN = { bgm: { w: 240, h: 280 }, se: { w: 360, h: 240 }, mixer: { w: 300, h: 250 } };
+    const PANEL_IDS = ['bgm', 'se', 'mixer', 'eq'];
+    const PANEL_NAMES = { bgm: 'BGM DECK', se: 'SE DECK', mixer: 'MIXER', eq: 'EQ DECK' };
+    const PANEL_MIN = { bgm: { w: 240, h: 280 }, se: { w: 360, h: 240 }, mixer: { w: 300, h: 250 }, eq: { w: 260, h: 220 } };
     const PIN_SVG = `<svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 17v5"></path><path d="M9 4h6l-1 6 3 4H7l3-4z"></path></svg>`;
     let panelZ = 1;
 
     function createDefaultPanels() {
-      return { bgm: { floating: false }, se: { floating: false }, mixer: { floating: false } };
+      return { bgm: { floating: false }, se: { floating: false }, mixer: { floating: false }, eq: { floating: false } };
     }
 
     function pointInRect(x, y, r) {
@@ -3893,6 +4383,8 @@
       updateXfadeUI();
       updateDuckingVisuals();
       updateDuckAmountUI();
+      renderEqDeck();
+      audioEngine.applyEq();
       renderBgmList();
       renderBankTabs();
       renderPads();
@@ -4279,9 +4771,12 @@
         dockAllPanels();
         state.bgm.manualDuck = false;
         state.duckAmount = 0.8;
+        state.eq = createDefaultEq();
         audioEngine.applyManualDuck();
+        audioEngine.applyEq();
         updateManualDuckUI();
         updateDuckAmountUI();
+        renderEqDeck();
         renderBgmList();
         renderBankTabs();
         renderPads();
@@ -4422,6 +4917,7 @@
         if (saved.layoutMode) state.layoutMode = saved.layoutMode;
         if (saved.themeColor && THEMES[saved.themeColor]) state.themeColor = saved.themeColor;
         if (typeof saved.duckAmount === 'number') state.duckAmount = saved.duckAmount;
+        if (saved.eq) state.eq = normalizeEq(saved.eq);
         if (saved.panels) {
           state.panels = createDefaultPanels();
           PANEL_IDS.forEach(id => { if (saved.panels[id]) state.panels[id] = { ...saved.panels[id] }; });
@@ -4439,6 +4935,7 @@
       renderPads();
       updateManualDuckUI();
       updateDuckAmountUI();
+      initEqDeck();
       initPanels();
       bindEvents();
       configureStartupOverlay();
