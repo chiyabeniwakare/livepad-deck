@@ -481,6 +481,16 @@
     .deck-panel.is-moving .panel-head { cursor: grabbing; }
     #panel-se:not(.is-floating) { width: 100%; max-width: 1240px; margin: 0 auto; }
     .sampler-pad { container-type: inline-size; }
+    /* SE DECKを小さく・平たくしたとき：パッドの高さに合わせて表示を省く（fitPadGrid が決める） */
+    #padGrid[data-density="sm"] .pad-bottom { display: none; }
+    #padGrid[data-density="xs"] .pad-bottom,
+    #padGrid[data-density="xs"] .pad-badges { display: none; }
+    #padGrid[data-density="xs"] .pad-top { position: absolute; top: 5px; right: 5px; padding: 0; }
+    #padGrid[data-density="xs"] .pad-edit-btn { width: 20px; height: 20px; }
+    #padGrid[data-density="xs"] .sampler-pad { padding: 4px 6px; }
+    #padGrid[data-density="xs"] .pad-name { font-size: 12px; }
+    /* MIXERを横長にしたとき、フェーダーが離れすぎないようにまとめて真ん中に置く */
+    .mixer-grid { width: 100%; max-width: 560px; margin-left: auto; margin-right: auto; }
     @container (max-width: 150px) {
       .pad-src-badge { display: none; }
     }
@@ -698,10 +708,103 @@
     .eq-knob.is-dragging .knob-body { fill: #283041; }
 
     /* ===== レイアウト：右下の段（FX PAD ＋ MIXER）と、狭い画面のタブ表示 ===== */
-    .deck-bottom { display: flex; gap: 8px; flex-shrink: 0; height: clamp(230px, 40%, 380px); }
-    .mixer-slot.in-row { flex: none; width: clamp(320px, 40%, 400px); }
-    .mixer-slot.in-row #panel-mixer .mixer-grid,
     #deviceShell.is-compact #panel-mixer .mixer-grid { grid-template-rows: auto minmax(80px, 1fr) auto; }
+
+    /* ===== タイル型レイアウト（広い画面）：画面を区切って各DECKを並べる ===== */
+    .tile-root { flex: 1; min-width: 0; min-height: 0; display: flex; padding: 10px; overflow: auto; background: #0f1115; }
+    #deviceShell.is-compact .tile-root { display: none; }
+    #deviceShell:not(.is-compact) #leftCol,
+    #deviceShell:not(.is-compact) #rightCol { display: none; }
+    .tile-split { display: flex; flex: 1 1 0px; min-width: 0; min-height: 0; }
+    .tile-split.is-row { flex-direction: row; }
+    .tile-split.is-col { flex-direction: column; }
+    .tile-leaf { position: relative; display: flex; min-width: 0; min-height: 0; }
+    .tile-leaf > .dock-slot { position: relative; flex: 1 1 auto; min-width: 0; min-height: 0 !important; width: auto !important; height: auto !important; }
+    .tile-leaf > .dock-slot > .deck-panel:not(.is-floating) { position: relative; z-index: 0; flex: 1 1 auto; min-height: 0; min-width: 0; }
+    .tile-leaf .slot-placeholder { flex: 1 1 auto !important; height: auto !important; }
+    .tile-leaf #panel-eq .eq-curve-box { flex: 1; min-height: 50px; }
+    .tile-leaf #panel-mixer .mixer-grid { grid-template-rows: auto minmax(80px, 1fr) auto; }
+    /* 区切り線：ふだんはただのすき間。LAYOUT編集中はドラッグで大きさを変えられる */
+    .tile-divider { position: relative; flex: 0 0 8px; }
+    .tile-divider::after {
+      content: ''; position: absolute; border-radius: 2px; background: rgb(var(--ac-400)); opacity: 0;
+      transition: opacity .12s ease;
+    }
+    .tile-divider.is-row::after { top: 8px; bottom: 8px; left: 3px; width: 2px; }
+    .tile-divider.is-col::after { left: 8px; right: 8px; top: 3px; height: 2px; }
+    #deviceShell.is-layout-edit .tile-divider { touch-action: none; }
+    #deviceShell.is-layout-edit .tile-divider.is-row { cursor: col-resize; }
+    #deviceShell.is-layout-edit .tile-divider.is-col { cursor: row-resize; }
+    #deviceShell.is-layout-edit .tile-divider::after { opacity: .45; }
+    #deviceShell.is-layout-edit .tile-divider:hover::after,
+    #deviceShell.is-layout-edit .tile-divider.is-dragging::after { opacity: 1; box-shadow: 0 0 10px rgb(var(--ac-400) / .7); }
+    #deviceShell.is-layout-edit .tile-divider::before { content: ''; position: absolute; inset: -6px; }   /* 指でつかみやすく */
+
+    /* LAYOUT編集中：各DECKの上にかぶせる板（ドラッグで移動・FLOAT・HIDE） */
+    .tile-overlay {
+      display: none; position: absolute; inset: 0; z-index: 6;
+      flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+      border-radius: 12px; border: 1.5px dashed rgb(var(--ac-400) / .55);
+      background: rgba(9, 11, 15, .74); backdrop-filter: blur(1.5px); -webkit-backdrop-filter: blur(1.5px);
+      cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+    }
+    #deviceShell.is-layout-edit:not(.is-compact) .tile-leaf .tile-overlay { display: flex; }
+    .tile-overlay.is-source { opacity: .35; }
+    .tile-ov-name { font-size: 13px; font-weight: 800; letter-spacing: .1em; color: #e2e8f0; text-align: center; }
+    .tile-ov-hint { font-size: 10px; color: #94a3b8; }
+    .tile-ov-actions { display: flex; gap: 6px; margin-top: 2px; }
+    .tile-ov-actions button {
+      padding: 4px 10px; border-radius: 7px; font-size: 10px; font-weight: 800; letter-spacing: .06em;
+      color: #cbd5e1; background: #141821; border: 1px solid #2f3848; cursor: pointer;
+    }
+    .tile-ov-actions button:hover { color: #fff; border-color: rgb(var(--ac-400) / .7); }
+    .tile-drop-mark {
+      display: none; position: absolute; z-index: 45; pointer-events: none; border-radius: 12px;
+      background: rgb(var(--ac-400) / .2); border: 2px solid rgb(var(--ac-300));
+      box-shadow: 0 0 24px rgb(var(--ac-400) / .35); transition: left .08s ease, top .08s ease, width .08s ease, height .08s ease;
+    }
+    .tile-ghost {
+      position: fixed; z-index: 70; pointer-events: none; padding: 6px 12px; border-radius: 8px;
+      font-size: 11px; font-weight: 800; letter-spacing: .08em; color: #06121a;
+      background: rgb(var(--ac-300)); box-shadow: 0 8px 24px rgba(0,0,0,.5); transform: translate(-50%, -140%);
+    }
+    /* ふだんは動かせないので、つまみ・📌・大きさ変更の角は LAYOUT編集中だけ出す */
+    #deviceShell:not(.is-layout-edit) .panel-grip,
+    #deviceShell:not(.is-layout-edit) .panel-pin,
+    #deviceShell:not(.is-layout-edit) .panel-resize { display: none !important; }
+    #deviceShell:not(.is-layout-edit) .panel-head { cursor: default !important; }
+
+    /* LAYOUT ボタンとツールバー */
+    .layout-edit-btn {
+      display: flex; align-items: center; gap: 6px; padding: 6px 9px; border-radius: 8px;
+      font-size: 11px; font-weight: 700; color: #cbd5e1; border: 1px solid #2c3445; background: #1a1f2b;
+      transition: background-color .12s ease, border-color .12s ease, color .12s ease;
+    }
+    .layout-edit-btn:hover { background: #222838; }
+    .layout-edit-btn.is-on { color: rgb(var(--ac-200)); border-color: rgb(var(--ac-400) / .7); background: rgb(var(--ac-500) / .2); }
+    .layout-edit-btn:disabled { opacity: .35; cursor: not-allowed; }
+    #deviceShell.is-compact .compact-hide { display: none !important; }
+    .layout-bar {
+      display: none; flex-wrap: wrap; align-items: center; gap: 8px 12px; flex-shrink: 0;
+      padding: 7px 12px; background: #11151d; border-bottom: 1px solid rgb(var(--ac-500) / .35);
+    }
+    #deviceShell.is-layout-edit:not(.is-compact) .layout-bar { display: flex; }
+    .layout-bar-title { font-size: 11px; font-weight: 800; letter-spacing: .12em; color: rgb(var(--ac-300)); }
+    .layout-bar-hint { font-size: 10px; color: #94a3b8; }
+    .layout-bar-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .layout-btn, .layout-chip {
+      height: 26px; padding: 0 10px; border-radius: 7px; font-size: 10px; font-weight: 800; letter-spacing: .06em;
+      color: #cbd5e1; background: #161b25; border: 1px solid #2c3445; cursor: pointer; white-space: nowrap;
+    }
+    .layout-btn:hover, .layout-chip:hover { color: #fff; border-color: rgb(var(--ac-400) / .6); }
+    .layout-btn:disabled { opacity: .35; cursor: not-allowed; }
+    .layout-btn.is-primary { color: #06121a; background: rgb(var(--ac-400)); border-color: rgb(var(--ac-300)); }
+    .layout-btn.is-danger { color: #fff; background: #dc2626; border-color: #f87171; }
+    .layout-chip { border-style: dashed; color: #94a3b8; }
+    .layout-select {
+      height: 26px; max-width: 180px; padding: 0 8px; border-radius: 7px; font-size: 11px; font-weight: 700;
+      color: #e2e8f0; background: #0d1016; border: 1px solid #2c3445;
+    }
     /* FX PADが細いとき：表示窓と横のボタンを小さく、FXボタンの番号を省く */
     #panel-fx { container-type: inline-size; }
     @container (max-width: 520px) {
@@ -1112,6 +1215,12 @@
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><rect x="9" y="9" width="6" height="6" fill="currentColor"></rect></svg>
           PANIC
         </button>
+        <!-- LAYOUT：各DECKの大きさ・並びを変える編集モード（広い画面のみ） -->
+        <button id="btnLayoutEdit" type="button" aria-pressed="false" title="LAYOUT：DECKの大きさや並びを変える" class="layout-edit-btn compact-hide">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>
+          <span class="hidden lg:inline">LAYOUT</span>
+        </button>
+
         <!-- Screen Wake Lock トグル -->
         <button id="btnWakeLock" type="button" title="画面スリープ防止 (Wake Lock)" class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-[#2c3445] bg-[#1a1f2b] hover:bg-[#222838] transition-all text-[11px] font-bold text-slate-400">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
@@ -1160,7 +1269,26 @@
     <!-- 2. メインエリア（横画面2カラム：左30% / 右70%） -->
     <!-- 2. メインエリア（横画面2カラム：左30% / 右70%）
          BGM DECK / MIXER / SE DECK は「パネル」。タイトル部分をドラッグすると浮遊し、好きな位置に置ける -->
-    <main class="flex-1 min-h-0 flex flex-row overflow-hidden">
+    <!-- LAYOUT編集中だけ出るツールバー -->
+    <div id="layoutBar" class="layout-bar">
+      <div class="flex items-center gap-1.5 shrink-0">
+        <span class="layout-bar-title">LAYOUT</span>
+        <button type="button" class="help-btn" data-help="layout" title="LAYOUTの使い方" aria-label="LAYOUTの使い方">?</button>
+      </div>
+      <span class="layout-bar-hint">線をドラッグで大きさ／DECKをドラッグで移動</span>
+      <div class="layout-bar-group">
+        <select id="layoutPresetSelect" class="layout-select" aria-label="保存したレイアウト"></select>
+        <button id="btnLayoutSave" type="button" class="layout-btn">SAVE</button>
+        <button id="btnLayoutDelete" type="button" class="layout-btn">DELETE</button>
+      </div>
+      <div id="layoutHiddenChips" class="layout-bar-group"></div>
+      <div class="layout-bar-group ml-auto">
+        <button id="btnLayoutReset" type="button" class="layout-btn">RESET</button>
+        <button id="btnLayoutDone" type="button" class="layout-btn is-primary">DONE</button>
+      </div>
+    </div>
+
+    <main id="mainArea" class="flex-1 min-h-0 flex flex-row overflow-hidden">
 
       <!-- 左カラム：BGM DECK + EQ DECK + PITCH DECK（狭い画面ではタブで1つずつ表示し、MIXERもここに入る） -->
       <aside id="leftCol" class="w-[34%] min-w-[280px] max-w-[440px] bg-[#14171f] border-r border-[#262c3a] p-2.5 flex flex-col gap-2 min-h-0 overflow-y-auto no-scrollbar">
@@ -1377,8 +1505,6 @@
           </div>
         </div>
 
-        <!-- 下の段：FX PAD ＋ MIXER -->
-        <div id="deckBottomRow" class="deck-bottom">
         <!-- FX PAD の定位置（指でなぞってエフェクトをかけるXYパッド） -->
         <div id="slot-fx" class="dock-slot fx-slot flex flex-col" data-slot="fx">
           <section id="panel-fx" data-panel="fx" class="deck-panel bg-[#181c26] rounded-xl border border-[#282f3d] p-2.5 flex flex-col gap-2 flex-1 min-h-0">
@@ -1453,7 +1579,7 @@
           </div>
         </div>
 
-          <!-- MIXER の定位置（広い画面：FX PADの右／狭い画面：左の列。placeMixerSlot が場所を決める） -->
+          <!-- MIXER の定位置（広い画面ではタイルの1枚、狭い画面では左の列のタブ） -->
           <div id="slot-mixer" class="dock-slot mixer-slot flex flex-col" data-slot="mixer">
             <section id="panel-mixer" data-panel="mixer" class="deck-panel bg-[#181c26] rounded-xl border border-[#282f3d] p-2.5 flex flex-col flex-1 min-h-0">
               <div class="panel-head flex items-center justify-between gap-1 mb-1.5">
@@ -1514,9 +1640,16 @@
               <span class="placeholder-sub">Drag it back here, or tap 📌</span>
             </div>
           </div>
-        </div>
       </section>
+
+      <!-- 広い画面：タイル型レイアウト（renderTiles が各DECKの定位置をここに並べる） -->
+      <div id="tileRoot" class="tile-root"></div>
     </main>
+
+    <!-- 隠したDECKの置き場（表示しない） -->
+    <div id="deckStash" hidden></div>
+    <!-- LAYOUT編集：DECKを運ぶときの落とし先の表示 -->
+    <div id="tileDropMark" class="tile-drop-mark"></div>
 
     <!-- 浮遊中のパネルを置く層 -->
     <div id="floatLayer" class="absolute inset-0 z-30 pointer-events-none"></div>
@@ -1681,6 +1814,23 @@
   </div>
 
   <!-- タブ名変更モーダル -->
+  <!-- レイアウトに名前を付けて保存 -->
+  <div id="layoutNameBackdrop" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
+    <form id="layoutNameForm" class="bg-[#181c26] border border-[#30384b] rounded-2xl w-full max-w-xs shadow-2xl overflow-hidden">
+      <div class="px-4 py-3 bg-[#14171f] border-b border-[#262c3a]">
+        <h3 class="text-sm font-bold text-slate-100">レイアウトを保存</h3>
+      </div>
+      <div class="p-4">
+        <label class="block text-xs font-bold text-slate-400 mb-1" for="layoutNameInput">名前（20文字まで。同じ名前は上書き）</label>
+        <input id="layoutNameInput" type="text" maxlength="20" class="w-full px-3 py-2 rounded-lg bg-[#0d1016] border border-[#2a3242] text-sm font-bold text-white focus:outline-none focus:border-accent-400" />
+      </div>
+      <div class="px-4 py-3 bg-[#14171f] border-t border-[#262c3a] flex items-center justify-end gap-2">
+        <button id="btnLayoutNameCancel" type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:bg-slate-800">キャンセル</button>
+        <button type="submit" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-accent-500 hover:bg-accent-400 text-slate-950">保存する</button>
+      </div>
+    </form>
+  </div>
+
   <!-- 使い方（各パネルの「？」で開く図解） -->
   <div id="helpModalBackdrop" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
     <div class="help-sheet bg-[#181c26] border border-[#30384b] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col" role="dialog" aria-modal="true" aria-labelledby="helpTitleText">
@@ -1920,6 +2070,7 @@
       fx: createDefaultFx(),  // FX PAD（XYパッドのエフェクト）
       pitch: { tempo: 0, range: 8, key: 0 },   // PITCH DECK（TEMPO：速さと音程％／KEY：音程だけ半音）
       panels: createDefaultPanels(),   // パネルの浮遊状態と位置
+      layout: createDefaultLayout(),   // 広い画面のDECKの並び（タイル型）と保存したレイアウト
       themeColor: DEFAULT_THEME,
       banks: createDefaultBanks(),
       bgmList: createDefaultBgmList(),
@@ -1992,7 +2143,8 @@
             eq: state.eq,
             fx: state.fx,
             pitch: state.pitch,
-            panels: state.panels
+            panels: state.panels,
+            layout: state.layout
           };
           store.put(payload);
           if (this.listener) this.listener.onLocalChange();
@@ -3452,6 +3604,36 @@ registerProcessor('livepad-pitch', LivepadPitch);
         b += HF.t(76, 96, 'HOLDで固定', 'hf-tj', 'middle') + HF.t(232, 96, '指で動かして重ねる', 'hf-tj', 'middle');
         return HF.svg(300, 112, b);
       },
+      layoutTiles() {
+        let b = '';
+        const box = (x, y, w, h, label, cls = 'hf-box') => HF.r(x, y, w, h, cls, 5) + HF.t(x + w / 2, y + h / 2, label, 'hf-tb', 'middle');
+        b += box(4, 4, 84, 50, 'BGM') + box(4, 60, 84, 28, 'EQ') + box(4, 94, 84, 22, 'PITCH');
+        b += box(96, 4, 200, 66, 'SE DECK') + box(96, 76, 110, 40, 'FX PAD') + box(212, 76, 84, 40, 'MIXER');
+        // 区切り線（ドラッグで大きさ）
+        b += HF.l(92, 8, 92, 112, '', ' style="stroke:rgb(var(--ac-400));stroke-width:2"');
+        b += HF.l(100, 73, 292, 73, '', ' style="stroke:rgb(var(--ac-400));stroke-width:2"');
+        b += HF.a(92, 120, 78, 120, 'hf-arw', 'hf-arwh', 4) + HF.a(92, 120, 106, 120, 'hf-arw', 'hf-arwh', 4);
+        b += HF.t(112, 121, '線をドラッグ → 大きさが変わる', 'hf-tj');
+        return HF.svg(300, 130, b);
+      },
+      layoutDrop() {
+        let b = '';
+        const x = 70;
+        const y = 6;
+        const w = 160;
+        const h = 96;
+        b += HF.r(x, y, w, h, 'hf-box', 8);
+        b += HF.r(x + 2, y + 2, w * 0.5 - 2, h - 4, '', 6, ' style="fill:rgb(var(--ac-400) / .18)"');
+        b += HF.t(x + w * 0.25, y + h / 2, '左', 'hf-tj hf-ta', 'middle');
+        b += HF.t(x + w * 0.75, y + 14, '上', 'hf-tj', 'middle') + HF.t(x + w * 0.75, y + h - 12, '下', 'hf-tj', 'middle');
+        b += HF.t(x + w - 12, y + h / 2, '右', 'hf-tj', 'middle');
+        b += HF.r(x + w * 0.62, y + h * 0.36, w * 0.24, h * 0.28, '', 4, ' style="fill:none;stroke:#64748b;stroke-dasharray:3 3"');
+        b += HF.t(x + w * 0.74, y + h / 2, '入替', 'hf-tj', 'middle');
+        b += HF.t(8, 30, '運んだ', 'hf-tj') + HF.t(8, 43, 'DECK', 'hf-t hf-ta');
+        b += HF.a(40, 54, 92, 54);
+        b += HF.t(238, 40, '落とした', 'hf-tj') + HF.t(238, 53, '場所に', 'hf-tj') + HF.t(238, 66, '並ぶ', 'hf-tj');
+        return HF.svg(300, 108, b);
+      },
       fxOrder() {
         const items = [['IN', null], ['GATE', 'gate'], ['FILTER', 'filter'], ['PITCH', 'pitch'], ['ECHO', 'echo'], ['TAPE', 'tape'], ['MASTER', null]];
         let b = '';
@@ -3520,6 +3702,26 @@ registerProcessor('livepad-pitch', LivepadPitch);
           { name: 'SIGNAL FLOW', fig: 'flow', text: '音はこの順に流れます。DUCK（AUTO DUCKINGとDUCKボタン）・EQ・PITCH DECK（TEMPO・KEY）はBGMだけにかかります。FX PADは、FXごとに BGM・ALL・SE のどれにかけるかを選べます。' },
           { name: 'DUCK', fig: 'duck', text: '押している間だけ、BGMを今の音量の80%に下げます（下げ幅は設定の「DUCKの下げ幅」で変えられます）。離すと元に戻ります。' },
           { name: 'PANIC STOP', text: 'SE・BGM・FXの残響まで、全部の音をすぐに止めます。PCでは Esc キーでも押せます。' }
+        ]
+      },
+      layout: {
+        title: 'LAYOUT',
+        intro: 'DECKの大きさと並びを自由に変えるモードです。ヘッダーの LAYOUT ボタンで入り、DONE で終わります。並びはこの端末に自動で保存されます。',
+        sections: [
+          { name: '大きさを変える', fig: 'layoutTiles', text: 'DECKとDECKの間の線をドラッグすると、両側の大きさが変わります。DECKごとに「これ以上は小さくできない」大きさがあります。' },
+          { name: '並べ替える', fig: 'layoutDrop', text: [
+            'DECKの上の板をドラッグして、別のDECKの上へ運びます。光った場所に並びます（上下左右のどこか。真ん中なら2つが入れ替わる）',
+            '画面のいちばん外側の辺へ運ぶと、画面の端から端までの長さで並びます'
+          ] },
+          { name: 'FLOAT / HIDE', text: [
+            '<b>FLOAT</b>：そのDECKを浮かせて、ほかのDECKの上に重ねて置けます（タイトルを持って移動、右下の角で大きさ）。<b>DOCK</b> で元に戻ります',
+            '<b>HIDE</b>：使わないDECKを隠します。隠したDECKは上のバーの「+」で右端に戻せます'
+          ] },
+          { name: 'SAVE / RESET', text: [
+            '<b>SAVE</b>：今の並びに名前を付けて保存します（例：「配信用」「練習用」）。左のリストから選ぶと切り替わります。Googleでログイン中は、ほかの端末でも使えます',
+            '<b>DELETE</b>：選んでいる保存済みのレイアウトを削除。<b>RESET</b>：初期の並びに戻します（どちらも2回押し）',
+            'iPhone横向きなど狭い画面では、タブ表示になります（ここで隠したDECKはタブにも出ません）'
+          ] }
         ]
       },
       pitch: {
@@ -4127,6 +4329,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
         eq: state.eq,
         fx: state.fx,
         pitch: state.pitch,
+        layoutPresets: state.layout.presets,   // 名前を付けて保存したレイアウト（今の並びは端末ごと）
         themeColor: state.themeColor
       };
     }
@@ -4144,6 +4347,11 @@ registerProcessor('livepad-pitch', LivepadPitch);
       if (d.eq) state.eq = normalizeEq(d.eq);
       if (d.fx) state.fx = normalizeFx(d.fx);
       if (d.pitch) state.pitch = normalizePitch(d.pitch);
+      if (Array.isArray(d.layoutPresets)) {
+        const n = normalizeLayout({ tree: state.layout.tree, hidden: state.layout.hidden, presets: d.layoutPresets, active: state.layout.active });
+        state.layout.presets = n.presets;
+        state.layout.active = n.active;
+      }
       if (d.themeColor && THEMES[d.themeColor]) state.themeColor = d.themeColor;
       state.activeBankIndex = Math.min(state.activeBankIndex, state.banks.length - 1);
       state.bgm.trackIndex = 0;
@@ -5645,6 +5853,38 @@ registerProcessor('livepad-pitch', LivepadPitch);
       backdrop.classList.add('hidden');
       backdrop.classList.remove('flex');
     }
+    /** SE DECKの形に合わせてパッドのマスを組み替える（4×4／8×2／2×8。iPhone 4×2なら 4×2／8×1／2×4） */
+    function fitPadGrid() {
+      const grid = document.getElementById('padGrid');
+      if (!grid) return;
+      const n = state.layoutMode === 'iphone' ? 8 : 16;
+      const W = grid.clientWidth;
+      const H = grid.clientHeight;
+      if (!W || !H) return;
+      const gap = 8;
+      const opts = n === 16 ? [[4, 4], [8, 2], [2, 8]] : [[4, 2], [8, 1], [2, 4]];
+      let best = null;
+      opts.forEach(([c, r]) => {
+        const pw = (W - gap * (c - 1)) / c;
+        const ph = (H - gap * (r - 1)) / r;
+        if (pw <= 0 || ph <= 0) return;
+        // パッドの横:縦がおよそ 1.6:1 に近く、小さくなりすぎない形を選ぶ
+        let score = Math.abs(Math.log((pw / ph) / 1.6));
+        if (ph < 56) score += 2;
+        if (pw < 70) score += 2;
+        if (!best || score < best.score) best = { c, r, ph, score };
+      });
+      if (!best) return;
+      const shape = `${best.c}x${best.r}`;
+      if (grid.dataset.shape !== shape) {
+        grid.style.gridTemplateColumns = `repeat(${best.c}, minmax(0, 1fr))`;
+        grid.style.gridTemplateRows = `repeat(${best.r}, minmax(0, 1fr))`;
+        grid.dataset.shape = shape;
+      }
+      const density = best.ph < 62 ? 'xs' : best.ph < 88 ? 'sm' : '';
+      if ((grid.dataset.density || '') !== density) grid.dataset.density = density;
+    }
+
     function renderPads() {
       const grid = document.getElementById('padGrid');
       const bank = state.banks[state.activeBankIndex];
@@ -5652,8 +5892,10 @@ registerProcessor('livepad-pitch', LivepadPitch);
       const padCount = isIphone ? 8 : 16;
 
       // 大きな画面（PC）ではパッドが伸びすぎないように上限を設けて中央に置く
-      grid.className = `flex-1 min-h-0 w-full grid grid-cols-4 ${isIphone ? 'grid-rows-2 gap-3 max-h-[640px]' : 'grid-rows-4 gap-2 sm:gap-2.5 max-h-[940px]'}`;
+      grid.className = `flex-1 min-h-0 w-full grid grid-cols-4 ${isIphone ? 'grid-rows-2 gap-2 max-h-[640px]' : 'grid-rows-4 gap-2 max-h-[940px]'}`;
+      grid.dataset.shape = '';
       grid.innerHTML = '';
+      requestAnimationFrame(fitPadGrid);
 
       bank.pads.slice(0, padCount).forEach((pad, padIndex) => {
         const palette = COLOR_PALETTE[pad.color] || COLOR_PALETTE.cyan;
@@ -5691,8 +5933,8 @@ registerProcessor('livepad-pitch', LivepadPitch);
           <div class="absolute top-0 left-0 right-0 h-1.5" style="background-color: ${isEmpty ? '#334155' : palette.hex}; opacity: ${isEmpty ? 0.4 : 0.92};"></div>
           <div class="pad-progress-fill" id="prog-${pad.id}"></div>
 
-          <div class="relative z-10 flex items-center justify-between gap-1 pt-0.5">
-            <div class="flex items-center gap-1">
+          <div class="pad-top relative z-10 flex items-center justify-between gap-1 pt-0.5">
+            <div class="pad-badges flex items-center gap-1">
               ${!isEmpty ? `<span class="whitespace-nowrap px-1.5 py-0.5 rounded text-[9px] font-mono-num font-bold border ${modeBadgeColor}">${pad.mode}</span>` : ''}
               ${sourceBadgeHtml}
             </div>
@@ -5709,12 +5951,12 @@ registerProcessor('livepad-pitch', LivepadPitch);
           </div>
 
           <div class="relative z-10 flex-1 flex items-center justify-center text-center px-1 min-h-0">
-            <span class="${isIphone ? 'text-base sm:text-lg' : 'text-xs sm:text-sm lg:text-base'} font-extrabold leading-tight line-clamp-2 ${isEmpty ? 'text-slate-500' : 'text-slate-100 drop-shadow'}">
+            <span class="pad-name ${isIphone ? 'text-base sm:text-lg' : 'text-xs sm:text-sm lg:text-base'} font-extrabold leading-tight line-clamp-2 ${isEmpty ? 'text-slate-500' : 'text-slate-100 drop-shadow'}">
               ${isEmpty ? '+ 音源を割り当て' : pad.name}
             </span>
           </div>
 
-          <div class="relative z-10 flex items-center justify-between text-[9px] font-mono-num text-slate-400">
+          <div class="pad-bottom relative z-10 flex items-center justify-between text-[9px] font-mono-num text-slate-400">
             <span class="flex items-center"><span class="kbd" title="キーボードの ${KEY_LABELS[padIndex]} キーで鳴らせます">${KEY_LABELS[padIndex]}</span><span class="pad-vol whitespace-nowrap">${isEmpty ? '' : `VOL ${pad.volume}%${pad.pitch ? ` P${fmtSemitone(pad.pitch)}` : ''}`}</span></span>
             <span class="pad-status-dot flex items-center gap-1 ${isPlaying ? 'text-white font-bold' : 'opacity-40'}">
               ${!isEmpty ? `<span class="w-1.5 h-1.5 rounded-full" style="background-color: ${isPlaying ? palette.hex : '#64748b'};"></span>${isPlaying ? 'PLAY' : 'IDLE'}` : ''}
@@ -6028,6 +6270,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
       slot.classList.add('is-empty');
       applyPanelGeometry(id);
       bringPanelToFront(id);
+      updateTileOverlays();
     }
 
     /** 元の位置に戻す。keepState=true のときは見た目だけ戻し、浮遊の設定は残す（狭い画面で一時的に戻すとき） */
@@ -6039,6 +6282,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
       ['left', 'top', 'width', 'height', 'zIndex'].forEach(k => { p.style[k] = ''; });
       slot.insertBefore(p, slot.firstChild);
       slot.classList.remove('is-empty', 'is-drop-target');
+      updateTileOverlays();
     }
 
     function bindPanel(id) {
@@ -6053,7 +6297,8 @@ registerProcessor('livepad-pitch', LivepadPitch);
 
       // タイトル部分をドラッグ：少し動かすと浮遊 → 好きな位置へ。元の場所で離すと戻る
       head.addEventListener('pointerdown', (e) => {
-        if (state.perfLock || layoutUi.compact) return;   // 狭い画面ではパネルを浮かせない
+        // 動かせるのは LAYOUT編集中の浮いているパネルだけ（並んでいるDECKは上の板でドラッグする）
+        if (state.perfLock || layoutUi.compact || !layoutUi.edit || !state.panels[id].floating) return;
         if (e.pointerType === 'mouse' && e.button !== 0) return;
         if (e.target.closest('button, input, select, label, a')) return;
         e.preventDefault();
@@ -6118,7 +6363,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
       // 右下の角をドラッグして大きさを変更（浮遊中のみ）
       const rz = p.querySelector('.panel-resize');
       rz.addEventListener('pointerdown', (e) => {
-        if (state.perfLock || !state.panels[id].floating) return;
+        if (state.perfLock || !layoutUi.edit || !state.panels[id].floating) return;
         e.preventDefault();
         e.stopPropagation();
         const st = state.panels[id];
@@ -6152,27 +6397,32 @@ registerProcessor('livepad-pitch', LivepadPitch);
     }
 
     // ---- 画面の大きさに合わせたレイアウト ----------------------------------------
-    //   広い画面：左＝BGM・EQ・PITCH／右＝SEの下に FX PAD と MIXER（右の列が狭ければ MIXER は左の列）
+    //   広い画面：タイル型。画面を区切って各DECKを並べる（区切り線で大きさ、LAYOUT編集モードで並べ替え）
     //   狭い画面（iPhone横向き・iPhone 4×2）：左右の列それぞれタブで1つずつ大きく表示。浮遊はしない
-    const layoutUi = { compact: false, ready: false, leftTab: 'bgm', rightTab: 'se' };
+    const layoutUi = { compact: false, ready: false, edit: false, leftTab: 'bgm', rightTab: 'se' };
+    const COMPACT_LEFT = ['bgm', 'eq', 'pitch', 'mixer'];
+    const COMPACT_RIGHT = ['se', 'fx'];
 
     function isCompactLayout() {
       return state.layoutMode === 'iphone' || window.innerHeight < 600 || window.innerWidth < 700;
     }
 
-    function placeMixerSlot() {
-      const slot = $('slot-mixer');
-      const inRow = !layoutUi.compact && $('rightCol').clientWidth >= 760;
-      const parent = inRow ? $('deckBottomRow') : $('leftCol');
-      if (slot.parentElement !== parent) parent.appendChild(slot);
-      slot.classList.toggle('in-row', inRow);
+    /** 狭い画面：決まった左右の列に置く（隠したDECKは置き場へ） */
+    function placeCompactSlots() {
+      const hidden = new Set(state.layout.hidden);
+      COMPACT_LEFT.forEach(id => (hidden.has(id) ? $('deckStash') : $('leftCol')).appendChild(slotEl(id)));
+      COMPACT_RIGHT.forEach(id => (hidden.has(id) ? $('deckStash') : $('rightCol')).appendChild(slotEl(id)));
+      const firstShown = (ids) => ids.find(id => !hidden.has(id));
+      if (hidden.has(layoutUi.leftTab)) layoutUi.leftTab = firstShown(COMPACT_LEFT) || 'bgm';
+      if (hidden.has(layoutUi.rightTab)) layoutUi.rightTab = firstShown(COMPACT_RIGHT) || 'se';
+      document.querySelectorAll('[data-col-tab]').forEach(btn => btn.classList.toggle('hidden', hidden.has(btn.dataset.colTab)));
     }
 
     function applyColTabs() {
-      ['bgm', 'eq', 'pitch', 'mixer'].forEach(id => {
+      COMPACT_LEFT.forEach(id => {
         $(`slot-${id}`).classList.toggle('is-shown', layoutUi.compact && layoutUi.leftTab === id);
       });
-      ['se', 'fx'].forEach(id => {
+      COMPACT_RIGHT.forEach(id => {
         $(`slot-${id}`).classList.toggle('is-shown', layoutUi.compact && layoutUi.rightTab === id);
       });
       document.querySelectorAll('[data-col-tab]').forEach(btn => {
@@ -6191,6 +6441,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
       const changed = compact !== layoutUi.compact;
       layoutUi.compact = compact;
       $('deviceShell').classList.toggle('is-compact', compact);
+      if (compact && layoutUi.edit) setLayoutEdit(false);
       if (changed) {
         if (compact) {
           // 浮いているパネルは見た目だけ元の位置へ（設定は残すので、広い画面に戻ると元の位置に浮く）
@@ -6198,22 +6449,623 @@ registerProcessor('livepad-pitch', LivepadPitch);
         } else {
           PANEL_IDS.forEach(id => {
             const st = state.panels[id];
-            if (st.floating && $(`panel-${id}`).parentElement !== $('floatLayer')) floatPanel(id, { x: st.x, y: st.y, w: st.w, h: st.h });
+            if (st.floating && !state.layout.hidden.includes(id) && $(`panel-${id}`).parentElement !== $('floatLayer')) {
+              floatPanel(id, { x: st.x, y: st.y, w: st.w, h: st.h });
+            }
           });
         }
       }
-      placeMixerSlot();
+      if (compact) placeCompactSlots();
+      else renderTiles();
       applyColTabs();
+    }
+
+    // =========================================================================
+    // タイル型レイアウト
+    //   レイアウトは木の形で持つ：{ t:'split', dir:'row'|'col', sizes:[比率...], children:[...] } と { t:'deck', id }
+    //   row＝横に並べる、col＝縦に並べる。sizes は合計1の比率なので、画面の大きさが変わっても形が崩れない
+    // =========================================================================
+    const DECK_IDS = ['bgm', 'eq', 'pitch', 'se', 'fx', 'mixer'];
+    // これより小さくすると使えない大きさ（px）
+    const DECK_MIN = {
+      bgm: { w: 240, h: 190 }, eq: { w: 240, h: 200 }, pitch: { w: 250, h: 104 },
+      se: { w: 300, h: 180 }, fx: { w: 330, h: 190 }, mixer: { w: 280, h: 210 }
+    };
+    const TILE_GAP = 8;
+
+    function createDefaultLayoutTree() {
+      return {
+        t: 'split', dir: 'row', sizes: [0.34, 0.66], children: [
+          { t: 'split', dir: 'col', sizes: [0.52, 0.32, 0.16], children: [{ t: 'deck', id: 'bgm' }, { t: 'deck', id: 'eq' }, { t: 'deck', id: 'pitch' }] },
+          { t: 'split', dir: 'col', sizes: [0.6, 0.4], children: [
+            { t: 'deck', id: 'se' },
+            { t: 'split', dir: 'row', sizes: [0.57, 0.43], children: [{ t: 'deck', id: 'fx' }, { t: 'deck', id: 'mixer' }] }
+          ] }
+        ]
+      };
+    }
+
+    function createDefaultLayout() {
+      return { tree: createDefaultLayoutTree(), hidden: [], presets: [], active: '' };
+    }
+
+    /** 木を整える：重複・不明なDECKを外し、子が1つの区切りはまとめ、同じ向きの入れ子は平らにし、比率を合計1にする */
+    function normalizeTree(node, seen) {
+      if (!node || typeof node !== 'object') return null;
+      if (node.t === 'deck') {
+        if (!DECK_IDS.includes(node.id) || seen.has(node.id)) return null;
+        seen.add(node.id);
+        return { t: 'deck', id: node.id };
+      }
+      if (node.t !== 'split' || !Array.isArray(node.children)) return null;
+      const dir = node.dir === 'col' ? 'col' : 'row';
+      const rawSizes = Array.isArray(node.sizes) && node.sizes.length === node.children.length ? node.sizes : null;
+      let children = [];
+      let sizes = [];
+      node.children.forEach((ch, i) => {
+        const c = normalizeTree(ch, seen);
+        if (!c) return;
+        const sz = rawSizes && typeof rawSizes[i] === 'number' && rawSizes[i] > 0 ? rawSizes[i] : 1 / node.children.length;
+        if (c.t === 'split' && c.dir === dir) {
+          // 同じ向きの入れ子は1段にまとめる
+          c.children.forEach((gc, j) => { children.push(gc); sizes.push(sz * c.sizes[j]); });
+        } else {
+          children.push(c);
+          sizes.push(sz);
+        }
+      });
+      if (children.length === 0) return null;
+      if (children.length === 1) return children[0];
+      const sum = sizes.reduce((a, b) => a + b, 0) || 1;
+      sizes = sizes.map(v => v / sum);
+      return { t: 'split', dir, sizes, children };
+    }
+
+    function normalizeLayoutEntry(e) {
+      const seen = new Set();
+      let tree = normalizeTree(e && e.tree, seen);
+      if (!tree) { seen.clear(); tree = normalizeTree(createDefaultLayoutTree(), seen); }
+      const hidden = [];
+      ((e && Array.isArray(e.hidden)) ? e.hidden : []).forEach(id => {
+        if (DECK_IDS.includes(id) && !seen.has(id) && !hidden.includes(id)) hidden.push(id);
+      });
+      // どこにも無いDECK（新しく増えたDECKなど）は右端に足す
+      DECK_IDS.forEach(id => {
+        if (!seen.has(id) && !hidden.includes(id)) {
+          tree = insertAtRootEdge(tree, id, 'right');
+          seen.add(id);
+        }
+      });
+      return { tree, hidden };
+    }
+
+    function normalizeLayout(l) {
+      const d = createDefaultLayout();
+      if (!l || typeof l !== 'object') return d;
+      const cur = normalizeLayoutEntry(l);
+      const presets = [];
+      (Array.isArray(l.presets) ? l.presets : []).forEach(p => {
+        if (!p || typeof p.name !== 'string') return;
+        const name = p.name.trim().slice(0, 20);
+        if (!name || presets.some(x => x.name === name)) return;
+        presets.push({ name, ...normalizeLayoutEntry(p) });
+      });
+      const active = typeof l.active === 'string' && presets.some(p => p.name === l.active) ? l.active : '';
+      return { tree: cur.tree, hidden: cur.hidden, presets, active };
+    }
+
+    function cloneTree(t) {
+      return JSON.parse(JSON.stringify(t));
+    }
+
+    function treeDecks(node, out = []) {
+      if (!node) return out;
+      if (node.t === 'deck') out.push(node.id);
+      else node.children.forEach(c => treeDecks(c, out));
+      return out;
+    }
+
+    /** そのDECKを木から外す（外したあとは normalizeTree で整える） */
+    function removeFromTree(node, id) {
+      if (!node) return null;
+      if (node.t === 'deck') return node.id === id ? null : node;
+      const children = [];
+      const sizes = [];
+      node.children.forEach((c, i) => {
+        const r = removeFromTree(c, id);
+        if (r) { children.push(r); sizes.push(node.sizes[i]); }
+      });
+      if (!children.length) return null;
+      return { t: 'split', dir: node.dir, sizes, children };
+    }
+
+    /** 画面のいちばん外側の辺に足す（全体の高さ・幅いっぱいの列や段になる） */
+    function insertAtRootEdge(tree, id, side) {
+      const dir = side === 'left' || side === 'right' ? 'row' : 'col';
+      const before = side === 'left' || side === 'top';
+      const leaf = { t: 'deck', id };
+      if (!tree) return leaf;
+      if (tree.t === 'split' && tree.dir === dir) {
+        const sizes = tree.sizes.map(v => v * 0.75);
+        const children = tree.children.slice();
+        if (before) { children.unshift(leaf); sizes.unshift(0.25); } else { children.push(leaf); sizes.push(0.25); }
+        return { t: 'split', dir, sizes, children };
+      }
+      return { t: 'split', dir, sizes: before ? [0.25, 0.75] : [0.75, 0.25], children: before ? [leaf, tree] : [tree, leaf] };
+    }
+
+    /** target のDECKの上下左右に id を置く（同じ向きの並びなら隣に入り、違えば target を2つに分ける） */
+    function insertNextTo(node, id, targetId, side, parent = null, index = -1) {
+      if (node.t === 'deck') {
+        if (node.id !== targetId) return false;
+        const dir = side === 'left' || side === 'right' ? 'row' : 'col';
+        const before = side === 'left' || side === 'top';
+        const leaf = { t: 'deck', id };
+        if (parent && parent.dir === dir) {
+          const half = parent.sizes[index] / 2;
+          parent.sizes[index] = half;
+          parent.children.splice(before ? index : index + 1, 0, leaf);
+          parent.sizes.splice(before ? index : index + 1, 0, half);
+        } else {
+          const split = { t: 'split', dir, sizes: [0.5, 0.5], children: before ? [leaf, { t: 'deck', id: targetId }] : [{ t: 'deck', id: targetId }, leaf] };
+          if (parent) parent.children[index] = split;
+          else return split;   // 木の根っこがそのDECKだけだった
+        }
+        return true;
+      }
+      for (let i = 0; i < node.children.length; i++) {
+        const r = insertNextTo(node.children[i], id, targetId, side, node, i);
+        if (r) return r;
+      }
+      return false;
+    }
+
+    function swapInTree(node, a, b) {
+      if (node.t === 'deck') {
+        if (node.id === a) node.id = b;
+        else if (node.id === b) node.id = a;
+        return;
+      }
+      node.children.forEach(c => swapInTree(c, a, b));
+    }
+
+    /** DECKを運んで落としたときの並べ替え */
+    function moveDeckInLayout(srcId, target, zone) {
+      let tree = cloneTree(state.layout.tree);
+      if (target === 'root') {
+        tree = removeFromTree(tree, srcId);
+        tree = insertAtRootEdge(tree, srcId, zone);
+      } else if (zone === 'center') {
+        swapInTree(tree, srcId, target);
+      } else {
+        tree = removeFromTree(tree, srcId);
+        tree = normalizeTree(tree, new Set());
+        const r = insertNextTo(tree, srcId, target, zone);
+        if (r && r !== true) tree = r;
+      }
+      state.layout.tree = normalizeTree(tree, new Set());
+      state.layout.active = '';
+    }
+
+    /** そのまとまりの最小サイズ（横に並ぶものは幅を足し、縦に並ぶものは高さを足す） */
+    function treeMinSize(node) {
+      if (node.t === 'deck') return { ...DECK_MIN[node.id] };
+      const mins = node.children.map(treeMinSize);
+      const gaps = TILE_GAP * (node.children.length - 1);
+      if (node.dir === 'row') {
+        return { w: mins.reduce((a, m) => a + m.w, 0) + gaps, h: Math.max(...mins.map(m => m.h)) };
+      }
+      return { w: Math.max(...mins.map(m => m.w)), h: mins.reduce((a, m) => a + m.h, 0) + gaps };
+    }
+
+    /** 木の形どおりに画面を組み立てる（各DECKの定位置の要素はそのまま運ぶので、中身の状態は消えない） */
+    // 各DECKの定位置の要素（画面から一時的に外れても見失わないよう、最初に覚えておく）
+    const slotCache = {};
+    function slotEl(id) {
+      if (!slotCache[id]) slotCache[id] = document.getElementById(`slot-${id}`);
+      return slotCache[id];
+    }
+
+    function renderTiles() {
+      const root = $('tileRoot');
+      // 先に隠すDECKを置き場へ（古い並びを消すときに一緒に消えないように）
+      state.layout.hidden.forEach(id => $('deckStash').appendChild(slotEl(id)));
+      const build = (node, path) => {
+        let el;
+        if (node.t === 'deck') {
+          el = document.createElement('div');
+          el.className = 'tile-leaf';
+          el.dataset.deck = node.id;
+          el.appendChild(slotEl(node.id));
+        } else {
+          el = document.createElement('div');
+          el.className = `tile-split is-${node.dir}`;
+          el.dataset.path = path.join('.');
+          node.children.forEach((ch, i) => {
+            if (i > 0) {
+              const d = document.createElement('div');
+              d.className = `tile-divider is-${node.dir}`;
+              d.dataset.path = path.join('.');
+              d.dataset.index = String(i - 1);
+              el.appendChild(d);
+            }
+            const c = build(ch, path.concat(i));
+            c.style.flex = `${node.sizes[i].toFixed(5)} 1 0px`;
+            el.appendChild(c);
+          });
+        }
+        const m = treeMinSize(node);
+        el.style.minWidth = `${m.w}px`;
+        el.style.minHeight = `${m.h}px`;
+        return el;
+      };
+      const tree = state.layout.tree;
+      const top = build(tree, []);
+      top.style.flex = '1 1 0px';
+      root.replaceChildren(top);
+      fxUi.dirty = true;
+      drawEqCurve();
+      renderLayoutBar();
+    }
+
+    function nodeAtPath(path) {
+      let n = state.layout.tree;
+      path.forEach(i => { n = n.children[i]; });
+      return n;
+    }
+
+    /** 区切り線のドラッグ：両隣の大きさを変える（最小サイズより小さくはしない） */
+    function bindTileDividers() {
+      $('tileRoot').addEventListener('pointerdown', (e) => {
+        const div = e.target.closest('.tile-divider');
+        if (!div || !layoutUi.edit) return;
+        e.preventDefault();
+        const path = div.dataset.path ? div.dataset.path.split('.').map(Number) : [];
+        const idx = Number(div.dataset.index);
+        const node = nodeAtPath(path);
+        const splitEl = div.parentElement;
+        const cells = [...splitEl.children].filter(c => !c.classList.contains('tile-divider'));
+        const isRow = node.dir === 'row';
+        const px = cells.map(c => (isRow ? c.getBoundingClientRect().width : c.getBoundingClientRect().height));
+        const total = px.reduce((a, b) => a + b, 0);
+        const pair = px[idx] + px[idx + 1];
+        const minA = isRow ? treeMinSize(node.children[idx]).w : treeMinSize(node.children[idx]).h;
+        const minB = isRow ? treeMinSize(node.children[idx + 1]).w : treeMinSize(node.children[idx + 1]).h;
+        const start = isRow ? e.clientX : e.clientY;
+        try { div.setPointerCapture(e.pointerId); } catch (err) { /* 古いブラウザ */ }
+        div.classList.add('is-dragging');
+        const move = (ev) => {
+          const d = (isRow ? ev.clientX : ev.clientY) - start;
+          const a = Math.max(minA, Math.min(pair - minB, px[idx] + d));
+          const sizes = px.map(v => v / total);
+          sizes[idx] = a / total;
+          sizes[idx + 1] = (pair - a) / total;
+          node.sizes = sizes;
+          cells[idx].style.flex = `${sizes[idx].toFixed(5)} 1 0px`;
+          cells[idx + 1].style.flex = `${sizes[idx + 1].toFixed(5)} 1 0px`;
+        };
+        const up = () => {
+          div.removeEventListener('pointermove', move);
+          div.removeEventListener('pointerup', up);
+          div.removeEventListener('pointercancel', up);
+          div.classList.remove('is-dragging');
+          state.layout.active = '';
+          renderLayoutBar();
+          storage.saveState();
+        };
+        div.addEventListener('pointermove', move);
+        div.addEventListener('pointerup', up);
+        div.addEventListener('pointercancel', up);
+      });
+    }
+
+    // ---- LAYOUT編集モード ------------------------------------------------------
+    function setLayoutEdit(on) {
+      if (on && layoutUi.compact) {
+        showToast('LAYOUTの編集は広い画面（iPad・PC）で使えます');
+        return;
+      }
+      if (on && state.perfLock) return;
+      layoutUi.edit = !!on;
+      $('deviceShell').classList.toggle('is-layout-edit', layoutUi.edit);
+      const b = $('btnLayoutEdit');
+      b.classList.toggle('is-on', layoutUi.edit);
+      b.setAttribute('aria-pressed', String(layoutUi.edit));
+      if (layoutUi.edit) renderLayoutBar();
+      fxUi.dirty = true;
+    }
+
+    /** 各DECKの板のボタン表示（浮いているDECKは FLOAT → DOCK） */
+    function updateTileOverlays() {
+      DECK_IDS.forEach(id => {
+        const btn = document.querySelector(`.tile-overlay[data-deck="${id}"] [data-ov="float"]`);
+        if (btn) btn.textContent = state.panels[id] && state.panels[id].floating ? 'DOCK' : 'FLOAT';
+      });
+    }
+
+    /** ツールバー：保存したレイアウトの一覧、隠したDECK */
+    function renderLayoutBar() {
+      const sel = $('layoutPresetSelect');
+      const L = state.layout;
+      sel.innerHTML = '';
+      const head = document.createElement('option');
+      head.value = '';
+      head.textContent = L.presets.length ? (L.active ? '— 保存したレイアウト —' : '（保存していない並び）') : '保存したレイアウトなし';
+      sel.appendChild(head);
+      L.presets.forEach(p => {
+        const o = document.createElement('option');
+        o.value = p.name;
+        o.textContent = p.name;
+        sel.appendChild(o);
+      });
+      sel.value = L.active || '';
+      $('btnLayoutDelete').disabled = !L.active;
+      const chips = $('layoutHiddenChips');
+      chips.innerHTML = '';
+      L.hidden.forEach(id => {
+        const c = document.createElement('button');
+        c.type = 'button';
+        c.className = 'layout-chip';
+        c.textContent = `+ ${PANEL_NAMES[id]}`;
+        c.title = `${PANEL_NAMES[id]} をもう一度表示する`;
+        c.addEventListener('click', () => showDeck(id));
+        chips.appendChild(c);
+      });
+      updateTileOverlays();
+    }
+
+    function layoutChanged(msg) {
+      state.layout.active = '';
+      applyResponsiveLayout();
+      storage.saveState();
+      if (msg) showToast(msg);
+    }
+
+    function hideDeck(id) {
+      if (treeDecks(state.layout.tree).length <= 1) {
+        showToast('最後の1つのDECKは隠せません');
+        return;
+      }
+      if (state.panels[id].floating) dockPanel(id);
+      state.layout.tree = normalizeTree(removeFromTree(cloneTree(state.layout.tree), id), new Set());
+      state.layout.hidden.push(id);
+      layoutChanged(`${PANEL_NAMES[id]} を隠しました（上のバーの「+」で戻せます）`);
+    }
+
+    function showDeck(id) {
+      state.layout.hidden = state.layout.hidden.filter(x => x !== id);
+      state.layout.tree = normalizeTree(insertAtRootEdge(cloneTree(state.layout.tree), id, 'right'), new Set());
+      layoutChanged(`${PANEL_NAMES[id]} を右端に戻しました`);
+    }
+
+    function toggleFloatFromLayout(id) {
+      if (state.panels[id].floating) {
+        dockPanel(id);
+      } else {
+        const shell = $('deviceShell').getBoundingClientRect();
+        const r = $(`slot-${id}`).getBoundingClientRect();
+        floatPanel(id, {
+          x: r.left - shell.left + 24, y: r.top - shell.top + 24,
+          w: Math.min(r.width, Math.max(PANEL_MIN[id].w, shell.width * 0.6)),
+          h: Math.min(r.height, Math.max(PANEL_MIN[id].h, shell.height * 0.7))
+        });
+      }
+      storage.saveState();
+    }
+
+    /** 2回押しで実行するボタン（初期化・削除など） */
+    function confirmTwice(btn, label, run) {
+      if (btn.dataset.armed === '1') {
+        btn.dataset.armed = '';
+        btn.textContent = label;
+        btn.classList.remove('is-danger');
+        clearTimeout(btn._armTimer);
+        run();
+        return;
+      }
+      btn.dataset.armed = '1';
+      btn.textContent = 'もう一度押すと実行';
+      btn.classList.add('is-danger');
+      clearTimeout(btn._armTimer);
+      btn._armTimer = setTimeout(() => {
+        btn.dataset.armed = '';
+        btn.textContent = label;
+        btn.classList.remove('is-danger');
+      }, 3000);
+    }
+
+    /** DECKを運んでいる指の下にある「落とし先」（ほかのDECKの上下左右・真ん中、または画面の外側の辺） */
+    function findDropTarget(x, y, srcId) {
+      const rr = $('tileRoot').getBoundingClientRect();
+      const inside = (r) => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+      if (!inside(rr)) return null;
+      const EDGE = 22;
+      const pad = 10;
+      const iw = rr.width - pad * 2;
+      const ih = rr.height - pad * 2;
+      if (x - rr.left < EDGE) return { target: 'root', zone: 'left', rect: { left: rr.left + pad, top: rr.top + pad, width: iw * 0.25, height: ih } };
+      if (rr.right - x < EDGE) return { target: 'root', zone: 'right', rect: { left: rr.right - pad - iw * 0.25, top: rr.top + pad, width: iw * 0.25, height: ih } };
+      if (y - rr.top < EDGE) return { target: 'root', zone: 'top', rect: { left: rr.left + pad, top: rr.top + pad, width: iw, height: ih * 0.25 } };
+      if (rr.bottom - y < EDGE) return { target: 'root', zone: 'bottom', rect: { left: rr.left + pad, top: rr.bottom - pad - ih * 0.25, width: iw, height: ih * 0.25 } };
+      for (const id of treeDecks(state.layout.tree)) {
+        if (id === srcId) continue;
+        const r = $(`slot-${id}`).getBoundingClientRect();
+        if (!inside(r)) continue;
+        const fx = (x - r.left) / r.width;
+        const fy = (y - r.top) / r.height;
+        let zone;
+        let rect;
+        if (fx > 0.3 && fx < 0.7 && fy > 0.3 && fy < 0.7) {
+          zone = 'center';
+          rect = { left: r.left + 6, top: r.top + 6, width: r.width - 12, height: r.height - 12 };
+        } else {
+          const d = { left: fx, right: 1 - fx, top: fy, bottom: 1 - fy };
+          zone = Object.keys(d).reduce((a, b) => (d[a] <= d[b] ? a : b));
+          rect = {
+            left: zone === 'right' ? r.left + r.width / 2 : r.left,
+            top: zone === 'bottom' ? r.top + r.height / 2 : r.top,
+            width: zone === 'left' || zone === 'right' ? r.width / 2 : r.width,
+            height: zone === 'top' || zone === 'bottom' ? r.height / 2 : r.height
+          };
+        }
+        return { target: id, zone, rect };
+      }
+      return null;
+    }
+
+    /** 板をドラッグしてDECKを運ぶ */
+    function startDeckDrag(e, id, ov) {
+      if (!layoutUi.edit || e.target.closest('button')) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      e.preventDefault();
+      const sx = e.clientX;
+      const sy = e.clientY;
+      let dragging = false;
+      let ghost = null;
+      let drop = null;
+      const mark = $('tileDropMark');
+      try { ov.setPointerCapture(e.pointerId); } catch (err) { /* 古いブラウザ */ }
+      const move = (ev) => {
+        if (!dragging) {
+          if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 6) return;
+          dragging = true;
+          ov.classList.add('is-source');
+          ghost = document.createElement('div');
+          ghost.className = 'tile-ghost';
+          ghost.textContent = PANEL_NAMES[id];
+          document.body.appendChild(ghost);
+        }
+        ghost.style.left = `${ev.clientX}px`;
+        ghost.style.top = `${ev.clientY}px`;
+        drop = findDropTarget(ev.clientX, ev.clientY, id);
+        if (drop) {
+          const shell = $('deviceShell').getBoundingClientRect();
+          mark.style.display = 'block';
+          mark.style.left = `${drop.rect.left - shell.left}px`;
+          mark.style.top = `${drop.rect.top - shell.top}px`;
+          mark.style.width = `${drop.rect.width}px`;
+          mark.style.height = `${drop.rect.height}px`;
+        } else {
+          mark.style.display = 'none';
+        }
+      };
+      const up = () => {
+        ov.removeEventListener('pointermove', move);
+        ov.removeEventListener('pointerup', up);
+        ov.removeEventListener('pointercancel', up);
+        if (ghost) ghost.remove();
+        mark.style.display = 'none';
+        ov.classList.remove('is-source');
+        if (!dragging || !drop) return;
+        const where = drop.target === 'root'
+          ? { left: '左端', right: '右端', top: '上端', bottom: '下端' }[drop.zone]
+          : drop.zone === 'center' ? `${PANEL_NAMES[drop.target]} と入れ替え` : `${PANEL_NAMES[drop.target]} の${{ left: '左', right: '右', top: '上', bottom: '下' }[drop.zone]}`;
+        moveDeckInLayout(id, drop.target, drop.zone);
+        layoutChanged(`${PANEL_NAMES[id]} → ${where}`);
+      };
+      ov.addEventListener('pointermove', move);
+      ov.addEventListener('pointerup', up);
+      ov.addEventListener('pointercancel', up);
+    }
+
+    function openLayoutName() {
+      $('layoutNameInput').value = state.layout.active || '';
+      const b = $('layoutNameBackdrop');
+      b.classList.remove('hidden');
+      b.classList.add('flex');
+      setTimeout(() => { $('layoutNameInput').focus(); $('layoutNameInput').select(); }, 30);
+    }
+
+    function closeLayoutName() {
+      const b = $('layoutNameBackdrop');
+      b.classList.add('hidden');
+      b.classList.remove('flex');
+    }
+
+    function initLayoutEditor() {
+      // 各DECKの定位置に、LAYOUT編集中だけ出る板をかぶせる
+      DECK_IDS.forEach(id => {
+        const ov = document.createElement('div');
+        ov.className = 'tile-overlay';
+        ov.dataset.deck = id;
+        ov.innerHTML = `<div class="tile-ov-name">${PANEL_NAMES[id]}</div>
+          <div class="tile-ov-hint">ドラッグで移動</div>
+          <div class="tile-ov-actions"><button type="button" data-ov="float">FLOAT</button><button type="button" data-ov="hide">HIDE</button></div>`;
+        $(`slot-${id}`).appendChild(ov);
+        ov.addEventListener('pointerdown', (e) => startDeckDrag(e, id, ov));
+        ov.querySelector('[data-ov="float"]').addEventListener('click', () => toggleFloatFromLayout(id));
+        ov.querySelector('[data-ov="hide"]').addEventListener('click', () => hideDeck(id));
+      });
+      bindTileDividers();
+
+      $('btnLayoutEdit').addEventListener('click', () => setLayoutEdit(!layoutUi.edit));
+      $('btnLayoutDone').addEventListener('click', () => {
+        setLayoutEdit(false);
+        showToast('LAYOUTの編集を終えました（並びは自動で保存されています）');
+      });
+      $('btnLayoutReset').addEventListener('click', (e) => confirmTwice(e.currentTarget, 'RESET', () => {
+        PANEL_IDS.forEach(id => { if (state.panels[id].floating) dockPanel(id); });
+        state.layout.tree = createDefaultLayoutTree();
+        state.layout.hidden = [];
+        layoutChanged('初期の並びに戻しました');
+      }));
+      $('layoutPresetSelect').addEventListener('change', (e) => {
+        const p = state.layout.presets.find(x => x.name === e.target.value);
+        if (!p) { renderLayoutBar(); return; }
+        p.hidden.forEach(id => { if (state.panels[id].floating) dockPanel(id); });
+        state.layout.tree = cloneTree(p.tree);
+        state.layout.hidden = p.hidden.slice();
+        applyResponsiveLayout();
+        state.layout.active = p.name;
+        renderLayoutBar();
+        storage.saveState();
+        showToast(`レイアウト「${p.name}」に切り替えました`);
+      });
+      $('btnLayoutSave').addEventListener('click', openLayoutName);
+      $('btnLayoutNameCancel').addEventListener('click', closeLayoutName);
+      $('layoutNameBackdrop').addEventListener('click', (e) => { if (e.target.id === 'layoutNameBackdrop') closeLayoutName(); });
+      $('layoutNameForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = $('layoutNameInput').value.trim().slice(0, 20);
+        if (!name) return;
+        const entry = { name, tree: cloneTree(state.layout.tree), hidden: state.layout.hidden.slice() };
+        const i = state.layout.presets.findIndex(p => p.name === name);
+        if (i >= 0) state.layout.presets[i] = entry;
+        else {
+          if (state.layout.presets.length >= 12) {
+            showToast('保存できるレイアウトは12個までです');
+            return;
+          }
+          state.layout.presets.push(entry);
+        }
+        state.layout.active = name;
+        closeLayoutName();
+        renderLayoutBar();
+        storage.saveState();
+        showToast(`レイアウト「${name}」を保存しました`);
+      });
+      $('btnLayoutDelete').addEventListener('click', (e) => {
+        if (!state.layout.active) return;
+        confirmTwice(e.currentTarget, 'DELETE', () => {
+          const name = state.layout.active;
+          state.layout.presets = state.layout.presets.filter(p => p.name !== name);
+          state.layout.active = '';
+          renderLayoutBar();
+          storage.saveState();
+          showToast(`レイアウト「${name}」を削除しました`);
+        });
+      });
     }
 
     function initPanels() {
       document.querySelectorAll('.panel-pin').forEach(btn => { btn.innerHTML = PIN_SVG; });
       PANEL_IDS.forEach(bindPanel);
       // 保存されていた浮遊位置を復元（狭い画面では浮かせない）
+      initLayoutEditor();
       layoutUi.compact = isCompactLayout();
       PANEL_IDS.forEach(id => {
         const st = state.panels[id];
-        if (st && st.floating && !layoutUi.compact) floatPanel(id, { x: st.x, y: st.y, w: st.w, h: st.h });
+        if (st && st.floating && !layoutUi.compact && !state.layout.hidden.includes(id)) floatPanel(id, { x: st.x, y: st.y, w: st.w, h: st.h });
       });
       layoutUi.ready = true;
       applyResponsiveLayout();
@@ -6493,6 +7345,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
       renderPitchDeck();
       audioEngine.applyTempo();
       audioEngine.applyKey();
+      if (layoutUi.ready) renderLayoutBar();
       renderBgmList();
       renderBankTabs();
       renderPads();
@@ -6583,10 +7436,12 @@ registerProcessor('livepad-pitch', LivepadPitch);
         const pill = document.getElementById('lockStatePill');
         const btnAddBgm = document.getElementById('btnAddBgm');
 
+        $('btnLayoutEdit').disabled = state.perfLock;
         if (state.perfLock) {
           closeEditModal();
           closeTabRename();
           closeBgmMenu();
+          setLayoutEdit(false);
           iconOpen.classList.add('hidden');
           iconClosed.classList.remove('hidden');
           btnAddBgm.classList.add('hidden');
@@ -6895,6 +7750,9 @@ registerProcessor('livepad-pitch', LivepadPitch);
         state.eq = createDefaultEq();
         state.fx = createDefaultFx();
         state.pitch = normalizePitch(null);
+        state.layout = createDefaultLayout();
+        setLayoutEdit(false);
+        applyResponsiveLayout();
         audioEngine.applyTempo();
         audioEngine.applyKey();
         renderPitchDeck();
@@ -6967,7 +7825,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
       const heldKeys = new Map();
       const isOpen = (id) => !$(id).classList.contains('hidden');
       const overlayOpen = () =>
-        isOpen('editModalBackdrop') || isOpen('settingsModalBackdrop') || isOpen('tabModalBackdrop') || isOpen('bgmMenu') || isOpen('helpModalBackdrop');
+        isOpen('editModalBackdrop') || isOpen('settingsModalBackdrop') || isOpen('tabModalBackdrop') || isOpen('bgmMenu') || isOpen('helpModalBackdrop') || isOpen('layoutNameBackdrop');
       const isTyping = (t) => !!t && (
         (t.tagName === 'INPUT' && !['range', 'button', 'checkbox', 'file'].includes(t.type)) ||
         t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable
@@ -6989,6 +7847,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
             closeEditModal();
             closeSettings();
             closeHelp();
+            closeLayoutName();
             return;
           }
           if (isOpen('startupOverlay')) return;
@@ -7049,6 +7908,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
         if (saved.eq) state.eq = normalizeEq(saved.eq);
         if (saved.fx) state.fx = normalizeFx(saved.fx);
         if (saved.pitch) state.pitch = normalizePitch(saved.pitch);
+        if (saved.layout) state.layout = normalizeLayout(saved.layout);
         if (saved.panels) {
           state.panels = createDefaultPanels();
           PANEL_IDS.forEach(id => { if (saved.panels[id]) state.panels[id] = { ...saved.panels[id] }; });
@@ -7070,6 +7930,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
       initFxPad();
       initPitchDeck();
       initHelp();
+      if (window.ResizeObserver) new ResizeObserver(() => fitPadGrid()).observe(document.getElementById('padGrid'));
       initPanels();
       bindEvents();
       configureStartupOverlay();
