@@ -6,6 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>LIVEPAD DECK - Streamer Sampler & BGM</title>
+  <meta name="theme-color" content="#14171f">
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Googleログイン（Google Identity Services） -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -17,7 +18,9 @@
         extend: {
           colors: {
             accent: acShade('ac', [200, 300, 400, 500, 600, 700]),
-            accent2: acShade('ac2', [400, 500, 600])
+            accent2: acShade('ac2', [400, 500, 600]),
+            // 文字・枠線のグレーも背景の色調に合わせて切り替える
+            slate: acShade('sl', [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950])
           }
         }
       }
@@ -26,14 +29,93 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-base: #0b0d11;
-      --bg-panel: #14171f;
-      --bg-card: #1b202b;
-      --border-subtle: #282f3d;
+      --bg-base: rgb(var(--n-0b0d11));
+      --bg-panel: rgb(var(--n-14171f));
+      --bg-card: rgb(var(--n-1b202b));
+      --border-subtle: rgb(var(--n-282f3d));
       /* テーマカラー（初期値：シアン）。設定で選んだ色に JS で書き換える */
       --ac-200: 165 243 252; --ac-300: 103 232 249; --ac-400: 34 211 238;
       --ac-500: 6 182 212;   --ac-600: 8 145 178;   --ac-700: 14 116 144;
       --ac2-400: 96 165 250; --ac2-500: 59 130 246; --ac2-600: 37 99 235;
+      /* テーマカラーの元の明るさ（ライトモードでも、暗い表示窓の中ではこちらを使う） */
+      --acb-200: 165 243 252; --acb-300: 103 232 249; --acb-400: 34 211 238;
+    }
+    /* 背景の色調：中間色（背景・パネル・枠線・文字）。初期値は DARK。applyTone が色調に合わせて書き換える */
+    :root,
+    .fx-display, .fx-pad, .fx-depth, .eq-curve-box, .vmeter, .help-fig {
+      --n-07090d: 7 9 13;
+      --n-07080b: 7 8 11;
+      --n-090b0f: 9 11 15;
+      --n-0a0c10: 10 12 16;
+      --n-0b0d11: 11 13 17;
+      --n-0d1016: 13 16 22;
+      --n-0e1118: 14 17 24;
+      --n-0f1218: 15 18 24;
+      --n-0f1219: 15 18 25;
+      --n-10131b: 16 19 27;
+      --n-0f1115: 15 17 21;
+      --n-11141b: 17 20 27;
+      --n-11151d: 17 21 29;
+      --n-121620: 18 22 32;
+      --n-14171f: 20 23 31;
+      --n-12151d: 18 21 29;
+      --n-141821: 20 24 33;
+      --n-141925: 20 25 37;
+      --n-161b25: 22 27 37;
+      --n-171c27: 23 28 39;
+      --n-181c26: 24 28 38;
+      --n-1a1f2b: 26 31 43;
+      --n-1b202b: 27 32 43;
+      --n-1a2030: 26 32 48;
+      --n-1b2130: 27 33 48;
+      --n-1e2433: 30 36 51;
+      --n-1f2636: 31 38 54;
+      --n-222838: 34 40 56;
+      --n-242b38: 36 43 56;
+      --n-262d3d: 38 45 61;
+      --n-283041: 40 48 65;
+      --n-2a3347: 42 51 71;
+      --n-1a202c: 26 32 44;
+      --n-1c2230: 28 34 48;
+      --n-1f2633: 31 38 51;
+      --n-222836: 34 40 54;
+      --n-262c3a: 38 44 58;
+      --n-282f3d: 40 47 61;
+      --n-262e40: 38 46 64;
+      --n-242a38: 36 42 56;
+      --n-2a3242: 42 50 66;
+      --n-2b3344: 43 51 68;
+      --n-2b3447: 43 52 71;
+      --n-2c3445: 44 52 69;
+      --n-2f3848: 47 56 72;
+      --n-2f3849: 47 56 73;
+      --n-30384b: 48 56 75;
+      --n-333c4f: 51 60 79;
+      --n-334155: 51 65 85;
+      --n-3a4458: 58 68 88;
+      --n-3b4559: 59 69 89;
+      --n-4b5568: 75 85 104;
+      --n-475569: 71 85 105;
+      --n-64748b: 100 116 139;
+      --n-94a3b8: 148 163 184;
+      --n-cbd5e1: 203 213 225;
+      --n-e2e8f0: 226 232 240;
+      --n-f1f5f9: 241 245 249;
+      --sl-50: 248 250 252;
+      --sl-100: 241 245 249;
+      --sl-200: 226 232 240;
+      --sl-300: 203 213 225;
+      --sl-400: 148 163 184;
+      --sl-500: 100 116 139;
+      --sl-600: 71 85 105;
+      --sl-700: 51 65 85;
+      --sl-800: 30 41 59;
+      --sl-900: 15 23 42;
+      --sl-950: 2 6 23;
+    }
+    /* 表示窓・パッド面・メーター・図解は、どの色調でも機材のような暗い画面のまま */
+    .fx-display, .fx-pad, .fx-depth, .eq-curve-box, .vmeter, .help-fig {
+      --ac-200: var(--acb-200); --ac-300: var(--acb-300); --ac-400: var(--acb-400);
     }
 
     * {
@@ -51,8 +133,8 @@
 
     body {
       font-family: 'Inter', 'Noto Sans JP', sans-serif;
-      background-color: #07090d;
-      color: #e2e8f0;
+      background-color: rgb(var(--n-07090d));
+      color: rgb(var(--n-e2e8f0));
       margin: 0;
       padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
       overflow: hidden;
@@ -110,10 +192,10 @@
     input[type="range"].pro-fader {
       -webkit-appearance: none;
       appearance: none;
-      background: #0d1016;
+      background: rgb(var(--n-0d1016));
       height: 7px;
       border-radius: 999px;
-      border: 1px solid #2a3242;
+      border: 1px solid rgb(var(--n-2a3242));
       outline: none;
     }
 
@@ -123,8 +205,8 @@
       width: 16px;
       height: 22px;
       border-radius: 4px;
-      background: linear-gradient(180deg, #e2e8f0 0%, #94a3b8 100%);
-      border: 1px solid #475569;
+      background: linear-gradient(180deg, rgb(var(--n-e2e8f0)) 0%, rgb(var(--n-94a3b8)) 100%);
+      border: 1px solid rgb(var(--n-475569));
       box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 #fff;
       cursor: pointer;
     }
@@ -163,7 +245,7 @@
     .device-shell.mode-iphone {
       max-width: 960px;
       max-height: 500px;
-      border: 3px solid #2b3344;
+      border: 3px solid rgb(var(--n-2b3344));
       border-radius: 24px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.06);
     }
@@ -171,7 +253,7 @@
     /* シークバー（再生位置）：再生済みの部分をテーマカラーで塗る */
     input[type="range"].seek-fader {
       height: 5px;
-      background: linear-gradient(to right, rgb(var(--ac-500)) var(--fill, 0%), #0d1016 var(--fill, 0%));
+      background: linear-gradient(to right, rgb(var(--ac-500)) var(--fill, 0%), rgb(var(--n-0d1016)) var(--fill, 0%));
     }
     input[type="range"].seek-fader::-webkit-slider-thumb {
       width: 12px;
@@ -184,11 +266,11 @@
     /* BGMプレイリスト */
     .bgm-list {
       scrollbar-width: thin;
-      scrollbar-color: #2f3849 transparent;
+      scrollbar-color: rgb(var(--n-2f3849)) transparent;
       overscroll-behavior: contain;
     }
     .bgm-list::-webkit-scrollbar { width: 6px; }
-    .bgm-list::-webkit-scrollbar-thumb { background: #2f3849; border-radius: 999px; }
+    .bgm-list::-webkit-scrollbar-thumb { background: rgb(var(--n-2f3849)); border-radius: 999px; }
     .bgm-list::-webkit-scrollbar-track { background: transparent; }
 
     .bgm-row {
@@ -198,12 +280,12 @@
       align-items: center;
       gap: 8px;
       padding: 0 4px 0 10px;
-      border-bottom: 1px solid #171c27;
-      background: #0e1118;
+      border-bottom: 1px solid rgb(var(--n-171c27));
+      background: rgb(var(--n-0e1118));
       cursor: pointer;
       transition: background-color .12s ease, transform .14s ease;
     }
-    .bgm-row:hover { background: #141925; }
+    .bgm-row:hover { background: rgb(var(--n-141925)); }
     .bgm-row.is-current { background: rgb(var(--ac-500) / .12); }
     .bgm-row.is-current::before {
       content: '';
@@ -219,7 +301,7 @@
     .bgm-row.is-dragging {
       z-index: 5;
       transition: none;
-      background: #1b2130;
+      background: rgb(var(--n-1b2130));
       border-radius: 6px;
       box-shadow: 0 6px 18px rgba(0,0,0,.55), 0 0 0 1px rgb(var(--ac-500) / .5);
     }
@@ -230,20 +312,20 @@
       align-items: center;
       justify-content: center;
       font-size: 9px;
-      color: #64748b;
+      color: rgb(var(--n-64748b));
     }
     .bgm-row-name {
       flex: 1;
       min-width: 0;
       font-size: 11px;
       font-weight: 700;
-      color: #cbd5e1;
+      color: rgb(var(--n-cbd5e1));
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
     .bgm-row.is-current .bgm-row-name { color: rgb(var(--ac-200)); }
-    .bgm-row-dur { font-size: 10px; color: #64748b; flex-shrink: 0; }
+    .bgm-row-dur { font-size: 10px; color: rgb(var(--n-64748b)); flex-shrink: 0; }
     .bgm-handle {
       width: 24px;
       height: 28px;
@@ -251,12 +333,12 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #475569;
+      color: rgb(var(--n-475569));
       border-radius: 4px;
       touch-action: none;
       cursor: grab;
     }
-    .bgm-handle:hover { color: #cbd5e1; background: #1a2030; }
+    .bgm-handle:hover { color: rgb(var(--n-cbd5e1)); background: rgb(var(--n-1a2030)); }
 
     /* 再生中のイコライザー表示 */
     .eq { display: flex; align-items: flex-end; gap: 2px; height: 10px; }
@@ -275,13 +357,13 @@
       border-radius: 8px;
       font-size: 12px;
       font-weight: 700;
-      color: #e2e8f0;
+      color: rgb(var(--n-e2e8f0));
       text-align: left;
       transition: background-color .1s ease;
     }
-    .ctx-item:hover { background: #262d3d; }
+    .ctx-item:hover { background: rgb(var(--n-262d3d)); }
     .ctx-item.is-danger { color: #fca5a5; }
-    .ctx-item:disabled { color: #64748b; background: transparent; cursor: default; }
+    .ctx-item:disabled { color: rgb(var(--n-64748b)); background: transparent; cursor: default; }
     .ctx-item.is-confirm, .ctx-item.is-confirm:hover { background: #dc2626; color: #fff; }
 
     /* MIXER：縦フェーダー＋縦メーター */
@@ -338,7 +420,7 @@
       font-size: 9px;
       font-weight: 700;
       letter-spacing: .06em;
-      color: #94a3b8;
+      color: rgb(var(--n-94a3b8));
     }
     .strip-value {
       font-family: 'JetBrains Mono', monospace;
@@ -364,7 +446,7 @@
       top: 8px;
       bottom: 8px;
       width: 6px;
-      background: repeating-linear-gradient(to bottom, #333c4f 0 1px, transparent 1px 10.4px);
+      background: repeating-linear-gradient(to bottom, rgb(var(--n-333c4f)) 0 1px, transparent 1px 10.4px);
     }
     .vfader::before { left: 0; }
     .vfader::after { right: 0; }
@@ -375,8 +457,8 @@
       bottom: 8px;
       width: 7px;
       transform: translateX(-50%);
-      background: #0d1016;
-      border: 1px solid #2a3242;
+      background: rgb(var(--n-0d1016));
+      border: 1px solid rgb(var(--n-2a3242));
       border-radius: 999px;
       overflow: hidden;
     }
@@ -396,8 +478,8 @@
       height: 18px;
       transform: translate(-50%, 50%);
       border-radius: 4px;
-      background: linear-gradient(180deg, #e2e8f0 0%, #94a3b8 100%);
-      border: 1px solid #475569;
+      background: linear-gradient(180deg, rgb(var(--n-e2e8f0)) 0%, rgb(var(--n-94a3b8)) 100%);
+      border: 1px solid rgb(var(--n-475569));
       box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 #fff;
       z-index: 1;
     }
@@ -434,8 +516,8 @@
       width: 13px;
       height: 100%;
       padding: 2px;
-      background: #0b0d11;
-      border: 1px solid #222836;
+      background: rgb(var(--n-0b0d11));
+      border: 1px solid rgb(var(--n-222836));
       border-radius: 3px;
     }
     .vmeter .led-seg { flex: 1; }
@@ -451,7 +533,7 @@
       letter-spacing: .05em;
       transition: all .12s ease;
     }
-    .duck-btn.is-off { color: #64748b; border-color: #2a3242; background: #0d1016; }
+    .duck-btn.is-off { color: rgb(var(--n-64748b)); border-color: rgb(var(--n-2a3242)); background: rgb(var(--n-0d1016)); }
     .duck-btn.is-on { color: #fcd34d; border-color: rgba(251,191,36,.5); background: rgba(245,158,11,.12); }
     .duck-btn.is-active { color: #1a1205; border-color: #fbbf24; background: #f59e0b; box-shadow: 0 0 10px rgba(245,158,11,.6); }
 
@@ -466,7 +548,7 @@
       height: 14px;
       flex-shrink: 0;
       opacity: .6;
-      background-image: radial-gradient(circle, #94a3b8 1.1px, transparent 1.3px);
+      background-image: radial-gradient(circle, rgb(var(--n-94a3b8)) 1.1px, transparent 1.3px);
       background-size: 4.5px 4.5px;
     }
     #deviceShell:not(.is-locked) .panel-head { cursor: grab; touch-action: none; }
@@ -499,8 +581,8 @@
       .pad-status-dot { font-size: 0; gap: 0; }
     }
     .se-panel.is-floating {
-      background: #11141b;
-      border: 1px solid #2b3447;
+      background: rgb(var(--n-11141b));
+      border: 1px solid rgb(var(--n-2b3447));
       border-radius: 14px;
       padding: 10px;
     }
@@ -513,9 +595,9 @@
       border-radius: 6px;
       align-items: center;
       justify-content: center;
-      border: 1px solid #2a3242;
-      background: #10131b;
-      color: #94a3b8;
+      border: 1px solid rgb(var(--n-2a3242));
+      background: rgb(var(--n-10131b));
+      color: rgb(var(--n-94a3b8));
       cursor: pointer;
       transition: color .12s ease, border-color .12s ease;
     }
@@ -534,7 +616,7 @@
       cursor: nwse-resize;
       touch-action: none;
       border-radius: 0 0 11px 0;
-      background: linear-gradient(135deg, transparent 52%, #4b5568 52%, #4b5568 60%, transparent 60%, transparent 70%, #4b5568 70%, #4b5568 78%, transparent 78%);
+      background: linear-gradient(135deg, transparent 52%, rgb(var(--n-4b5568)) 52%, rgb(var(--n-4b5568)) 60%, transparent 60%, transparent 70%, rgb(var(--n-4b5568)) 70%, rgb(var(--n-4b5568)) 78%, transparent 78%);
     }
     .deck-panel.is-floating .panel-resize { display: block; }
     #deviceShell.is-locked .panel-resize { display: none !important; }
@@ -550,9 +632,9 @@
       gap: 3px;
       padding: 10px;
       text-align: center;
-      border: 1.5px dashed #2a3242;
+      border: 1.5px dashed rgb(var(--n-2a3242));
       border-radius: 12px;
-      color: #64748b;
+      color: rgb(var(--n-64748b));
       transition: border-color .12s ease, background-color .12s ease, color .12s ease;
     }
     /* EQ DECK・MIXER は中身の高さで決まるので、浮かせる直前の高さを測って同じ大きさにする（floatPanel） */
@@ -602,9 +684,9 @@
       align-items: center;
       justify-content: center;
       border-radius: 3px;
-      border: 1px solid #334155;
-      background: #0f1219;
-      color: #94a3b8;
+      border: 1px solid rgb(var(--n-334155));
+      background: rgb(var(--n-0f1219));
+      color: rgb(var(--n-94a3b8));
       font-family: 'JetBrains Mono', monospace;
       font-size: 9px;
       font-weight: 700;
@@ -627,7 +709,7 @@
       padding: 12px;
       text-align: center;
       font-size: 11px;
-      color: #64748b;
+      color: rgb(var(--n-64748b));
     }
     #btnBgmPrev:disabled, #btnBgmPlay:disabled, #btnBgmNext:disabled, #bgmSeek:disabled {
       opacity: .35;
@@ -646,16 +728,16 @@
       transition: all .12s ease;
     }
     .eq-toggle.is-on { color: rgb(var(--ac-300)); border-color: rgb(var(--ac-500) / .5); background: rgb(var(--ac-500) / .15); }
-    .eq-toggle.is-off { color: #64748b; border-color: #2a3242; background: #0d1016; }
+    .eq-toggle.is-off { color: rgb(var(--n-64748b)); border-color: rgb(var(--n-2a3242)); background: rgb(var(--n-0d1016)); }
 
     .eq-pad {
       position: relative;
       height: 44px;
       padding: 5px 2px 2px;
       border-radius: 10px;
-      border: 1px solid #2a3242;
-      background: linear-gradient(180deg, #1b202b 0%, #141821 100%);
-      color: #94a3b8;
+      border: 1px solid rgb(var(--n-2a3242));
+      background: linear-gradient(180deg, rgb(var(--n-1b202b)) 0%, rgb(var(--n-141821)) 100%);
+      color: rgb(var(--n-94a3b8));
       display: flex;
       align-items: center;
       justify-content: center;
@@ -665,7 +747,7 @@
       touch-action: manipulation;
       cursor: pointer;
     }
-    .eq-pad:hover { border-color: #3a4458; color: #cbd5e1; }
+    .eq-pad:hover { border-color: rgb(var(--n-3a4458)); color: rgb(var(--n-cbd5e1)); }
     .eq-pad:active { transform: scale(.96); }
     .eq-pad-led {
       position: absolute;
@@ -683,7 +765,7 @@
     .eq-pad.is-active {
       color: #fff;
       border-color: var(--eq-color);
-      background: linear-gradient(180deg, color-mix(in srgb, var(--eq-color) 30%, #1b202b) 0%, color-mix(in srgb, var(--eq-color) 12%, #141821) 100%);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--eq-color) 30%, rgb(var(--n-1b202b))) 0%, color-mix(in srgb, var(--eq-color) 12%, rgb(var(--n-141821))) 100%);
       box-shadow: 0 0 14px color-mix(in srgb, var(--eq-color) 45%, transparent), inset 0 1px 0 rgba(255,255,255,.08);
     }
     .eq-pad.is-active .eq-pad-led { opacity: 1; box-shadow: 0 0 8px var(--eq-color); }
@@ -694,8 +776,8 @@
       height: 80px;
       flex-shrink: 0;
       border-radius: 8px;
-      background: #0b0d11;
-      border: 1px solid #222836;
+      background: rgb(var(--n-0b0d11));
+      border: 1px solid rgb(var(--n-222836));
       overflow: hidden;
     }
     #panel-eq.is-floating .eq-curve-box { flex: 1; min-height: 60px; }
@@ -711,7 +793,7 @@
     #deviceShell.is-compact #panel-mixer .mixer-grid { grid-template-rows: auto minmax(80px, 1fr) auto; }
 
     /* ===== タイル型レイアウト（広い画面）：画面を区切って各DECKを並べる ===== */
-    .tile-root { flex: 1; min-width: 0; min-height: 0; display: flex; padding: 10px; overflow: auto; background: #0f1115; }
+    .tile-root { flex: 1; min-width: 0; min-height: 0; display: flex; padding: 10px; overflow: auto; background: rgb(var(--n-0f1115)); }
     #deviceShell.is-compact .tile-root { display: none; }
     #deviceShell:not(.is-compact) #leftCol,
     #deviceShell:not(.is-compact) #rightCol { display: none; }
@@ -750,12 +832,12 @@
     }
     #deviceShell.is-layout-edit:not(.is-compact) .tile-leaf .tile-overlay { display: flex; }
     .tile-overlay.is-source { opacity: .35; }
-    .tile-ov-name { font-size: 13px; font-weight: 800; letter-spacing: .1em; color: #e2e8f0; text-align: center; }
-    .tile-ov-hint { font-size: 10px; color: #94a3b8; }
+    .tile-ov-name { font-size: 13px; font-weight: 800; letter-spacing: .1em; color: rgb(var(--n-e2e8f0)); text-align: center; }
+    .tile-ov-hint { font-size: 10px; color: rgb(var(--n-94a3b8)); }
     .tile-ov-actions { display: flex; gap: 6px; margin-top: 2px; }
     .tile-ov-actions button {
       padding: 4px 10px; border-radius: 7px; font-size: 10px; font-weight: 800; letter-spacing: .06em;
-      color: #cbd5e1; background: #141821; border: 1px solid #2f3848; cursor: pointer;
+      color: rgb(var(--n-cbd5e1)); background: rgb(var(--n-141821)); border: 1px solid rgb(var(--n-2f3848)); cursor: pointer;
     }
     .tile-ov-actions button:hover { color: #fff; border-color: rgb(var(--ac-400) / .7); }
     .tile-drop-mark {
@@ -777,33 +859,33 @@
     /* LAYOUT ボタンとツールバー */
     .layout-edit-btn {
       display: flex; align-items: center; gap: 6px; padding: 6px 9px; border-radius: 8px;
-      font-size: 11px; font-weight: 700; color: #cbd5e1; border: 1px solid #2c3445; background: #1a1f2b;
+      font-size: 11px; font-weight: 700; color: rgb(var(--n-cbd5e1)); border: 1px solid rgb(var(--n-2c3445)); background: rgb(var(--n-1a1f2b));
       transition: background-color .12s ease, border-color .12s ease, color .12s ease;
     }
-    .layout-edit-btn:hover { background: #222838; }
+    .layout-edit-btn:hover { background: rgb(var(--n-222838)); }
     .layout-edit-btn.is-on { color: rgb(var(--ac-200)); border-color: rgb(var(--ac-400) / .7); background: rgb(var(--ac-500) / .2); }
     .layout-edit-btn:disabled { opacity: .35; cursor: not-allowed; }
     #deviceShell.is-compact .compact-hide { display: none !important; }
     .layout-bar {
       display: none; flex-wrap: wrap; align-items: center; gap: 8px 12px; flex-shrink: 0;
-      padding: 7px 12px; background: #11151d; border-bottom: 1px solid rgb(var(--ac-500) / .35);
+      padding: 7px 12px; background: rgb(var(--n-11151d)); border-bottom: 1px solid rgb(var(--ac-500) / .35);
     }
     #deviceShell.is-layout-edit:not(.is-compact) .layout-bar { display: flex; }
     .layout-bar-title { font-size: 11px; font-weight: 800; letter-spacing: .12em; color: rgb(var(--ac-300)); }
-    .layout-bar-hint { font-size: 10px; color: #94a3b8; }
+    .layout-bar-hint { font-size: 10px; color: rgb(var(--n-94a3b8)); }
     .layout-bar-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .layout-btn, .layout-chip {
       height: 26px; padding: 0 10px; border-radius: 7px; font-size: 10px; font-weight: 800; letter-spacing: .06em;
-      color: #cbd5e1; background: #161b25; border: 1px solid #2c3445; cursor: pointer; white-space: nowrap;
+      color: rgb(var(--n-cbd5e1)); background: rgb(var(--n-161b25)); border: 1px solid rgb(var(--n-2c3445)); cursor: pointer; white-space: nowrap;
     }
     .layout-btn:hover, .layout-chip:hover { color: #fff; border-color: rgb(var(--ac-400) / .6); }
     .layout-btn:disabled { opacity: .35; cursor: not-allowed; }
     .layout-btn.is-primary { color: #06121a; background: rgb(var(--ac-400)); border-color: rgb(var(--ac-300)); }
     .layout-btn.is-danger { color: #fff; background: #dc2626; border-color: #f87171; }
-    .layout-chip { border-style: dashed; color: #94a3b8; }
+    .layout-chip { border-style: dashed; color: rgb(var(--n-94a3b8)); }
     .layout-select {
       height: 26px; max-width: 180px; padding: 0 8px; border-radius: 7px; font-size: 11px; font-weight: 700;
-      color: #e2e8f0; background: #0d1016; border: 1px solid #2c3445;
+      color: rgb(var(--n-e2e8f0)); background: rgb(var(--n-0d1016)); border: 1px solid rgb(var(--n-2c3445));
     }
     /* FX PADが細いとき：表示窓と横のボタンを小さく、FXボタンの番号を省く */
     #panel-fx { container-type: inline-size; }
@@ -817,14 +899,14 @@
     .col-tabs { display: none; }
     #deviceShell.is-compact .col-tabs {
       display: flex; flex-shrink: 0; gap: 2px; padding: 2px;
-      border-radius: 8px; background: #0b0d11; border: 1px solid #262c3a;
+      border-radius: 8px; background: rgb(var(--n-0b0d11)); border: 1px solid rgb(var(--n-262c3a));
     }
     .col-tabs button {
       flex: 1; padding: 5px 0; border-radius: 6px;
-      font-size: 10px; font-weight: 800; letter-spacing: .06em; color: #64748b;
+      font-size: 10px; font-weight: 800; letter-spacing: .06em; color: rgb(var(--n-64748b));
       transition: color .12s ease, background-color .12s ease;
     }
-    .col-tabs button:hover { color: #cbd5e1; }
+    .col-tabs button:hover { color: rgb(var(--n-cbd5e1)); }
     .col-tabs button.is-active { color: rgb(var(--ac-300)); background: rgb(var(--ac-500) / .16); box-shadow: inset 0 0 0 1px rgb(var(--ac-500) / .45); }
     #deviceShell.is-compact .dock-slot { display: none !important; }
     #deviceShell.is-compact .dock-slot.is-shown {
@@ -849,21 +931,21 @@
 
     /* ===== PITCH DECK（BGMの速さ・音程） ===== */
     .pitch-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
-    .pitch-label { width: 40px; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 800; letter-spacing: .06em; color: #94a3b8; }
-    .pitch-value { width: 46px; flex-shrink: 0; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: #cbd5e1; }
+    .pitch-label { width: 40px; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 800; letter-spacing: .06em; color: rgb(var(--n-94a3b8)); }
+    .pitch-value { width: 46px; flex-shrink: 0; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: rgb(var(--n-cbd5e1)); }
     .pitch-value.is-on { color: rgb(var(--ac-300)); }
     .pitch-mini {
       flex-shrink: 0; height: 24px; min-width: 26px; padding: 0 6px; border-radius: 6px;
-      font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 800; color: #94a3b8;
-      border: 1px solid #2a3242; background: #10131b;
+      font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 800; color: rgb(var(--n-94a3b8));
+      border: 1px solid rgb(var(--n-2a3242)); background: rgb(var(--n-10131b));
     }
     .pitch-mini:hover { color: #fff; border-color: rgb(var(--ac-500) / .6); }
     .tempo-wrap { position: relative; flex: 1; min-width: 60px; height: 24px; display: flex; align-items: center; }
-    .tempo-wrap::after { content: ''; position: absolute; left: 50%; top: 3px; bottom: 3px; width: 1px; background: #475569; pointer-events: none; }
+    .tempo-wrap::after { content: ''; position: absolute; left: 50%; top: 3px; bottom: 3px; width: 1px; background: rgb(var(--n-475569)); pointer-events: none; }
     input[type="range"].tempo-fader {
       -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 3px; margin: 0;
-      background: linear-gradient(to right, #0d1016 var(--a, 50%), rgb(var(--ac-500)) var(--a, 50%), rgb(var(--ac-500)) var(--b, 50%), #0d1016 var(--b, 50%));
-      border: 1px solid #262c3a; cursor: pointer;
+      background: linear-gradient(to right, rgb(var(--n-0d1016)) var(--a, 50%), rgb(var(--ac-500)) var(--a, 50%), rgb(var(--ac-500)) var(--b, 50%), rgb(var(--n-0d1016)) var(--b, 50%));
+      border: 1px solid rgb(var(--n-262c3a)); cursor: pointer;
     }
     input[type="range"].tempo-fader::-webkit-slider-thumb {
       -webkit-appearance: none; appearance: none; width: 12px; height: 18px; border-radius: 3px;
@@ -877,16 +959,16 @@
     }
     .key-pads { flex: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
     .key-pad {
-      height: 30px; border-radius: 7px; border: 1px solid #2a3242;
-      background: linear-gradient(180deg, #1b202b 0%, #141821 100%);
-      color: #94a3b8; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800;
+      height: 30px; border-radius: 7px; border: 1px solid rgb(var(--n-2a3242));
+      background: linear-gradient(180deg, rgb(var(--n-1b202b)) 0%, rgb(var(--n-141821)) 100%);
+      color: rgb(var(--n-94a3b8)); font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800;
       box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 2px 4px rgba(0,0,0,.35);
       transition: transform .06s ease, background .12s ease, border-color .12s ease, color .12s ease, box-shadow .12s ease;
       touch-action: manipulation;
     }
-    .key-pad:hover { border-color: #3a4458; color: #e2e8f0; }
+    .key-pad:hover { border-color: rgb(var(--n-3a4458)); color: rgb(var(--n-e2e8f0)); }
     .key-pad:active { transform: scale(.95); }
-    .key-pad.is-zero { color: #cbd5e1; }
+    .key-pad.is-zero { color: rgb(var(--n-cbd5e1)); }
     .key-pad.is-active {
       color: #fff; border-color: rgb(var(--ac-400) / .8);
       background: linear-gradient(180deg, rgb(var(--ac-500) / .32) 0%, rgb(var(--ac-600) / .14) 100%);
@@ -901,9 +983,9 @@
       height: 16px;
       flex-shrink: 0;
       border-radius: 50%;
-      border: 1px solid #3a4458;
-      background: #10131b;
-      color: #94a3b8;
+      border: 1px solid rgb(var(--n-3a4458));
+      background: rgb(var(--n-10131b));
+      color: rgb(var(--n-94a3b8));
       font-family: 'Inter', sans-serif;
       font-size: 10px;
       font-weight: 800;
@@ -924,34 +1006,34 @@
       font-size: 11px; font-weight: 800; color: rgb(var(--ac-300));
       border: 1px solid rgb(var(--ac-500) / .5); background: rgb(var(--ac-500) / .12);
     }
-    .help-intro { font-size: 12px; color: #cbd5e1; line-height: 1.7; margin-bottom: 10px; }
-    .help-sec { padding: 10px 0 12px; border-top: 1px solid #222836; }
+    .help-intro { font-size: 12px; color: rgb(var(--n-cbd5e1)); line-height: 1.7; margin-bottom: 10px; }
+    .help-sec { padding: 10px 0 12px; border-top: 1px solid rgb(var(--n-222836)); }
     .help-sec:first-of-type { border-top: none; padding-top: 2px; }
     .help-h { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800; letter-spacing: .08em; color: rgb(var(--ac-300)); }
-    .help-p, .help-list { font-size: 12px; color: #cbd5e1; line-height: 1.75; }
+    .help-p, .help-list { font-size: 12px; color: rgb(var(--n-cbd5e1)); line-height: 1.75; }
     .help-list { margin: 2px 0 0; padding-left: 1.1em; list-style: disc; }
-    .help-list li::marker { color: #475569; }
-    .help-p b, .help-list b { color: #f1f5f9; font-weight: 800; }
-    .help-fig { margin: 6px 0 8px; padding: 8px 10px; border-radius: 10px; background: #0b0d11; border: 1px solid #222836; }
+    .help-list li::marker { color: rgb(var(--n-475569)); }
+    .help-p b, .help-list b { color: rgb(var(--n-f1f5f9)); font-weight: 800; }
+    .help-fig { margin: 6px 0 8px; padding: 8px 10px; border-radius: 10px; background: rgb(var(--n-0b0d11)); border: 1px solid rgb(var(--n-222836)); }
     .help-fig svg { display: block; width: 100%; height: auto; }
-    .hf-t { fill: #94a3b8; font: 700 9px 'JetBrains Mono', monospace; }
-    .hf-ts { fill: #64748b; font: 700 7px 'JetBrains Mono', monospace; }
-    .hf-tj { fill: #94a3b8; font: 700 9px 'Noto Sans JP', sans-serif; }
+    .hf-t { fill: rgb(var(--n-94a3b8)); font: 700 9px 'JetBrains Mono', monospace; }
+    .hf-ts { fill: rgb(var(--n-64748b)); font: 700 7px 'JetBrains Mono', monospace; }
+    .hf-tj { fill: rgb(var(--n-94a3b8)); font: 700 9px 'Noto Sans JP', sans-serif; }
     .hf-ta { fill: rgb(var(--ac-300)); }
-    .hf-grid { stroke: #1f2633; stroke-width: 1; fill: none; }
-    .hf-axis { stroke: #334155; stroke-width: 1; fill: none; }
+    .hf-grid { stroke: rgb(var(--n-1f2633)); stroke-width: 1; fill: none; }
+    .hf-axis { stroke: rgb(var(--n-334155)); stroke-width: 1; fill: none; }
     .hf-acc { stroke: rgb(var(--ac-400)); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .hf-acc-fill { fill: rgb(var(--ac-400) / .14); stroke: none; }
-    .hf-sub { stroke: #64748b; stroke-width: 1.6; fill: none; stroke-dasharray: 4 3; stroke-linejoin: round; }
-    .hf-arw { stroke: #64748b; stroke-width: 1.3; fill: none; }
-    .hf-arwh { fill: #64748b; }
-    .hf-box { fill: #141821; stroke: #2a3242; stroke-width: 1; }
+    .hf-sub { stroke: rgb(var(--n-64748b)); stroke-width: 1.6; fill: none; stroke-dasharray: 4 3; stroke-linejoin: round; }
+    .hf-arw { stroke: rgb(var(--n-64748b)); stroke-width: 1.3; fill: none; }
+    .hf-arwh { fill: rgb(var(--n-64748b)); }
+    .hf-box { fill: rgb(var(--n-141821)); stroke: rgb(var(--n-2a3242)); stroke-width: 1; }
     .hf-boxa { fill: rgb(var(--ac-500) / .16); stroke: rgb(var(--ac-400)); stroke-width: 1; }
-    .hf-pad { fill: #0f1218; stroke: rgb(var(--ac-400) / .45); stroke-width: 1.2; }
+    .hf-pad { fill: rgb(var(--n-0f1218)); stroke: rgb(var(--ac-400) / .45); stroke-width: 1.2; }
     .hf-amb-bar { fill: #fbbf24; }
     .hf-acc-bar { fill: rgb(var(--ac-400) / .85); }
     .hf-tag { fill: #1a1205; font: 800 6px 'JetBrains Mono', monospace; }
-    .hf-tb { fill: #cbd5e1; font: 700 7.5px 'JetBrains Mono', monospace; }
+    .hf-tb { fill: rgb(var(--n-cbd5e1)); font: 700 7.5px 'JetBrains Mono', monospace; }
     .hf-dot { fill: rgb(var(--ac-300)); }
 
     /* ===== FX PAD（指でなぞってエフェクトをかけるXYパッド） ===== */
@@ -960,12 +1042,12 @@
     .device-shell.mode-iphone .fx-display { height: 36px; }
     #panel-fx:not(.is-floating) { width: 100%; max-width: 1240px; margin: 0 auto; }
 
-    .fx-target { display: flex; gap: 2px; padding: 2px; border-radius: 7px; background: #0b0d11; border: 1px solid #262c3a; }
+    .fx-target { display: flex; gap: 2px; padding: 2px; border-radius: 7px; background: rgb(var(--n-0b0d11)); border: 1px solid rgb(var(--n-262c3a)); }
     .fx-target button {
       font-size: 9px; font-weight: 800; letter-spacing: .04em; padding: 3px 8px; border-radius: 5px;
-      color: #64748b; transition: color .12s ease, background-color .12s ease, box-shadow .12s ease;
+      color: rgb(var(--n-64748b)); transition: color .12s ease, background-color .12s ease, box-shadow .12s ease;
     }
-    .fx-target button:hover { color: #cbd5e1; }
+    .fx-target button:hover { color: rgb(var(--n-cbd5e1)); }
     .fx-target button.is-active { color: rgb(var(--ac-300)); background: rgb(var(--ac-500) / .16); box-shadow: inset 0 0 0 1px rgb(var(--ac-500) / .45); }
 
     /* 表示窓（エフェクト名・今の値・テンポ） */
@@ -978,8 +1060,8 @@
       align-items: center;
       justify-content: center;
       border-radius: 8px;
-      background: #07080b;
-      border: 1px solid #222836;
+      background: rgb(var(--n-07080b));
+      border: 1px solid rgb(var(--n-222836));
       box-shadow: inset 0 2px 10px rgba(0,0,0,.75);
       font-family: 'JetBrains Mono', monospace;
       font-size: 14px;
@@ -998,9 +1080,9 @@
       min-width: 0;
       padding: 4px 4px 3px;
       border-radius: 10px;
-      border: 1px solid #2a3242;
-      background: linear-gradient(180deg, #1b202b 0%, #141821 100%);
-      color: #94a3b8;
+      border: 1px solid rgb(var(--n-2a3242));
+      background: linear-gradient(180deg, rgb(var(--n-1b202b)) 0%, rgb(var(--n-141821)) 100%);
+      color: rgb(var(--n-94a3b8));
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -1015,16 +1097,16 @@
       -webkit-user-select: none;
       cursor: pointer;
     }
-    .fx-btn:hover { border-color: #3a4458; color: #cbd5e1; }
+    .fx-btn:hover { border-color: rgb(var(--n-3a4458)); color: rgb(var(--n-cbd5e1)); }
     .fx-btn:active { transform: scale(.96); }
-    .fx-btn-top { display: flex; align-items: center; gap: 4px; font-family: 'JetBrains Mono', monospace; font-size: 8px; font-weight: 700; color: #4b5568; letter-spacing: .06em; }
-    .fx-btn-led { width: 5px; height: 5px; border-radius: 50%; background: #2a3242; transition: background-color .12s ease, box-shadow .12s ease; }
+    .fx-btn-top { display: flex; align-items: center; gap: 4px; font-family: 'JetBrains Mono', monospace; font-size: 8px; font-weight: 700; color: rgb(var(--n-4b5568)); letter-spacing: .06em; }
+    .fx-btn-led { width: 5px; height: 5px; border-radius: 50%; background: rgb(var(--n-2a3242)); transition: background-color .12s ease, box-shadow .12s ease; }
     .fx-btn-name { font-size: 10px; font-weight: 800; line-height: 1.15; letter-spacing: .04em; word-break: keep-all; }
     /* そのFXのHOLDがONのときだけ「HOLD」の札を出す */
     .fx-btn-hold { display: none; margin-left: 2px; padding: 0 3px; border-radius: 3px; font-size: 7px; line-height: 10px; letter-spacing: .04em; color: #1a1205; background: #fbbf24; }
     .fx-btn.is-held .fx-btn-hold { display: inline-block; }
     /* BGM以外にかけているFXは「ALL」「SE」の札を出す */
-    .fx-btn-tgt { margin-left: 2px; padding: 0 3px; border-radius: 3px; font-size: 7px; line-height: 10px; letter-spacing: .04em; color: #0b0d11; background: #94a3b8; }
+    .fx-btn-tgt { margin-left: 2px; padding: 0 3px; border-radius: 3px; font-size: 7px; line-height: 10px; letter-spacing: .04em; color: rgb(var(--n-0b0d11)); background: rgb(var(--n-94a3b8)); }
     .fx-btn.is-active {
       color: #fff;
       border-color: rgb(var(--ac-400) / .75);
@@ -1034,7 +1116,7 @@
     .fx-btn.is-active .fx-btn-top { color: rgb(var(--ac-300)); }
     /* ランプ＝そのエフェクトがかかっている（HOLDで固定中も点灯）。色はパッド上の点と同じ */
     .fx-btn.is-on .fx-btn-led { background: var(--fx-color); box-shadow: 0 0 8px var(--fx-color); }
-    .fx-btn.is-on:not(.is-active) { border-color: color-mix(in srgb, var(--fx-color) 55%, #2a3242); }
+    .fx-btn.is-on:not(.is-active) { border-color: color-mix(in srgb, var(--fx-color) 55%, rgb(var(--n-2a3242))); }
 
     /* FX DEPTH（かかり具合）の縦長の帯 */
     .fx-depth {
@@ -1044,7 +1126,7 @@
       flex-shrink: 0;
       border-radius: 10px;
       border: 1.5px solid rgb(var(--ac-400) / .35);
-      background: #0a0c10;
+      background: rgb(var(--n-0a0c10));
       overflow: hidden;
       touch-action: none;
       cursor: ns-resize;
@@ -1062,8 +1144,8 @@
       position: absolute; left: 0; right: 0; text-align: center; pointer-events: none;
       font-family: 'JetBrains Mono', monospace; font-weight: 800;
     }
-    .fx-depth-label { top: 6px; font-size: 8px; line-height: 1.15; letter-spacing: .04em; color: #94a3b8; }
-    .fx-depth-value { bottom: 5px; font-size: 10px; color: #e2e8f0; }
+    .fx-depth-label { top: 6px; font-size: 8px; line-height: 1.15; letter-spacing: .04em; color: rgb(var(--n-94a3b8)); }
+    .fx-depth-value { bottom: 5px; font-size: 10px; color: rgb(var(--n-e2e8f0)); }
 
     /* XYパッド本体 */
     .fx-pad {
@@ -1073,7 +1155,7 @@
       min-height: 0;
       border-radius: 12px;
       border: 1.5px solid rgb(var(--ac-400) / .35);
-      background: radial-gradient(120% 120% at 50% 45%, #121620 0%, #090b0f 100%);
+      background: radial-gradient(120% 120% at 50% 45%, rgb(var(--n-121620)) 0%, rgb(var(--n-090b0f)) 100%);
       overflow: hidden;
       touch-action: none;
       cursor: crosshair;
@@ -1087,13 +1169,13 @@
       box-shadow: 0 0 0 1px rgb(var(--ac-400) / .2), 0 0 24px rgb(var(--ac-500) / .25), inset 0 0 36px rgb(var(--ac-500) / .08);
     }
     .fx-pad canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-    .fx-axis { position: absolute; font-size: 9px; font-weight: 700; color: #475569; pointer-events: none; white-space: nowrap; }
+    .fx-axis { position: absolute; font-size: 9px; font-weight: 700; color: rgb(var(--n-475569)); pointer-events: none; white-space: nowrap; }
     .fx-axis-x0 { left: 8px; bottom: 5px; }
     .fx-axis-x1 { right: 8px; bottom: 5px; }
     .fx-axis-y { left: 4px; top: 50%; transform: translateY(-50%) rotate(180deg); writing-mode: vertical-rl; letter-spacing: .06em; }
     .fx-pad-hint {
       position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 700; color: #3b4559; pointer-events: none; transition: opacity .15s ease;
+      font-size: 11px; font-weight: 700; color: rgb(var(--n-3b4559)); pointer-events: none; transition: opacity .15s ease;
     }
     .fx-pad.is-engaged .fx-pad-hint, .fx-pad.is-used .fx-pad-hint { opacity: 0; }
     @container (max-height: 120px) {
@@ -1109,8 +1191,8 @@
       max-height: 64px;
       border-radius: 10px;
       border: 1.5px solid rgb(var(--ac-400) / .35);
-      background: #0f1218;
-      color: #cbd5e1;
+      background: rgb(var(--n-0f1218));
+      color: rgb(var(--n-cbd5e1));
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -1132,17 +1214,39 @@
       box-shadow: 0 0 16px rgba(245,158,11,.5), inset 0 1px 0 rgba(255,255,255,.4);
     }
     .fx-bpm { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: rgb(var(--ac-300)); letter-spacing: 0; }
-    .fx-tempo-led { width: 5px; height: 5px; border-radius: 50%; background: #2a3242; }
+    .fx-tempo-led { width: 5px; height: 5px; border-radius: 50%; background: rgb(var(--n-2a3242)); }
     .fx-tempo-led.is-beat { background: rgb(var(--ac-300)); box-shadow: 0 0 8px rgb(var(--ac-400)); }
 
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* ===== ライトモードだけの調整 ===== */
+    html.tone-light .text-emerald-300 { color: #059669; }
+    html.tone-light .text-violet-300, html.tone-light .text-violet-200 { color: #7c3aed; }
+    html.tone-light .text-red-300, html.tone-light .text-red-400, html.tone-light .text-red-200 { color: #dc2626; }
+    html.tone-light .text-amber-300, html.tone-light .text-amber-200 { color: #b45309; }
+    html.tone-light .text-amber-400 { color: #d97706; }
+    html.tone-light .duck-pad:not(.is-active) {
+      background: linear-gradient(180deg, #fff8e6 0%, #fdeec7 100%);
+      color: #92400e;
+      border-color: rgba(217, 119, 6, .45);
+      box-shadow: 0 3px 8px rgba(146, 64, 14, .12);
+    }
+    html.tone-light .deck-panel.is-floating { box-shadow: 0 16px 40px rgba(15, 23, 42, .22), 0 0 0 1px rgba(15, 23, 42, .08); }
+    html.tone-light .sampler-pad { box-shadow: 0 2px 6px rgba(15, 23, 42, .08); }
+    html.tone-light .tile-overlay { background: rgba(241, 244, 248, .78); }
+    html.tone-light .tile-ov-name { color: #0f172a; }
+    html.tone-light .drop-shadow { filter: none; }
+    html.tone-light .fx-btn.is-active,
+    html.tone-light .key-pad.is-active { color: rgb(var(--ac-200)); }
+    html.tone-light .duck-btn.is-on { color: #92400e; border-color: rgba(217, 119, 6, .55); background: #fef3c7; }
+    html.tone-light .layout-btn.is-primary { color: #fff; }
   </style>
 </head>
 <body class="flex items-center justify-center">
 
   <!-- 起動時オーバーレイ（iOS Safari等のWeb Audio APIアンロック用） -->
-  <div id="startupOverlay" class="fixed inset-0 z-50 bg-[#07090d]/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+  <div id="startupOverlay" class="fixed inset-0 z-50 bg-[rgb(var(--n-07090d)/0.95)] backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
     <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent-500 to-accent2-600 flex items-center justify-center shadow-2xl shadow-accent-500/30 mb-5">
       <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
         <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
@@ -1151,7 +1255,7 @@
         <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
       </svg>
     </div>
-    <h1 class="text-2xl sm:text-3xl font-black tracking-wider text-white mb-2">
+    <h1 class="text-2xl sm:text-3xl font-black tracking-wider text-slate-50 mb-2">
       LIVEPAD <span class="text-accent-400">DECK</span>
     </h1>
     <p class="text-xs sm:text-sm text-slate-400 max-w-md mb-7 leading-relaxed">
@@ -1177,10 +1281,10 @@
   </div>
 
   <!-- メインデバイスコンテナ -->
-  <div id="deviceShell" class="device-shell relative w-full h-full flex flex-col bg-[#0f1115] overflow-hidden">
+  <div id="deviceShell" class="device-shell relative w-full h-full flex flex-col bg-[rgb(var(--n-0f1115))] overflow-hidden">
 
     <!-- 1. トップヘッダーバー -->
-    <header class="h-12 shrink-0 bg-[#14171f] border-b border-[#262c3a] px-2.5 sm:px-4 flex items-center justify-between gap-2 z-20">
+    <header class="h-12 shrink-0 bg-[rgb(var(--n-14171f))] border-b border-[rgb(var(--n-262c3a))] px-2.5 sm:px-4 flex items-center justify-between gap-2 z-20">
       <!-- 左：ロゴ -->
       <div class="flex items-center gap-2 min-w-0">
         <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-accent-500 to-accent2-600 flex items-center justify-center shadow-md shadow-accent-500/20 shrink-0">
@@ -1197,7 +1301,7 @@
       </div>
 
       <!-- 中央：レイアウト切替 (iPad 4x4 / iPhone 4x2) -->
-      <div class="flex items-center bg-[#0b0d11] p-0.5 rounded-lg border border-[#262c3a] shrink-0">
+      <div class="flex items-center bg-[rgb(var(--n-0b0d11))] p-0.5 rounded-lg border border-[rgb(var(--n-262c3a))] shrink-0">
         <button id="btnLayoutIpad" type="button" class="px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-bold transition-all bg-accent-500/20 text-accent-300 border border-accent-500/40">
           iPad 4×4
         </button>
@@ -1220,7 +1324,7 @@
         </button>
 
         <!-- Screen Wake Lock トグル -->
-        <button id="btnWakeLock" type="button" title="画面スリープ防止 (Wake Lock)" class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-[#2c3445] bg-[#1a1f2b] hover:bg-[#222838] transition-all text-[11px] font-bold text-slate-400">
+        <button id="btnWakeLock" type="button" title="画面スリープ防止 (Wake Lock)" class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-[rgb(var(--n-2c3445))] bg-[rgb(var(--n-1a1f2b))] hover:bg-[rgb(var(--n-222838))] transition-all text-[11px] font-bold text-slate-400">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="5"></circle>
             <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -1234,7 +1338,7 @@
         </button>
 
         <!-- PERFORMANCE LOCK トグル -->
-        <button id="btnPerfLock" type="button" aria-pressed="false" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#2c3445] bg-[#1a1f2b] hover:bg-[#222838] transition-all text-[11px] font-bold text-slate-300">
+        <button id="btnPerfLock" type="button" aria-pressed="false" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[rgb(var(--n-2c3445))] bg-[rgb(var(--n-1a1f2b))] hover:bg-[rgb(var(--n-222838))] transition-all text-[11px] font-bold text-slate-300">
           <svg id="iconLockOpen" class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
             <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
@@ -1249,13 +1353,13 @@
         </button>
 
         <!-- Googleドライブ同期（ログイン・同期状態の表示） -->
-        <button id="btnAccount" type="button" title="Googleドライブ同期" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#2c3445] bg-[#1a1f2b] hover:bg-[#222838] transition-all text-[11px] font-bold text-slate-300">
+        <button id="btnAccount" type="button" title="Googleドライブ同期" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[rgb(var(--n-2c3445))] bg-[rgb(var(--n-1a1f2b))] hover:bg-[rgb(var(--n-222838))] transition-all text-[11px] font-bold text-slate-300">
           <span id="accountIcon" class="flex items-center justify-center"></span>
           <span id="accountLabel" class="hidden sm:inline whitespace-nowrap">LOGIN</span>
         </button>
 
         <!-- 設定ボタン -->
-        <button id="btnOpenSettings" type="button" title="設定・データ管理" class="p-1.5 rounded-lg border border-[#2c3445] bg-[#1a1f2b] hover:bg-[#222838] text-slate-300 hover:text-white transition-all">
+        <button id="btnOpenSettings" type="button" title="設定・データ管理" class="p-1.5 rounded-lg border border-[rgb(var(--n-2c3445))] bg-[rgb(var(--n-1a1f2b))] hover:bg-[rgb(var(--n-222838))] text-slate-300 hover:text-slate-50 transition-all">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -1289,7 +1393,7 @@
     <main id="mainArea" class="flex-1 min-h-0 flex flex-row overflow-hidden">
 
       <!-- 左カラム：BGM DECK + EQ DECK + PITCH DECK（狭い画面ではタブで1つずつ表示し、MIXERもここに入る） -->
-      <aside id="leftCol" class="w-[34%] min-w-[280px] max-w-[440px] bg-[#14171f] border-r border-[#262c3a] p-2.5 flex flex-col gap-2 min-h-0 overflow-y-auto no-scrollbar">
+      <aside id="leftCol" class="w-[34%] min-w-[280px] max-w-[440px] bg-[rgb(var(--n-14171f))] border-r border-[rgb(var(--n-262c3a))] p-2.5 flex flex-col gap-2 min-h-0 overflow-y-auto no-scrollbar">
         <div class="col-tabs" role="tablist" aria-label="左の列に表示するパネル">
           <button type="button" data-col-tab="bgm">BGM</button>
           <button type="button" data-col-tab="eq">EQ</button>
@@ -1299,7 +1403,7 @@
 
         <!-- BGM DECK の定位置 -->
         <div id="slot-bgm" class="dock-slot flex-1 min-h-[230px] flex flex-col" data-slot="bgm">
-          <section id="panel-bgm" data-panel="bgm" class="deck-panel bg-[#181c26] rounded-xl border border-[#282f3d] p-2.5 flex flex-col gap-2 flex-1 min-h-0">
+          <section id="panel-bgm" data-panel="bgm" class="deck-panel bg-[rgb(var(--n-181c26))] rounded-xl border border-[rgb(var(--n-282f3d))] p-2.5 flex flex-col gap-2 flex-1 min-h-0">
             <!-- タイトル（ドラッグで浮遊）＆BGM追加ボタン -->
             <div class="panel-head flex items-center justify-between gap-1">
               <div class="flex items-center gap-1.5 min-w-0">
@@ -1319,19 +1423,19 @@
             </div>
 
             <!-- プレイリスト（タップで再生 / 再生中の曲をタップで一時停止 / 長押しでメニュー / ≡ドラッグで並び替え） -->
-            <div id="bgmList" class="bgm-list flex-1 min-h-[110px] overflow-y-auto bg-[#0e1118] rounded-lg border border-[#242b38] relative" role="listbox" aria-label="BGMリスト"></div>
+            <div id="bgmList" class="bgm-list flex-1 min-h-[110px] overflow-y-auto bg-[rgb(var(--n-0e1118))] rounded-lg border border-[rgb(var(--n-242b38))] relative" role="listbox" aria-label="BGMリスト"></div>
 
             <!-- Prev / Play-Pause / Next & X-FADE -->
             <div class="flex items-center justify-between gap-1.5">
               <div class="flex items-center gap-1">
-                <button id="btnBgmPrev" type="button" title="前の曲" class="w-8 h-8 rounded-lg bg-[#10131b] hover:bg-[#1e2433] border border-[#2a3242] text-slate-300 flex items-center justify-center active:scale-95">
+                <button id="btnBgmPrev" type="button" title="前の曲" class="w-8 h-8 rounded-lg bg-[rgb(var(--n-10131b))] hover:bg-[rgb(var(--n-1e2433))] border border-[rgb(var(--n-2a3242))] text-slate-300 flex items-center justify-center active:scale-95">
                   <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
                 </button>
                 <button id="btnBgmPlay" type="button" title="再生 / 一時停止 [Space]" class="w-9 h-8 rounded-lg bg-gradient-to-b from-accent-500 to-accent-600 text-slate-950 flex items-center justify-center shadow-md shadow-accent-500/20 active:scale-95">
                   <svg id="iconBgmPlay" class="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
                   <svg id="iconBgmPause" class="w-3.5 h-3.5 hidden" fill="currentColor" viewBox="0 0 24 24"><rect x="5" y="4" width="5" height="16" rx="1"></rect><rect x="14" y="4" width="5" height="16" rx="1"></rect></svg>
                 </button>
-                <button id="btnBgmNext" type="button" title="次の曲" class="w-8 h-8 rounded-lg bg-[#10131b] hover:bg-[#1e2433] border border-[#2a3242] text-slate-300 flex items-center justify-center active:scale-95">
+                <button id="btnBgmNext" type="button" title="次の曲" class="w-8 h-8 rounded-lg bg-[rgb(var(--n-10131b))] hover:bg-[rgb(var(--n-1e2433))] border border-[rgb(var(--n-2a3242))] text-slate-300 flex items-center justify-center active:scale-95">
                   <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
                 </button>
               </div>
@@ -1361,7 +1465,7 @@
 
         <!-- EQ DECK の定位置（BGM専用イコライザー） -->
         <div id="slot-eq" class="dock-slot shrink-0 flex flex-col" data-slot="eq">
-          <section id="panel-eq" data-panel="eq" class="deck-panel bg-[#181c26] rounded-xl border border-[#282f3d] p-2.5 flex flex-col gap-2">
+          <section id="panel-eq" data-panel="eq" class="deck-panel bg-[rgb(var(--n-181c26))] rounded-xl border border-[rgb(var(--n-282f3d))] p-2.5 flex flex-col gap-2">
             <div class="panel-head flex items-center justify-between gap-1">
               <div class="flex items-center gap-1.5 min-w-0">
                 <span class="panel-grip"></span>
@@ -1422,7 +1526,7 @@
 
         <!-- PITCH DECK の定位置（BGMの速さ・音程） -->
         <div id="slot-pitch" class="dock-slot shrink-0 flex flex-col" data-slot="pitch">
-          <section id="panel-pitch" data-panel="pitch" class="deck-panel bg-[#181c26] rounded-xl border border-[#282f3d] p-2.5 flex flex-col gap-2">
+          <section id="panel-pitch" data-panel="pitch" class="deck-panel bg-[rgb(var(--n-181c26))] rounded-xl border border-[rgb(var(--n-282f3d))] p-2.5 flex flex-col gap-2">
             <div class="panel-head flex items-center justify-between gap-1">
               <div class="flex items-center gap-1.5 min-w-0">
                 <span class="panel-grip"></span>
@@ -1468,7 +1572,7 @@
       </aside>
 
       <!-- 右カラム：上に SE DECK、下の段に FX PAD と MIXER（狭い画面ではタブで SE / FX を切り替え） -->
-      <section id="rightCol" class="flex-1 min-w-0 bg-[#0f1115] p-2.5 flex flex-col gap-2 min-h-0 overflow-y-auto no-scrollbar">
+      <section id="rightCol" class="flex-1 min-w-0 bg-[rgb(var(--n-0f1115))] p-2.5 flex flex-col gap-2 min-h-0 overflow-y-auto no-scrollbar">
         <div class="col-tabs" role="tablist" aria-label="右の列に表示するパネル">
           <button type="button" data-col-tab="se">SE</button>
           <button type="button" data-col-tab="fx">FX</button>
@@ -1505,7 +1609,7 @@
 
         <!-- FX PAD の定位置（指でなぞってエフェクトをかけるXYパッド） -->
         <div id="slot-fx" class="dock-slot fx-slot flex flex-col" data-slot="fx">
-          <section id="panel-fx" data-panel="fx" class="deck-panel bg-[#181c26] rounded-xl border border-[#282f3d] p-2.5 flex flex-col gap-2 flex-1 min-h-0">
+          <section id="panel-fx" data-panel="fx" class="deck-panel bg-[rgb(var(--n-181c26))] rounded-xl border border-[rgb(var(--n-282f3d))] p-2.5 flex flex-col gap-2 flex-1 min-h-0">
             <div class="panel-head flex items-center justify-between gap-2 shrink-0">
               <div class="flex items-center gap-2 min-w-0">
                 <div class="flex items-center gap-1.5 shrink-0">
@@ -1579,7 +1683,7 @@
 
           <!-- MIXER の定位置（広い画面ではタイルの1枚、狭い画面では左の列のタブ） -->
           <div id="slot-mixer" class="dock-slot mixer-slot flex flex-col" data-slot="mixer">
-            <section id="panel-mixer" data-panel="mixer" class="deck-panel bg-[#181c26] rounded-xl border border-[#282f3d] p-2.5 flex flex-col flex-1 min-h-0">
+            <section id="panel-mixer" data-panel="mixer" class="deck-panel bg-[rgb(var(--n-181c26))] rounded-xl border border-[rgb(var(--n-282f3d))] p-2.5 flex flex-col flex-1 min-h-0">
               <div class="panel-head flex items-center justify-between gap-1 mb-1.5">
                 <div class="flex items-center gap-1.5">
                   <span class="panel-grip"></span>
@@ -1587,7 +1691,7 @@
                   <button type="button" class="help-btn" data-help="mixer" title="MIXERの使い方" aria-label="MIXERの使い方">?</button>
                 </div>
                 <div class="flex items-center gap-1">
-                  <span id="peakBadge" class="text-[9px] font-mono-num font-bold px-1.5 py-0.5 rounded bg-[#0d1016] text-slate-500 border border-[#262c3a]">PEAK</span>
+                  <span id="peakBadge" class="text-[9px] font-mono-num font-bold px-1.5 py-0.5 rounded bg-[rgb(var(--n-0d1016))] text-slate-500 border border-[rgb(var(--n-262c3a))]">PEAK</span>
                   <button type="button" class="panel-pin" data-pin="mixer" title="元の位置に戻す" aria-label="MIXERを元の位置に戻す"></button>
                 </div>
               </div>
@@ -1655,8 +1759,8 @@
 
   <!-- パッド編集モーダル -->
   <div id="editModalBackdrop" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
-    <div class="bg-[#181c26] border border-[#30384b] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]">
-      <div class="px-4 py-3 bg-[#14171f] border-b border-[#262c3a] flex items-center justify-between shrink-0">
+    <div class="bg-[rgb(var(--n-181c26))] border border-[rgb(var(--n-30384b))] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]">
+      <div class="px-4 py-3 bg-[rgb(var(--n-14171f))] border-b border-[rgb(var(--n-262c3a))] flex items-center justify-between shrink-0">
         <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
           <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path d="M12 20h9"></path>
@@ -1664,7 +1768,7 @@
           </svg>
           パッド設定を編集
         </h3>
-        <button id="btnEditModalClose" type="button" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+        <button id="btnEditModalClose" type="button" class="text-slate-400 hover:text-slate-50 p-1 rounded-lg hover:bg-slate-800">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -1674,7 +1778,7 @@
 
       <div class="p-4 space-y-3.5 overflow-y-auto">
         <!-- 音源ソース（ファイル読み込み / 内蔵シンセ / クリア） -->
-        <div class="bg-[#10131b] border border-[#262c3a] rounded-xl p-3 space-y-2.5">
+        <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 space-y-2.5">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-slate-300">音源ファイル</span>
             <span id="editSourceBadge" class="text-[10px] font-mono-num px-2 py-0.5 rounded bg-accent-500/20 text-accent-300 border border-accent-500/40">SYNTH</span>
@@ -1685,7 +1789,7 @@
               ファイルを選択 (MP3/WAV/M4A)
               <input id="inputPadAudioFile" type="file" accept="audio/*" class="hidden" />
             </label>
-            <button id="btnRevertSynth" type="button" class="px-2.5 py-1.5 rounded-lg bg-[#1c2230] hover:bg-[#262e40] text-slate-300 text-xs font-bold border border-[#30384b]">内蔵音に戻す</button>
+            <button id="btnRevertSynth" type="button" class="px-2.5 py-1.5 rounded-lg bg-[rgb(var(--n-1c2230))] hover:bg-[rgb(var(--n-262e40))] text-slate-300 text-xs font-bold border border-[rgb(var(--n-30384b))]">内蔵音に戻す</button>
             <button id="btnClearPad" type="button" class="px-2.5 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 text-xs font-bold border border-red-500/30">クリア</button>
           </div>
         </div>
@@ -1693,7 +1797,7 @@
         <!-- パッド名 -->
         <div>
           <label class="block text-xs font-bold text-slate-400 mb-1">パッド表示名</label>
-          <input id="editPadName" type="text" maxlength="18" class="w-full px-3 py-2 rounded-lg bg-[#0d1016] border border-[#2a3242] text-sm font-bold text-white focus:outline-none focus:border-accent-400" />
+          <input id="editPadName" type="text" maxlength="18" class="w-full px-3 py-2 rounded-lg bg-[rgb(var(--n-0d1016))] border border-[rgb(var(--n-2a3242))] text-sm font-bold text-slate-50 focus:outline-none focus:border-accent-400" />
         </div>
 
         <!-- 再生モード & 連打挙動 -->
@@ -1736,7 +1840,7 @@
             <span class="text-slate-400">ピッチ (PITCH)</span>
             <span class="flex items-center gap-2">
               <span id="editPadPitchVal" class="font-mono-num text-accent-300">0</span>
-              <button id="btnPadPitchReset" type="button" class="px-1.5 py-0.5 rounded text-[10px] font-bold text-slate-400 border border-[#2a3242] hover:text-white">0に戻す</button>
+              <button id="btnPadPitchReset" type="button" class="px-1.5 py-0.5 rounded text-[10px] font-bold text-slate-400 border border-[rgb(var(--n-2a3242))] hover:text-slate-50">0に戻す</button>
             </span>
           </div>
           <input id="editPadPitch" type="range" min="-12" max="12" step="1" value="0" class="pro-fader accent-cyan w-full">
@@ -1744,8 +1848,8 @@
         </div>
       </div>
 
-      <div class="px-4 py-3 bg-[#14171f] border-t border-[#262c3a] flex items-center justify-between shrink-0">
-        <button id="btnTestPadSound" type="button" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#1f2636] hover:bg-[#2a3347] text-accent-300 border border-accent-500/30 flex items-center gap-1.5">
+      <div class="px-4 py-3 bg-[rgb(var(--n-14171f))] border-t border-[rgb(var(--n-262c3a))] flex items-center justify-between shrink-0">
+        <button id="btnTestPadSound" type="button" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-[rgb(var(--n-1f2636))] hover:bg-[rgb(var(--n-2a3347))] text-accent-300 border border-accent-500/30 flex items-center gap-1.5">
           <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
           テスト再生
         </button>
@@ -1759,10 +1863,10 @@
 
   <!-- 設定＆データ初期化モーダル -->
   <div id="settingsModalBackdrop" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
-    <div class="bg-[#181c26] border border-[#30384b] rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
-      <div class="px-4 py-3 bg-[#14171f] border-b border-[#262c3a] flex items-center justify-between">
+    <div class="bg-[rgb(var(--n-181c26))] border border-[rgb(var(--n-30384b))] rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
+      <div class="px-4 py-3 bg-[rgb(var(--n-14171f))] border-b border-[rgb(var(--n-262c3a))] flex items-center justify-between">
         <h3 class="text-sm font-bold text-slate-100">設定・データ管理</h3>
-        <button id="btnSettingsClose" type="button" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+        <button id="btnSettingsClose" type="button" class="text-slate-400 hover:text-slate-50 p-1 rounded-lg hover:bg-slate-800">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -1770,12 +1874,22 @@
         </button>
       </div>
       <div class="p-4 space-y-4">
-        <div class="bg-[#10131b] border border-[#262c3a] rounded-xl p-3 space-y-2">
+        <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 space-y-2">
           <div class="text-xs font-bold text-accent-300">テーマカラー</div>
           <div id="themeGroup" class="grid grid-cols-6 gap-1"></div>
         </div>
 
-        <div class="bg-[#10131b] border border-[#262c3a] rounded-xl p-3 space-y-2">
+        <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 space-y-2">
+          <div class="text-xs font-bold text-accent-300">背景の色調</div>
+          <div id="toneGroup" class="grid grid-cols-6 gap-1"></div>
+          <label class="flex items-center gap-2 text-[11px] font-bold text-slate-300 cursor-pointer select-none">
+            <input id="toneTint" type="checkbox" class="w-4 h-4 accent-cyan-500">
+            テーマカラーの色味を背景にも少し乗せる
+          </label>
+          <p class="text-[10px] text-slate-500 leading-relaxed">AUTO：iPhone・iPad・PCのダーク／ライトの設定に合わせて自動で切り替えます</p>
+        </div>
+
+        <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 space-y-2">
           <div class="flex items-center justify-between">
             <div class="text-xs font-bold text-accent-300">DUCKの下げ幅</div>
             <span id="duckAmountValue" class="text-[11px] font-mono-num font-bold text-amber-300">80%</span>
@@ -1784,7 +1898,7 @@
           <p class="text-[10px] text-slate-500 leading-relaxed">MIXERのDUCKボタンを押している間、BGMを今の音量の何%にするか（例：BGM 70% で 80% の場合 → 56%）</p>
         </div>
 
-        <div class="bg-[#10131b] border border-[#262c3a] rounded-xl p-3 text-xs text-slate-300 space-y-1">
+        <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 text-xs text-slate-300 space-y-1">
           <div class="font-bold text-accent-300">保存と同期</div>
           <p class="text-slate-400 leading-relaxed">
             登録した音声ファイル・パッド設定・BGMプレイリストはブラウザ内に自動保存されます。Googleでログインすると、Googleドライブの「LIVEPAD DECK」フォルダにも保存され、別の端末やブラウザのデータを消したあとでも、ログインするだけで元に戻せます。
@@ -1792,7 +1906,7 @@
           <a href="privacy.html" target="_blank" rel="noopener" class="inline-block text-accent-300 hover:text-accent-200 underline underline-offset-2">プライバシーポリシー</a>
         </div>
 
-        <div class="border-t border-[#262c3a] pt-3">
+        <div class="border-t border-[rgb(var(--n-262c3a))] pt-3">
           <div class="text-xs font-bold text-red-400 mb-2">データの初期化</div>
           <div id="resetInitialArea">
             <button id="btnRequestReset" type="button" class="w-full py-2 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/40 text-xs font-bold transition-colors">
@@ -1814,15 +1928,15 @@
   <!-- タブ名変更モーダル -->
   <!-- レイアウトに名前を付けて保存 -->
   <div id="layoutNameBackdrop" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
-    <form id="layoutNameForm" class="bg-[#181c26] border border-[#30384b] rounded-2xl w-full max-w-xs shadow-2xl overflow-hidden">
-      <div class="px-4 py-3 bg-[#14171f] border-b border-[#262c3a]">
+    <form id="layoutNameForm" class="bg-[rgb(var(--n-181c26))] border border-[rgb(var(--n-30384b))] rounded-2xl w-full max-w-xs shadow-2xl overflow-hidden">
+      <div class="px-4 py-3 bg-[rgb(var(--n-14171f))] border-b border-[rgb(var(--n-262c3a))]">
         <h3 class="text-sm font-bold text-slate-100">レイアウトを保存</h3>
       </div>
       <div class="p-4">
         <label class="block text-xs font-bold text-slate-400 mb-1" for="layoutNameInput">名前（20文字まで。同じ名前は上書き）</label>
-        <input id="layoutNameInput" type="text" maxlength="20" class="w-full px-3 py-2 rounded-lg bg-[#0d1016] border border-[#2a3242] text-sm font-bold text-white focus:outline-none focus:border-accent-400" />
+        <input id="layoutNameInput" type="text" maxlength="20" class="w-full px-3 py-2 rounded-lg bg-[rgb(var(--n-0d1016))] border border-[rgb(var(--n-2a3242))] text-sm font-bold text-slate-50 focus:outline-none focus:border-accent-400" />
       </div>
-      <div class="px-4 py-3 bg-[#14171f] border-t border-[#262c3a] flex items-center justify-end gap-2">
+      <div class="px-4 py-3 bg-[rgb(var(--n-14171f))] border-t border-[rgb(var(--n-262c3a))] flex items-center justify-end gap-2">
         <button id="btnLayoutNameCancel" type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:bg-slate-800">キャンセル</button>
         <button type="submit" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-accent-500 hover:bg-accent-400 text-slate-950">保存する</button>
       </div>
@@ -1831,13 +1945,13 @@
 
   <!-- 使い方（各パネルの「？」で開く図解） -->
   <div id="helpModalBackdrop" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
-    <div class="help-sheet bg-[#181c26] border border-[#30384b] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col" role="dialog" aria-modal="true" aria-labelledby="helpTitleText">
-      <div class="px-4 py-3 bg-[#14171f] border-b border-[#262c3a] flex items-center justify-between shrink-0">
+    <div class="help-sheet bg-[rgb(var(--n-181c26))] border border-[rgb(var(--n-30384b))] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col" role="dialog" aria-modal="true" aria-labelledby="helpTitleText">
+      <div class="px-4 py-3 bg-[rgb(var(--n-14171f))] border-b border-[rgb(var(--n-262c3a))] flex items-center justify-between shrink-0">
         <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
           <span class="help-badge">?</span>
           <span id="helpTitleText"></span>
         </h3>
-        <button id="btnHelpClose" type="button" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800" aria-label="閉じる">
+        <button id="btnHelpClose" type="button" class="text-slate-400 hover:text-slate-50 p-1 rounded-lg hover:bg-slate-800" aria-label="閉じる">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -1849,8 +1963,8 @@
   </div>
 
   <div id="tabModalBackdrop" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
-    <form id="tabRenameForm" class="bg-[#181c26] border border-[#30384b] rounded-2xl w-full max-w-xs shadow-2xl overflow-hidden">
-      <div class="px-4 py-3 bg-[#14171f] border-b border-[#262c3a] flex items-center justify-between">
+    <form id="tabRenameForm" class="bg-[rgb(var(--n-181c26))] border border-[rgb(var(--n-30384b))] rounded-2xl w-full max-w-xs shadow-2xl overflow-hidden">
+      <div class="px-4 py-3 bg-[rgb(var(--n-14171f))] border-b border-[rgb(var(--n-262c3a))] flex items-center justify-between">
         <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
           <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path d="M12 20h9"></path>
@@ -1858,7 +1972,7 @@
           </svg>
           タブ名を変更
         </h3>
-        <button id="btnTabClose" type="button" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+        <button id="btnTabClose" type="button" class="text-slate-400 hover:text-slate-50 p-1 rounded-lg hover:bg-slate-800">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -1867,9 +1981,9 @@
       </div>
       <div class="p-4">
         <label class="block text-xs font-bold text-slate-400 mb-1" for="tabNameInput">タブ表示名（10文字まで）</label>
-        <input id="tabNameInput" type="text" maxlength="10" class="w-full px-3 py-2 rounded-lg bg-[#0d1016] border border-[#2a3242] text-sm font-bold text-white focus:outline-none focus:border-accent-400" />
+        <input id="tabNameInput" type="text" maxlength="10" class="w-full px-3 py-2 rounded-lg bg-[rgb(var(--n-0d1016))] border border-[rgb(var(--n-2a3242))] text-sm font-bold text-slate-50 focus:outline-none focus:border-accent-400" />
       </div>
-      <div class="px-4 py-3 bg-[#14171f] border-t border-[#262c3a] flex items-center justify-end gap-2">
+      <div class="px-4 py-3 bg-[rgb(var(--n-14171f))] border-t border-[rgb(var(--n-262c3a))] flex items-center justify-end gap-2">
         <button id="btnTabCancel" type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:bg-slate-800">キャンセル</button>
         <button id="btnTabSave" type="submit" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-accent-500 hover:bg-accent-400 text-slate-950 shadow-lg shadow-accent-500/20">保存する</button>
       </div>
@@ -1878,8 +1992,8 @@
 
   <!-- BGMリストの長押しメニュー -->
   <div id="bgmMenuShield" class="fixed inset-0 z-40 hidden"></div>
-  <div id="bgmMenu" class="fixed z-50 hidden w-[210px] bg-[#1b202b] border border-[#30384b] rounded-xl shadow-2xl shadow-black/60 p-1" role="menu">
-    <div id="bgmMenuTitle" class="px-2.5 pt-1.5 pb-1.5 text-[10px] font-bold text-slate-500 truncate border-b border-[#262c3a] mb-1"></div>
+  <div id="bgmMenu" class="fixed z-50 hidden w-[210px] bg-[rgb(var(--n-1b202b))] border border-[rgb(var(--n-30384b))] rounded-xl shadow-2xl shadow-black/60 p-1" role="menu">
+    <div id="bgmMenuTitle" class="px-2.5 pt-1.5 pb-1.5 text-[10px] font-bold text-slate-500 truncate border-b border-[rgb(var(--n-262c3a))] mb-1"></div>
     <button id="bgmMenuPlay" type="button" class="ctx-item" role="menuitem">
       <svg class="w-3.5 h-3.5 text-accent-300" fill="currentColor" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
       <span id="bgmMenuPlayLabel">PLAY</span>
@@ -1894,8 +2008,8 @@
   </div>
   <!-- Googleドライブ同期：アカウントメニュー -->
   <div id="accountMenuShield" class="fixed inset-0 z-40 hidden"></div>
-  <div id="accountMenu" class="fixed z-50 hidden w-[270px] bg-[#1b202b] border border-[#30384b] rounded-xl shadow-2xl shadow-black/60 p-1" role="menu">
-    <div class="px-2.5 pt-2 pb-2 border-b border-[#262c3a] mb-1">
+  <div id="accountMenu" class="fixed z-50 hidden w-[270px] bg-[rgb(var(--n-1b202b))] border border-[rgb(var(--n-30384b))] rounded-xl shadow-2xl shadow-black/60 p-1" role="menu">
+    <div class="px-2.5 pt-2 pb-2 border-b border-[rgb(var(--n-262c3a))] mb-1">
       <div id="accountName" class="text-[12px] font-bold text-slate-100 truncate">Googleアカウント</div>
       <div id="accountEmail" class="text-[10px] font-mono-num text-slate-400 truncate"></div>
       <div id="accountStatusText" class="text-[10px] text-slate-400 mt-1.5 leading-relaxed"></div>
@@ -1917,8 +2031,8 @@
 
   <!-- Googleドライブ同期：端末とドライブの両方にデータがある時の確認 -->
   <div id="syncConflictBackdrop" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-    <div class="bg-[#181c26] border border-[#30384b] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden" role="dialog" aria-modal="true">
-      <div class="px-4 py-3 bg-[#14171f] border-b border-[#262c3a]">
+    <div class="bg-[rgb(var(--n-181c26))] border border-[rgb(var(--n-30384b))] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden" role="dialog" aria-modal="true">
+      <div class="px-4 py-3 bg-[rgb(var(--n-14171f))] border-b border-[rgb(var(--n-262c3a))]">
         <h3 class="text-sm font-bold text-slate-100">どちらのデータを使いますか？</h3>
       </div>
       <div class="p-4 space-y-3">
@@ -1930,7 +2044,7 @@
           <div class="text-[13px] font-bold text-accent-200">ドライブの内容を使う</div>
           <div class="text-[10px] text-slate-400 mt-0.5">この端末のパッドの割り当て・BGMリストは、ドライブの内容に置き換わります</div>
         </button>
-        <button id="btnConflictLocal" type="button" class="w-full text-left px-3.5 py-3 rounded-xl bg-[#10131b] hover:bg-[#1a1f2b] border border-[#2a3242] transition-colors">
+        <button id="btnConflictLocal" type="button" class="w-full text-left px-3.5 py-3 rounded-xl bg-[rgb(var(--n-10131b))] hover:bg-[rgb(var(--n-1a1f2b))] border border-[rgb(var(--n-2a3242))] transition-colors">
           <div class="text-[13px] font-bold text-slate-100">この端末の内容でドライブを上書きする</div>
           <div class="text-[10px] text-slate-400 mt-0.5">ドライブの設定は、この端末の内容に置き換わります（ドライブにある音声ファイル自体は消えません）</div>
         </button>
@@ -1940,7 +2054,7 @@
 
   <!-- トースト通知 -->
   <div id="toastBox" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-200 translate-y-2">
-    <div class="px-4 py-2 rounded-xl bg-[#1b202b] border border-accent-500/40 text-xs font-bold text-slate-100 shadow-2xl flex items-center gap-2">
+    <div class="px-4 py-2 rounded-xl bg-[rgb(var(--n-1b202b))] border border-accent-500/40 text-xs font-bold text-slate-100 shadow-2xl flex items-center gap-2">
       <span class="w-2 h-2 rounded-full bg-accent-400"></span>
       <span id="toastMessage">通知</span>
     </div>
@@ -2070,6 +2184,8 @@
       panels: createDefaultPanels(),   // パネルの浮遊状態と位置
       layout: createDefaultLayout(),   // 広い画面のDECKの並び（タイル型）と保存したレイアウト
       themeColor: DEFAULT_THEME,
+      tone: 'dark',          // 背景の色調：dark / dim / navy / warm / light / auto
+      toneTint: false,       // テーマカラーの色味を背景にも少し乗せる
       banks: createDefaultBanks(),
       bgmList: createDefaultBgmList(),
       bgm: {
@@ -2137,6 +2253,8 @@
             duckingEnabled: state.ducking.enabled,
             layoutMode: state.layoutMode,
             themeColor: state.themeColor,
+            tone: state.tone,
+            toneTint: state.toneTint,
             duckAmount: state.duckAmount,
             eq: state.eq,
             fx: state.fx,
@@ -4328,6 +4446,8 @@ registerProcessor('livepad-pitch', LivepadPitch);
         fx: state.fx,
         pitch: state.pitch,
         layoutPresets: state.layout.presets,   // 名前を付けて保存したレイアウト（今の並びは端末ごと）
+        tone: state.tone,
+        toneTint: state.toneTint,
         themeColor: state.themeColor
       };
     }
@@ -4351,6 +4471,8 @@ registerProcessor('livepad-pitch', LivepadPitch);
         state.layout.active = n.active;
       }
       if (d.themeColor && THEMES[d.themeColor]) state.themeColor = d.themeColor;
+      if (TONES.some(t => t.id === d.tone)) state.tone = d.tone;
+      if (typeof d.toneTint === 'boolean') state.toneTint = d.toneTint;
       state.activeBankIndex = Math.min(state.activeBankIndex, state.banks.length - 1);
       state.bgm.trackIndex = 0;
       state.bgm.elapsedSec = 0;
@@ -5396,7 +5518,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
         el.innerHTML = '';
         for (let i = 0; i < 16; i++) {
           const seg = document.createElement('div');
-          seg.className = 'led-seg rounded-[1px] bg-[#1a202c]';
+          seg.className = 'led-seg rounded-[1px] bg-[rgb(var(--n-1a202c))]';
           el.appendChild(seg);
         }
       });
@@ -5405,13 +5527,146 @@ registerProcessor('livepad-pitch', LivepadPitch);
     // =========================================================================
     // テーマカラー
     // =========================================================================
+    // =========================================================================
+    // 背景の色調（DARK / DIM / NAVY / WARM / LIGHT / AUTO）
+    //   背景・パネル・枠線・文字の中間色を CSS変数（--n-xxxxxx / --sl-*）でまとめて切り替える
+    //   表示窓・パッド面・メーター・図解は、どの色調でも暗い画面のまま
+    // =========================================================================
+    const TONES = [
+      { id: 'dark', label: 'DARK' }, { id: 'dim', label: 'DIM' }, { id: 'navy', label: 'NAVY' },
+      { id: 'warm', label: 'WARM' }, { id: 'light', label: 'LIGHT' }, { id: 'auto', label: 'AUTO' }
+    ];
+    const TONE_GROUPS = {
+      well: ['07090d', '07080b', '090b0f', '0a0c10', '0b0d11', '0d1016', '0e1118', '0f1218', '0f1219', '10131b'],
+      page: ['0f1115'],
+      head: ['11141b', '11151d', '121620', '14171f', '12151d'],
+      panel: ['141821', '141925', '161b25', '171c27', '181c26'],
+      raise: ['1a1f2b', '1b202b', '1a2030', '1b2130', '1e2433', '1f2636', '222838', '242b38', '262d3d', '283041', '2a3347'],
+      line: ['1a202c', '1c2230', '1f2633', '222836', '262c3a', '282f3d', '262e40', '242a38'],
+      line2: ['2a3242', '2b3344', '2b3447', '2c3445', '2f3848', '2f3849', '30384b', '333c4f', '334155', '3a4458', '3b4559', '4b5568', '475569'],
+      text: ['64748b', '94a3b8', 'cbd5e1', 'e2e8f0', 'f1f5f9']
+    };
+    const SLATE_DARK = { 50: 'f8fafc', 100: 'f1f5f9', 200: 'e2e8f0', 300: 'cbd5e1', 400: '94a3b8', 500: '64748b', 600: '475569', 700: '334155', 800: '1e293b', 900: '0f172a', 950: '020617' };
+    // ライトでは濃淡を反対に（950 はアクセントのボタンの上の濃い文字なので、そのまま）
+    const SLATE_LIGHT = { 50: '0f172a', 100: '1e293b', 200: '273244', 300: '3b4657', 400: '5b6678', 500: '7d8796', 600: '9aa3b0', 700: 'c5ccd6', 800: 'e3e7ee', 900: 'f1f4f8', 950: '020617' };
+    // ライトの中間色：浮いているもの（パネル）ほど白く、くぼんだもの（入力欄）は少しグレー
+    const LIGHT_BASE = { well: 'e9edf2', page: 'e4e8ee', head: 'f4f6f9', panel: 'ffffff', line: 'd9dee7' };
+    const LIGHT_EACH = {
+      '1a1f2b': 'f3f5f9', '1b202b': 'f3f5f9', '1a2030': 'f3f5f9', '1b2130': 'f3f5f9',
+      '1e2433': 'edf0f5', '1f2636': 'edf0f5',
+      '222838': 'e4e8ef', '242b38': 'e4e8ef', '262d3d': 'e4e8ef', '283041': 'e4e8ef', '2a3347': 'e4e8ef',
+      '3a4458': 'aab4c3', '3b4559': 'aab4c3', '4b5568': 'aab4c3', '475569': 'aab4c3',
+      '64748b': '7d8796', '94a3b8': '5b6678', 'cbd5e1': '3b4657', 'e2e8f0': '1f2937', 'f1f5f9': '0f172a'
+    };
+
+    const hexToRgb = (h) => [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+    function rgbToHsl([r, g, b]) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const l = (max + min) / 2;
+      if (max === min) return [0, 0, l];
+      const d = max - min;
+      const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      let h;
+      if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      return [h * 60, s, l];
+    }
+    function hslToRgb([h, s, l]) {
+      const k = (n) => (n + h / 30) % 12;
+      const a = s * Math.min(l, 1 - l);
+      const f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+      return [f(0), f(8), f(4)].map(v => Math.round(Math.max(0, Math.min(1, v)) * 255));
+    }
+    const mixRgb = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+
+    function effectiveTone() {
+      if (state.tone !== 'auto') return state.tone;
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+
+    /** 色調ごとの中間色を計算（hex → [r,g,b]） */
+    function toneColor(hex, group, tone) {
+      if (tone === 'light') return hexToRgb(LIGHT_EACH[hex] || LIGHT_BASE[group] || (group === 'line2' ? 'c8cfda' : 'f3f5f9'));
+      const rgb = hexToRgb(hex);
+      if (tone === 'dark' || group === 'text') return rgb;
+      let [h, s, l] = rgbToHsl(rgb);
+      if (tone === 'dim') l = Math.min(0.5, l + (group === 'line' || group === 'line2' ? 0.06 : 0.05));
+      else if (tone === 'navy') { h = 224; s = Math.min(0.55, s + 0.22); l += 0.012; }
+      else if (tone === 'warm') { h = 30; s = 0.1 + s * 0.35; l += 0.006; }
+      return hslToRgb([h, s, l]);
+    }
+
+    function applyTone() {
+      const tone = effectiveTone();
+      const light = tone === 'light';
+      const root = document.documentElement;
+      const th = THEMES[state.themeColor] || THEMES[DEFAULT_THEME];
+      const tintRgb = th.ac['500'].split(' ').map(Number);
+      Object.entries(TONE_GROUPS).forEach(([group, list]) => {
+        list.forEach(hex => {
+          let c = toneColor(hex, group, tone);
+          if (state.toneTint && group !== 'text') {
+            const t = (group === 'line' || group === 'line2') ? (light ? 0.07 : 0.1) : (light ? 0.04 : 0.07);
+            c = mixRgb(c, tintRgb, t);
+          }
+          root.style.setProperty(`--n-${hex}`, c.join(' '));
+        });
+      });
+      const slate = light ? SLATE_LIGHT : SLATE_DARK;
+      Object.entries(slate).forEach(([k, hex]) => root.style.setProperty(`--sl-${k}`, hexToRgb(hex).join(' ')));
+      // テーマカラー：ライトでは文字に使う明るい色を濃い色に（暗い表示窓の中は --acb-* で元の明るさ）
+      ['200', '300', '400'].forEach(k => root.style.setProperty(`--acb-${k}`, th.ac[k]));
+      root.style.setProperty('--ac-200', light ? th.ac['700'] : th.ac['200']);
+      root.style.setProperty('--ac-300', light ? th.ac['600'] : th.ac['300']);
+      root.style.setProperty('--ac-400', light ? th.ac['500'] : th.ac['400']);
+      root.style.setProperty('--ac2-400', light ? th.ac2['600'] : th.ac2['400']);
+      root.classList.toggle('tone-light', light);
+      root.style.colorScheme = light ? 'light' : 'dark';
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', `rgb(${toneColor('14171f', 'head', tone).join(',')})`);
+    }
+
+    function renderToneGroup() {
+      const group = document.getElementById('toneGroup');
+      if (!group) return;
+      group.innerHTML = '';
+      TONES.forEach(t => {
+        const sel = t.id === state.tone;
+        const preview = t.id === 'auto' ? null : [toneColor('0f1115', 'page', t.id), toneColor('181c26', 'panel', t.id)];
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'flex flex-col items-center gap-1 py-1 rounded-lg hover:bg-[rgb(var(--n-1a1f2b))]';
+        btn.setAttribute('aria-pressed', String(sel));
+        btn.title = t.id === 'auto' ? '端末のダーク／ライトの設定に合わせる' : t.label;
+        const bg = preview
+          ? `linear-gradient(135deg, rgb(${preview[0].join(' ')}) 0 50%, rgb(${preview[1].join(' ')}) 50% 100%)`
+          : 'linear-gradient(135deg, #0f1115 0 50%, #ffffff 50% 100%)';
+        btn.innerHTML = `
+          <span class="w-7 h-7 rounded-lg border border-[rgb(var(--n-3a4458))] transition-transform ${sel ? 'scale-110 ring-2 ring-accent-400 ring-offset-2 ring-offset-[rgb(var(--n-10131b))]' : ''}" style="background:${bg}"></span>
+          <span class="text-[9px] font-bold ${sel ? 'text-slate-100' : 'text-slate-500'}">${t.label}</span>`;
+        btn.addEventListener('click', () => {
+          state.tone = t.id;
+          applyTheme();
+          storage.saveState();
+        });
+        group.appendChild(btn);
+      });
+      const tint = document.getElementById('toneTint');
+      if (tint) tint.checked = !!state.toneTint;
+    }
+
     function applyTheme() {
       if (!THEMES[state.themeColor]) state.themeColor = DEFAULT_THEME;
       const th = THEMES[state.themeColor];
       const root = document.documentElement.style;
       Object.entries(th.ac).forEach(([k, v]) => root.setProperty(`--ac-${k}`, v));
       Object.entries(th.ac2).forEach(([k, v]) => root.setProperty(`--ac2-${k}`, v));
+      applyTone();
       renderThemeGroup();
+      renderToneGroup();
       drawEqCurve();
       fxUi.colors = null;
       fxUi.dirty = true;
@@ -5425,11 +5680,11 @@ registerProcessor('livepad-pitch', LivepadPitch);
         const sel = key === state.themeColor;
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'flex flex-col items-center gap-1 py-1 rounded-lg hover:bg-[#1a1f2b]';
+        btn.className = 'flex flex-col items-center gap-1 py-1 rounded-lg hover:bg-[rgb(var(--n-1a1f2b))]';
         btn.setAttribute('aria-pressed', String(sel));
         btn.title = th.name;
         btn.innerHTML = `
-          <span class="w-7 h-7 rounded-full transition-transform ${sel ? 'scale-110 ring-2 ring-white ring-offset-2 ring-offset-[#10131b]' : 'opacity-80'}"
+          <span class="w-7 h-7 rounded-full transition-transform ${sel ? 'scale-110 ring-2 ring-slate-50 ring-offset-2 ring-offset-[rgb(var(--n-10131b))]' : 'opacity-80'}"
                 style="background: linear-gradient(135deg, rgb(${th.ac['400']}) 0%, rgb(${th.ac2['500']}) 100%);"></span>
           <span class="text-[10px] font-bold ${sel ? 'text-slate-100' : 'text-slate-500'}">${th.name}</span>`;
         btn.addEventListener('click', () => {
@@ -5776,7 +6031,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
       const r = state.bgm.repeat;
       btn.className = `repeat-btn relative w-8 h-8 shrink-0 rounded-lg border flex items-center justify-center active:scale-95 transition-all ${
         r === 'off'
-          ? 'bg-[#10131b] border-[#2a3242] text-slate-500 hover:text-slate-300'
+          ? 'bg-[rgb(var(--n-10131b))] border-[rgb(var(--n-2a3242))] text-slate-500 hover:text-slate-300'
           : 'bg-accent-500/20 border-accent-500/50 text-accent-300'
       }`;
       $('repeatOneBadge').classList.toggle('hidden', r !== 'one');
@@ -5787,7 +6042,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
     function updateXfadeUI() {
       $('btnBgmXfade').className = state.bgm.crossfade
         ? 'px-2 py-1 rounded text-[10px] font-bold border transition-all bg-violet-500/20 text-violet-300 border-violet-500/40'
-        : 'px-2 py-1 rounded text-[10px] font-bold border transition-all bg-[#0e1118] text-slate-500 border-[#242b38]';
+        : 'px-2 py-1 rounded text-[10px] font-bold border transition-all bg-[rgb(var(--n-0e1118))] text-slate-500 border-[rgb(var(--n-242b38))]';
     }
 
     /** DUCKボタン：OFF＝灰 / ON＝黄色枠 / 作動中（BGMを下げている間）＝黄色く点灯 */
@@ -5812,8 +6067,8 @@ registerProcessor('livepad-pitch', LivepadPitch);
         btn.type = 'button';
         btn.className = `px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold tracking-wide transition-all border shrink-0 cursor-pointer ${
           isActive
-            ? 'bg-[#1f2636] text-white border-accent-400/60 shadow-md shadow-accent-500/10'
-            : 'bg-[#14171f] text-slate-400 border-[#242a38] hover:text-slate-200 hover:bg-[#1a1f2b]'
+            ? 'bg-[rgb(var(--n-1f2636))] text-slate-50 border-accent-400/60 shadow-md shadow-accent-500/10'
+            : 'bg-[rgb(var(--n-14171f))] text-slate-400 border-[rgb(var(--n-242a38))] hover:text-slate-200 hover:bg-[rgb(var(--n-1a1f2b))]'
         }`;
         btn.textContent = bank.label;
         btn.addEventListener('click', () => {
@@ -5830,7 +6085,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
         edit.id = 'btnRenameBank';
         edit.title = '選択中のタブ名を変更';
         edit.setAttribute('aria-label', '選択中のタブ名を変更');
-        edit.className = 'w-7 h-7 shrink-0 rounded-md bg-[#0f1219]/85 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center border border-[#2a3242] transition-colors';
+        edit.className = 'w-7 h-7 shrink-0 rounded-md bg-[rgb(var(--n-0f1219)/0.85)] hover:bg-slate-700 text-slate-400 hover:text-slate-50 flex items-center justify-center border border-[rgb(var(--n-2a3242))] transition-colors';
         edit.innerHTML = PENCIL_SVG;
         edit.addEventListener('click', openTabRename);
         container.appendChild(edit);
@@ -5909,8 +6164,8 @@ registerProcessor('livepad-pitch', LivepadPitch);
 
         el.className = `sampler-pad rounded-xl border flex flex-col justify-between p-2 sm:p-2.5 cursor-pointer select-none ${
           isEmpty
-            ? 'bg-[#12151d] border-dashed border-[#2a3242] hover:border-slate-500'
-            : 'bg-[#181c26] border-[#2a3242]'
+            ? 'bg-[rgb(var(--n-12151d))] border-dashed border-[rgb(var(--n-2a3242))] hover:border-slate-500'
+            : 'bg-[rgb(var(--n-181c26))] border-[rgb(var(--n-2a3242))]'
         } ${isPlaying ? 'is-playing' : ''}`;
 
         const modeBadgeColor =
@@ -5938,7 +6193,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
             </div>
             ${
               !state.perfLock
-                ? `<button type="button" class="pad-edit-btn w-6 h-6 rounded-md bg-[#0f1219]/85 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center border border-[#2a3242] transition-colors" title="パッド設定を編集">
+                ? `<button type="button" class="pad-edit-btn w-6 h-6 rounded-md bg-[rgb(var(--n-0f1219)/0.85)] hover:bg-slate-700 text-slate-400 hover:text-slate-50 flex items-center justify-center border border-[rgb(var(--n-2a3242))] transition-colors" title="パッド設定を編集">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                       <path d="M12 20h9"></path>
                       <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
@@ -5956,7 +6211,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
 
           <div class="pad-bottom relative z-10 flex items-center justify-between text-[9px] font-mono-num text-slate-400">
             <span class="flex items-center"><span class="kbd" title="キーボードの ${KEY_LABELS[padIndex]} キーで鳴らせます">${KEY_LABELS[padIndex]}</span><span class="pad-vol whitespace-nowrap">${isEmpty ? '' : `VOL ${pad.volume}%${pad.pitch ? ` P${fmtSemitone(pad.pitch)}` : ''}`}</span></span>
-            <span class="pad-status-dot flex items-center gap-1 ${isPlaying ? 'text-white font-bold' : 'opacity-40'}">
+            <span class="pad-status-dot flex items-center gap-1 ${isPlaying ? 'text-slate-50 font-bold' : 'opacity-40'}">
               ${!isEmpty ? `<span class="w-1.5 h-1.5 rounded-full" style="background-color: ${isPlaying ? palette.hex : '#64748b'};"></span>${isPlaying ? 'PLAY' : 'IDLE'}` : ''}
             </span>
           </div>
@@ -6039,7 +6294,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
       const status = el.querySelector('.pad-status-dot');
       if (status) {
         const color = el.style.getPropertyValue('--pad-color');
-        status.className = `pad-status-dot flex items-center gap-1 ${isPlaying ? 'text-white font-bold' : 'opacity-40'}`;
+        status.className = `pad-status-dot flex items-center gap-1 ${isPlaying ? 'text-slate-50 font-bold' : 'opacity-40'}`;
         status.innerHTML = `<span class="w-1.5 h-1.5 rounded-full" style="background-color: ${isPlaying ? color : '#64748b'};"></span>${isPlaying ? 'PLAY' : 'IDLE'}`;
       }
     }
@@ -6108,14 +6363,14 @@ registerProcessor('livepad-pitch', LivepadPitch);
       document.querySelectorAll('.mode-opt-btn').forEach(btn => {
         const active = btn.dataset.mode === d.mode;
         btn.className = `mode-opt-btn py-1.5 rounded-lg border text-[11px] font-bold transition-all ${
-          active ? 'bg-accent-500/20 text-accent-200 border-accent-400' : 'bg-[#0d1016] text-slate-400 border-[#2a3242]'
+          active ? 'bg-accent-500/20 text-accent-200 border-accent-400' : 'bg-[rgb(var(--n-0d1016))] text-slate-400 border-[rgb(var(--n-2a3242))]'
         }`;
       });
 
       document.querySelectorAll('.retrigger-opt-btn').forEach(btn => {
         const active = btn.dataset.retrigger === d.retrigger;
         btn.className = `retrigger-opt-btn py-1.5 rounded-lg border text-[11px] font-bold transition-all ${
-          active ? 'bg-violet-500/20 text-violet-200 border-violet-400' : 'bg-[#0d1016] text-slate-400 border-[#2a3242]'
+          active ? 'bg-violet-500/20 text-violet-200 border-violet-400' : 'bg-[rgb(var(--n-0d1016))] text-slate-400 border-[rgb(var(--n-2a3242))]'
         }`;
       });
 
@@ -6125,7 +6380,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
         const btn = document.createElement('button');
         btn.type = 'button';
         const isSel = key === d.color;
-        btn.className = `w-7 h-7 rounded-full transition-transform ${isSel ? 'scale-110 ring-2 ring-white ring-offset-2 ring-offset-[#181c26]' : 'opacity-75 hover:opacity-100'}`;
+        btn.className = `w-7 h-7 rounded-full transition-transform ${isSel ? 'scale-110 ring-2 ring-white ring-offset-2 ring-offset-[rgb(var(--n-181c26))]' : 'opacity-75 hover:opacity-100'}`;
         btn.style.backgroundColor = val.hex;
         btn.addEventListener('click', () => {
           d.color = key;
@@ -6150,7 +6405,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
           showToast('画面スリープ防止 (Wake Lock) をONにしました');
           wakeLockSentinel.addEventListener('release', () => {
             state.wakeLockActive = false;
-            btn.className = 'flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-[#2c3445] bg-[#1a1f2b] hover:bg-[#222838] transition-all text-[11px] font-bold text-slate-400';
+            btn.className = 'flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-[rgb(var(--n-2c3445))] bg-[rgb(var(--n-1a1f2b))] hover:bg-[rgb(var(--n-222838))] transition-all text-[11px] font-bold text-slate-400';
           });
         } else {
           if (wakeLockSentinel) await wakeLockSentinel.release();
@@ -7157,7 +7412,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
         peakHoldTimer -= dt;
         peakBadge.className = 'text-[9px] font-mono-num font-bold px-1.5 py-0.5 rounded bg-red-500/25 text-red-400 border border-red-500/60';
       } else {
-        peakBadge.className = 'text-[9px] font-mono-num font-bold px-1.5 py-0.5 rounded bg-[#0d1016] text-slate-500 border border-[#262c3a]';
+        peakBadge.className = 'text-[9px] font-mono-num font-bold px-1.5 py-0.5 rounded bg-[rgb(var(--n-0d1016))] text-slate-500 border border-[rgb(var(--n-262c3a))]';
       }
 
       requestAnimationFrame(animateLoop);
@@ -7271,7 +7526,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
           sentence = 'Googleドライブに接続できませんでした。ネット接続を確認して「今すぐ同期」を押してください';
           break;
         default:
-          cls = 'border-[#2c3445] bg-[#1a1f2b] hover:bg-[#222838] text-slate-300';
+          cls = 'border-[rgb(var(--n-2c3445))] bg-[rgb(var(--n-1a1f2b))] hover:bg-[rgb(var(--n-222838))] text-slate-300';
           icon = SYNC_ICONS.cloud;
           label = 'LOGIN';
           sentence = 'Googleでログインすると、音源と設定がGoogleドライブに保存されます';
@@ -7451,7 +7706,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
           iconOpen.classList.remove('hidden');
           iconClosed.classList.add('hidden');
           btnAddBgm.classList.remove('hidden');
-          btnLock.className = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#2c3445] bg-[#1a1f2b] hover:bg-[#222838] transition-all text-[11px] font-bold text-slate-300';
+          btnLock.className = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[rgb(var(--n-2c3445))] bg-[rgb(var(--n-1a1f2b))] hover:bg-[rgb(var(--n-222838))] transition-all text-[11px] font-bold text-slate-300';
           pill.className = 'px-1.5 py-0.5 rounded text-[9px] font-mono-num bg-slate-800 text-slate-400';
           pill.textContent = 'OFF';
           showToast('PERFORMANCE LOCK OFF：編集が可能です');
@@ -7741,6 +7996,8 @@ registerProcessor('livepad-pitch', LivepadPitch);
         state.bgm.elapsedSec = 0;
         state.activeBankIndex = 0;
         state.themeColor = DEFAULT_THEME;
+        state.tone = 'dark';
+        state.toneTint = false;
         applyTheme();
         dockAllPanels();
         state.bgm.manualDuck = false;
@@ -7902,6 +8159,8 @@ registerProcessor('livepad-pitch', LivepadPitch);
         if (typeof saved.duckingEnabled === 'boolean') state.ducking.enabled = saved.duckingEnabled;
         if (saved.layoutMode) state.layoutMode = saved.layoutMode;
         if (saved.themeColor && THEMES[saved.themeColor]) state.themeColor = saved.themeColor;
+        if (TONES.some(t => t.id === saved.tone)) state.tone = saved.tone;
+        if (typeof saved.toneTint === 'boolean') state.toneTint = saved.toneTint;
         if (typeof saved.duckAmount === 'number') state.duckAmount = saved.duckAmount;
         if (saved.eq) state.eq = normalizeEq(saved.eq);
         if (saved.fx) state.fx = normalizeFx(saved.fx);
@@ -7914,6 +8173,18 @@ registerProcessor('livepad-pitch', LivepadPitch);
       }
 
       applyTheme();
+      document.getElementById('toneTint').addEventListener('change', (e) => {
+        state.toneTint = e.target.checked;
+        applyTheme();
+        storage.saveState();
+      });
+      // AUTO：端末のダーク／ライトが切り替わったら追従
+      if (window.matchMedia) {
+        const mq = window.matchMedia('(prefers-color-scheme: light)');
+        const onChange = () => { if (state.tone === 'auto') applyTheme(); };
+        if (mq.addEventListener) mq.addEventListener('change', onChange);
+        else if (mq.addListener) mq.addListener(onChange);
+      }
       initFaders();
       updateRepeatUI();
       updateXfadeUI();
