@@ -765,7 +765,10 @@
     .fx-btn:active { transform: scale(.96); }
     .fx-btn-top { display: flex; align-items: center; gap: 4px; font-family: 'JetBrains Mono', monospace; font-size: 8px; font-weight: 700; color: #4b5568; letter-spacing: .06em; }
     .fx-btn-led { width: 5px; height: 5px; border-radius: 50%; background: #2a3242; transition: background-color .12s ease, box-shadow .12s ease; }
-    .fx-btn-name { font-size: 10px; font-weight: 800; line-height: 1.15; word-break: keep-all; }
+    .fx-btn-name { font-size: 10px; font-weight: 800; line-height: 1.15; letter-spacing: .04em; word-break: keep-all; }
+    /* そのFXのHOLDがONのときだけ「HOLD」の札を出す */
+    .fx-btn-hold { display: none; margin-left: 2px; padding: 0 3px; border-radius: 3px; font-size: 7px; line-height: 10px; letter-spacing: .04em; color: #1a1205; background: #fbbf24; }
+    .fx-btn.is-held .fx-btn-hold { display: inline-block; }
     .fx-btn.is-active {
       color: #fff;
       border-color: rgb(var(--ac-400) / .75);
@@ -1152,7 +1155,7 @@
 
               <span id="seVolValue" class="strip-value text-slate-300">100%</span>
               <span id="bgmVolValue" class="strip-value text-accent-300">70%</span>
-              <span id="masterVolValue" class="strip-value text-emerald-300">90%</span>
+              <span id="masterVolValue" class="strip-value text-emerald-300">50%</span>
               <span class="strip-value text-slate-500">OUT</span>
 
               <!-- 右側：PANIC STOP（上）と DUCK（下）。押しやすい正方形ボタン -->
@@ -1241,17 +1244,17 @@
             <div class="flex items-stretch gap-2 shrink-0">
               <div id="fxDisplay" class="fx-display">FILTER</div>
               <div class="grid grid-cols-4 gap-1.5 flex-1 min-w-0">
-                <button type="button" class="fx-btn" data-fx="filter" style="--fx-color:#22d3ee" title="フィルター：左でこもった音、右でシャリシャリした音（真ん中は元の音）。上ほどクセが強くなります。長押しで外す">
-                  <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 1</span><span class="fx-btn-name">フィルター</span>
+                <button type="button" class="fx-btn" data-fx="filter" style="--fx-color:#22d3ee" title="FILTER：左でこもった音、右でシャリシャリした音（真ん中は元の音）。上ほどクセが強くなります。長押しで外す">
+                  <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 1<span class="fx-btn-hold">HOLD</span></span><span class="fx-btn-name">FILTER</span>
                 </button>
-                <button type="button" class="fx-btn" data-fx="echo" style="--fx-color:#a78bfa" title="エコー：横で繰り返しの間隔（曲のテンポに合わせる）、上ほど長く響きます。指を離すと残響が自然に消えます。長押しで外す">
-                  <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 2</span><span class="fx-btn-name">エコー</span>
+                <button type="button" class="fx-btn" data-fx="echo" style="--fx-color:#a78bfa" title="ECHO：横で繰り返しの間隔（曲のテンポに合わせる）、上ほど長く響きます。指を離すと残響が自然に消えます。長押しで外す">
+                  <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 2<span class="fx-btn-hold">HOLD</span></span><span class="fx-btn-name">ECHO</span>
                 </button>
-                <button type="button" class="fx-btn" data-fx="gate" style="--fx-color:#fbbf24" title="ゲート：音を細かく刻みます。右ほど細かく、上ほど深く刻みます。長押しで外す">
-                  <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 3</span><span class="fx-btn-name">ゲート</span>
+                <button type="button" class="fx-btn" data-fx="gate" style="--fx-color:#fbbf24" title="GATE：音を細かく刻みます。右ほど細かく、上ほど深く刻みます。長押しで外す">
+                  <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 3<span class="fx-btn-hold">HOLD</span></span><span class="fx-btn-name">GATE</span>
                 </button>
-                <button type="button" class="fx-btn" data-fx="tape" style="--fx-color:#fb7185" title="テープストップ：レコードを手で止めたように音程が下がります。右ほどすぐ止まり、上ほど遅くなります。長押しで外す">
-                  <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 4</span><span class="fx-btn-name">テープ<wbr>ストップ</span>
+                <button type="button" class="fx-btn" data-fx="tape" style="--fx-color:#fb7185" title="TAPE STOP：レコードを手で止めたように音程が下がります。右ほどすぐ止まり、上ほど遅くなります。長押しで外す">
+                  <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 4<span class="fx-btn-hold">HOLD</span></span><span class="fx-btn-name">TAPE STOP</span>
                 </button>
               </div>
             </div>
@@ -1650,7 +1653,7 @@
       perfLock: false,
       wakeLockActive: false,
       activeBankIndex: 0,
-      masterVolume: 0.90,
+      masterVolume: 0.50,
       seVolume: 1.0,          // MIXERのSEフェーダー（全SE共通の音量）
       duckAmount: 0.8,        // 手動DUCKの下げ幅（今のBGM音量の何倍にするか）
       eq: createDefaultEq(),  // BGM専用EQ（EQ DECK）
@@ -2177,15 +2180,15 @@
     // かかる順番（重ねたとき）：ゲート → フィルター → エコー → テープストップ
     const FX_ORDER = ['gate', 'filter', 'echo', 'tape'];
     const FX_INFO = {
-      filter: { name: 'FILTER', short: 'FLT', label: 'フィルター', color: '#22d3ee', x0: 'こもる', x1: 'シャリシャリ', y: 'クセ強く' },
-      echo: { name: 'ECHO', short: 'ECHO', label: 'エコー', color: '#a78bfa', x0: '間隔が短い', x1: '長い', y: '長く響く' },
-      gate: { name: 'GATE', short: 'GATE', label: 'ゲート', color: '#fbbf24', x0: 'ゆっくり', x1: '細かく', y: '深く刻む' },
-      tape: { name: 'TAPE STOP', short: 'TAPE', label: 'テープストップ', color: '#fb7185', x0: 'ゆっくり止まる', x1: 'すぐ止まる', y: '遅く' }
+      filter: { name: 'FILTER', short: 'FLT', label: 'FILTER', color: '#22d3ee', x0: 'こもる', x1: 'シャリシャリ', y: 'クセ強く' },
+      echo: { name: 'ECHO', short: 'ECHO', label: 'ECHO', color: '#a78bfa', x0: '間隔が短い', x1: '長い', y: '長く響く' },
+      gate: { name: 'GATE', short: 'GATE', label: 'GATE', color: '#fbbf24', x0: 'ゆっくり', x1: '細かく', y: '深く刻む' },
+      tape: { name: 'TAPE STOP', short: 'TAPE', label: 'TAPE STOP', color: '#fb7185', x0: 'ゆっくり止まる', x1: 'すぐ止まる', y: '遅く' }
     };
     // エコーの間隔（拍）とゲートの刻み（1拍をいくつに分けるか）。横の位置で段階的に切り替える
     const ECHO_STEPS = [
-      { beats: 0.25, label: '1/16' }, { beats: 0.5, label: '1/8' }, { beats: 0.75, label: '1/8.' },
-      { beats: 1, label: '1/4' }, { beats: 1.5, label: '1/4.' }, { beats: 2, label: '1/2' }
+      { beats: 0.25, label: '1/16' }, { beats: 0.5, label: '1/8' }, { beats: 0.75, label: '1/8D' },
+      { beats: 1, label: '1/4' }, { beats: 1.5, label: '1/4D' }, { beats: 2, label: '1/2' }
     ];
     const GATE_STEPS = [
       { perBeat: 1, label: '1/4' }, { perBeat: 2, label: '1/8' }, { perBeat: 4, label: '1/16' }, { perBeat: 8, label: '1/32' }
@@ -2195,7 +2198,7 @@
 
     // state の初期化時（この行より前）にも呼ばれるので、ここでは定数を使わず値を直接書く
     function createDefaultFx() {
-      return { effect: 'filter', depth: 0.85, bpm: 120, hold: false, target: 'bgm' };
+      return { effect: 'filter', depth: 0.85, bpm: 120, holds: { filter: false, echo: false, gate: false, tape: false }, target: 'bgm' };
     }
 
     function normalizeFx(f) {
@@ -2205,7 +2208,12 @@
         effect: FX_ORDER.includes(f.effect) ? f.effect : d.effect,
         depth: typeof f.depth === 'number' && isFinite(f.depth) ? Math.max(0, Math.min(1, f.depth)) : d.depth,
         bpm: typeof f.bpm === 'number' && isFinite(f.bpm) ? Math.round(Math.max(50, Math.min(220, f.bpm))) : d.bpm,
-        hold: !!f.hold,
+        holds: {
+          filter: !!(f.holds && f.holds.filter),
+          echo: !!(f.holds && f.holds.echo),
+          gate: !!(f.holds && f.holds.gate),
+          tape: !!(f.holds && f.holds.tape)
+        },
         target: f.target === 'all' ? 'all' : 'bgm'
       };
     }
@@ -2369,6 +2377,7 @@ registerProcessor('livepad-tape', LivepadTape);
       document.querySelectorAll('.fx-btn').forEach(btn => {
         const on = btn.dataset.fx === f.effect;
         btn.classList.toggle('is-active', on);
+        btn.classList.toggle('is-held', f.holds[btn.dataset.fx]);
         btn.setAttribute('aria-pressed', String(on));
       });
       updateFxLamps();
@@ -2378,8 +2387,11 @@ registerProcessor('livepad-tape', LivepadTape);
         btn.setAttribute('aria-pressed', String(on));
       });
       const hold = document.getElementById('btnFxHold');
-      hold.classList.toggle('is-on', f.hold);
-      hold.setAttribute('aria-pressed', String(f.hold));
+      // HOLDボタンは、今選んでいるFXのHOLDの状態を表示
+      const held = f.holds[f.effect];
+      hold.classList.toggle('is-on', held);
+      hold.setAttribute('aria-pressed', String(held));
+      hold.title = `${FX_INFO[f.effect].label}のHOLD：ONにすると、指を離しても${FX_INFO[f.effect].label}をかけたままにする（FXごとに別々）`;
       document.getElementById('fxBpm').textContent = String(f.bpm);
       const depth = document.getElementById('fxDepth');
       depth.style.setProperty('--d', f.depth.toFixed(3));
@@ -2605,7 +2617,7 @@ registerProcessor('livepad-tape', LivepadTape);
         fxUi.pointerId = null;
         fxUi.touching = false;
         fxUi.touchEffect = null;
-        if (!state.fx.hold && eff) audioEngine.fxRelease(eff);
+        if (eff && !state.fx.holds[eff]) audioEngine.fxRelease(eff);
         fxUi.dirty = true;
       };
       ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => pad.addEventListener(t, end));
@@ -2639,7 +2651,7 @@ registerProcessor('livepad-tape', LivepadTape);
           state.fx.effect = k;
           // パッドを触りながら切り替えた：HOLD中なら前のFXはその位置で固定、そうでなければ外して乗り換える
           if (fxUi.touching) {
-            if (!state.fx.hold && fxUi.touchEffect === prev) audioEngine.fxRelease(prev);
+            if (!state.fx.holds[prev] && fxUi.touchEffect === prev) audioEngine.fxRelease(prev);
             fxTouchEffect(k, fxUi.x, fxUi.y);
           }
           renderFxPad();
@@ -2659,8 +2671,10 @@ registerProcessor('livepad-tape', LivepadTape);
 
       // HOLD：指を離してもかけたまま。OFFにすると固定中のものが全部外れる
       document.getElementById('btnFxHold').addEventListener('click', () => {
-        state.fx.hold = !state.fx.hold;
-        if (!state.fx.hold) audioEngine.fxReleaseAll(fxUi.touching ? fxUi.touchEffect : null);
+        // 今選んでいるFXだけのHOLDを切り替える。OFFにしたら、そのFXだけ外す（指で触っている最中は離したときに外れる）
+        const k = state.fx.effect;
+        state.fx.holds[k] = !state.fx.holds[k];
+        if (!state.fx.holds[k] && !(fxUi.touching && fxUi.touchEffect === k)) audioEngine.fxRelease(k);
         renderFxPad();
         storage.saveState();
       });
@@ -3619,7 +3633,7 @@ registerProcessor('livepad-tape', LivepadTape);
         const was = fx.active[eff];
         fx.active[eff] = { x, y, engagedAt: was ? was.engagedAt : performance.now(), params: null };
         if (eff === 'echo') fx.echoMuted = false;
-        if (eff === 'tape' && fx.tapeFailed) showToast('このブラウザではテープストップを使えません');
+        if (eff === 'tape' && fx.tapeFailed) showToast('このブラウザではTAPE STOPを使えません');
         this.fxUpdate(eff, !was);
         this.fxApplyRouting(0.008);
       }
@@ -5329,7 +5343,7 @@ registerProcessor('livepad-tape', LivepadTape);
       });
       faderApi.master = createVFader($('faderMaster'), {
         value: Math.round(state.masterVolume * 100),
-        defaultValue: 90,
+        defaultValue: 50,
         onInput: (pct) => {
           state.masterVolume = pct / 100;
           $('masterVolValue').textContent = `${pct}%`;
