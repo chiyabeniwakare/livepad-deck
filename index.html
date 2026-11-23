@@ -756,6 +756,9 @@
       box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 2px 4px rgba(0,0,0,.35);
       transition: transform .06s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease, color .12s ease;
       touch-action: manipulation;
+      -webkit-touch-callout: none;
+      user-select: none;
+      -webkit-user-select: none;
       cursor: pointer;
     }
     .fx-btn:hover { border-color: #3a4458; color: #cbd5e1; }
@@ -770,7 +773,9 @@
       box-shadow: 0 0 14px rgb(var(--ac-500) / .28), inset 0 1px 0 rgba(255,255,255,.08);
     }
     .fx-btn.is-active .fx-btn-top { color: rgb(var(--ac-300)); }
-    .fx-btn.is-active .fx-btn-led { background: rgb(var(--ac-300)); box-shadow: 0 0 8px rgb(var(--ac-400)); }
+    /* ランプ＝そのエフェクトがかかっている（HOLDで固定中も点灯）。色はパッド上の点と同じ */
+    .fx-btn.is-on .fx-btn-led { background: var(--fx-color); box-shadow: 0 0 8px var(--fx-color); }
+    .fx-btn.is-on:not(.is-active) { border-color: color-mix(in srgb, var(--fx-color) 55%, #2a3242); }
 
     /* FX DEPTH（かかり具合）の縦長の帯 */
     .fx-depth {
@@ -1236,16 +1241,16 @@
             <div class="flex items-stretch gap-2 shrink-0">
               <div id="fxDisplay" class="fx-display">FILTER</div>
               <div class="grid grid-cols-4 gap-1.5 flex-1 min-w-0">
-                <button type="button" class="fx-btn" data-fx="filter" title="フィルター：左でこもった音、右でシャリシャリした音（真ん中は元の音）。上ほどクセが強くなります">
+                <button type="button" class="fx-btn" data-fx="filter" style="--fx-color:#22d3ee" title="フィルター：左でこもった音、右でシャリシャリした音（真ん中は元の音）。上ほどクセが強くなります。長押しで外す">
                   <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 1</span><span class="fx-btn-name">フィルター</span>
                 </button>
-                <button type="button" class="fx-btn" data-fx="echo" title="エコー：横で繰り返しの間隔（曲のテンポに合わせる）、上ほど長く響きます。指を離すと残響が自然に消えます">
+                <button type="button" class="fx-btn" data-fx="echo" style="--fx-color:#a78bfa" title="エコー：横で繰り返しの間隔（曲のテンポに合わせる）、上ほど長く響きます。指を離すと残響が自然に消えます。長押しで外す">
                   <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 2</span><span class="fx-btn-name">エコー</span>
                 </button>
-                <button type="button" class="fx-btn" data-fx="gate" title="ゲート：音を細かく刻みます。右ほど細かく、上ほど深く刻みます">
+                <button type="button" class="fx-btn" data-fx="gate" style="--fx-color:#fbbf24" title="ゲート：音を細かく刻みます。右ほど細かく、上ほど深く刻みます。長押しで外す">
                   <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 3</span><span class="fx-btn-name">ゲート</span>
                 </button>
-                <button type="button" class="fx-btn" data-fx="tape" title="テープストップ：レコードを手で止めたように音程が下がります。右ほどすぐ止まり、上ほど遅くなります">
+                <button type="button" class="fx-btn" data-fx="tape" style="--fx-color:#fb7185" title="テープストップ：レコードを手で止めたように音程が下がります。右ほどすぐ止まり、上ほど遅くなります。長押しで外す">
                   <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 4</span><span class="fx-btn-name">テープ<wbr>ストップ</span>
                 </button>
               </div>
@@ -1266,7 +1271,7 @@
                 <span class="fx-pad-hint">指でなぞるとエフェクトがかかります</span>
               </div>
               <div class="flex flex-col gap-2 shrink-0">
-                <button id="btnFxHold" type="button" class="fx-side-btn" aria-pressed="false" title="ON：指を離してもエフェクトをかけたままにする（もう一度押すと解除）">HOLD</button>
+                <button id="btnFxHold" type="button" class="fx-side-btn" aria-pressed="false" title="ON：指を離してもエフェクトをかけたままにする。固定したまま別のFXに切り替えると重ねてかけられる（もう一度押すと全部外れる）">HOLD</button>
                 <button id="btnFxTempo" type="button" class="fx-side-btn" title="曲に合わせて4回ほどタップすると、エコーとゲートの間隔が曲のテンポに揃います">
                   TEMPO<span class="flex items-center gap-1"><span id="fxTempoLed" class="fx-tempo-led"></span><span id="fxBpm" class="fx-bpm">120</span></span>
                 </button>
@@ -2169,12 +2174,13 @@
     //   横（X）と縦（Y）で2つの値を同時に動かす。縦は「上ほど強く」で統一
     //   指を置いている間だけかかる（HOLD中は指を離してもかかったまま）
     // =========================================================================
-    const FX_ORDER = ['filter', 'echo', 'gate', 'tape'];
+    // かかる順番（重ねたとき）：ゲート → フィルター → エコー → テープストップ
+    const FX_ORDER = ['gate', 'filter', 'echo', 'tape'];
     const FX_INFO = {
-      filter: { name: 'FILTER', x0: 'こもる', x1: 'シャリシャリ', y: 'クセ強く', mode: 'insert' },
-      echo: { name: 'ECHO', x0: '間隔が短い', x1: '長い', y: '長く響く', mode: 'send' },
-      gate: { name: 'GATE', x0: 'ゆっくり', x1: '細かく', y: '深く刻む', mode: 'insert' },
-      tape: { name: 'TAPE STOP', x0: 'ゆっくり止まる', x1: 'すぐ止まる', y: '遅く', mode: 'insert' }
+      filter: { name: 'FILTER', short: 'FLT', label: 'フィルター', color: '#22d3ee', x0: 'こもる', x1: 'シャリシャリ', y: 'クセ強く' },
+      echo: { name: 'ECHO', short: 'ECHO', label: 'エコー', color: '#a78bfa', x0: '間隔が短い', x1: '長い', y: '長く響く' },
+      gate: { name: 'GATE', short: 'GATE', label: 'ゲート', color: '#fbbf24', x0: 'ゆっくり', x1: '細かく', y: '深く刻む' },
+      tape: { name: 'TAPE STOP', short: 'TAPE', label: 'テープストップ', color: '#fb7185', x0: 'ゆっくり止まる', x1: 'すぐ止まる', y: '遅く' }
     };
     // エコーの間隔（拍）とゲートの刻み（1拍をいくつに分けるか）。横の位置で段階的に切り替える
     const ECHO_STEPS = [
@@ -2311,26 +2317,24 @@ registerProcessor('livepad-tape', LivepadTape);
 
     // ---- FX PAD：画面の更新と操作 --------------------------------------------
     const fxUi = {
-      pointerId: null, touching: false, x: 0.5, y: 0.5, trail: [],
+      pointerId: null, touching: false, touchEffect: null, x: 0.5, y: 0.5, trail: [],
       flash: '', flashUntil: 0, shownText: '', taps: [], beatAnchor: 0, beatLit: false,
-      dirty: true, wasEngaged: false, colors: null
+      dirty: true, activeSig: '', colors: null
     };
 
-    function fxIsEngaged() {
-      return !!(audioEngine.fx && audioEngine.fx.engaged);
+    /** 今かかっているエフェクトの一覧（かかる順） */
+    function fxActiveList() {
+      const fx = audioEngine.fx;
+      return fx ? FX_ORDER.filter(k => fx.active[k]) : [];
     }
 
-    function fxColors() {
-      if (!fxUi.colors) {
-        const css = getComputedStyle(document.documentElement);
-        const rgb = (k) => (css.getPropertyValue(`--ac-${k}`).trim() || '34 211 238').split(/\s+/).map(Number);
-        fxUi.colors = { a3: rgb('300'), a4: rgb('400') };
-      }
-      const c = fxUi.colors;
-      return {
-        a4: (al) => `rgba(${c.a4[0]},${c.a4[1]},${c.a4[2]},${al})`,
-        a3: (al) => `rgba(${c.a3[0]},${c.a3[1]},${c.a3[2]},${al})`
-      };
+    function fxActive(eff) {
+      return audioEngine.fx ? audioEngine.fx.active[eff] : null;
+    }
+
+    function hexA(hex, a) {
+      const n = parseInt(hex.slice(1), 16);
+      return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
     }
 
     /** 表示窓に一時的に文字を出す（テンポやDEPTHを変えたとき） */
@@ -2340,15 +2344,24 @@ registerProcessor('livepad-tape', LivepadTape);
       updateFxDisplay();
     }
 
+    /** 表示窓：選んでいるFXの今の値（かかっていなければ名前）。指で動かす対象と同じ */
     function updateFxDisplay(now = performance.now()) {
       let text;
+      const a = fxActive(state.fx.effect);
       if (now < fxUi.flashUntil) text = fxUi.flash;
-      else if (fxIsEngaged() && audioEngine.fx.params) text = audioEngine.fx.params.label;
+      else if (a && a.params) text = a.params.label;
       else text = FX_INFO[state.fx.effect].name;
       if (text !== fxUi.shownText) {
         document.getElementById('fxDisplay').textContent = text;
         fxUi.shownText = text;
       }
+    }
+
+    /** FXボタンのランプ（かかっているもの）を更新 */
+    function updateFxLamps() {
+      document.querySelectorAll('.fx-btn').forEach(btn => {
+        btn.classList.toggle('is-on', !!fxActive(btn.dataset.fx));
+      });
     }
 
     function renderFxPad() {
@@ -2358,6 +2371,7 @@ registerProcessor('livepad-tape', LivepadTape);
         btn.classList.toggle('is-active', on);
         btn.setAttribute('aria-pressed', String(on));
       });
+      updateFxLamps();
       document.querySelectorAll('[data-fx-target]').forEach(btn => {
         const on = btn.dataset.fxTarget === f.target;
         btn.classList.toggle('is-active', on);
@@ -2392,9 +2406,9 @@ registerProcessor('livepad-tape', LivepadTape);
       const g = canvas.getContext('2d');
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
       g.clearRect(0, 0, w, h);
-      const col = fxColors();
-      const engaged = fxIsEngaged();
-      const eff = state.fx.effect;
+      const sel = state.fx.effect;
+      const selColor = FX_INFO[sel].color;
+      const selActive = fxActive(sel);
       const line = (x0, y0, x1, y1) => { g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); };
 
       // 方眼
@@ -2403,18 +2417,18 @@ registerProcessor('livepad-tape', LivepadTape);
       for (let i = 1; i < 8; i++) { const x = Math.round((w * i) / 8) + 0.5; line(x, 0, x, h); }
       for (let j = 1; j < 4; j++) { const y = Math.round((h * j) / 4) + 0.5; line(0, y, w, y); }
 
-      // エフェクトごとの目印（エコー・ゲートは段階の区切り、フィルターは真ん中の「元の音」）
+      // 選んでいるFXの目印（エコー・ゲートは段階の区切り、フィルターは真ん中の「元の音」）
       g.font = "700 9px 'JetBrains Mono', monospace";
       g.textAlign = 'center';
       g.textBaseline = 'top';
-      if (eff === 'echo' || eff === 'gate') {
-        const steps = eff === 'echo' ? ECHO_STEPS : GATE_STEPS;
+      if (sel === 'echo' || sel === 'gate') {
+        const steps = sel === 'echo' ? ECHO_STEPS : GATE_STEPS;
         const n = steps.length;
-        const cur = engaged ? fxStepIndex(fxUi.x, n) : -1;
+        const cur = selActive ? fxStepIndex(selActive.x, n) : -1;
         for (let k = 0; k < n; k++) {
           const x0 = (w * k) / n;
           if (k === cur) {
-            g.fillStyle = col.a4(0.07);
+            g.fillStyle = hexA(selColor, 0.07);
             g.fillRect(x0, 0, w / n, h);
           }
           if (k > 0) {
@@ -2423,10 +2437,10 @@ registerProcessor('livepad-tape', LivepadTape);
             line(Math.round(x0) + 0.5, 0, Math.round(x0) + 0.5, h);
             g.setLineDash([]);
           }
-          g.fillStyle = k === cur ? col.a3(0.95) : 'rgba(100,116,139,0.6)';
+          g.fillStyle = k === cur ? hexA(selColor, 0.95) : 'rgba(100,116,139,0.6)';
           g.fillText(steps[k].label, x0 + w / n / 2, 6);
         }
-      } else if (eff === 'filter') {
+      } else if (sel === 'filter') {
         const fx0 = w * FX_FILTER_FLAT[0];
         const fx1 = w * FX_FILTER_FLAT[1];
         g.fillStyle = 'rgba(148,163,184,0.05)';
@@ -2435,54 +2449,73 @@ registerProcessor('livepad-tape', LivepadTape);
         g.fillText('LPF', fx0 / 2, 6);
         g.fillText('HPF', fx1 + (w - fx1) / 2, 6);
         g.fillText('FLAT', w / 2, 6);
-      } else if (eff === 'tape') {
+      } else if (sel === 'tape') {
         g.fillStyle = 'rgba(100,116,139,0.6)';
         g.fillText('STOP', w / 2, 6);
       }
 
-      // なぞった軌跡
+      // なぞった軌跡（動かしているFXの色）
       const tr = fxUi.trail;
+      const trColor = FX_INFO[fxUi.touchEffect || sel].color;
       g.lineCap = 'round';
       for (let i = 1; i < tr.length; i++) {
         const a = 1 - (now - tr[i].t) / 450;
         if (a <= 0) continue;
-        g.strokeStyle = col.a4(a * 0.55);
+        g.strokeStyle = hexA(trColor, a * 0.55);
         g.lineWidth = 1 + a * 4;
         line(tr[i - 1].x * w, (1 - tr[i - 1].y) * h, tr[i].x * w, (1 - tr[i].y) * h);
       }
 
-      // 指の位置
-      if (engaged) {
-        const px = fxUi.x * w;
-        const py = (1 - fxUi.y) * h;
-        g.strokeStyle = col.a4(0.22);
-        g.lineWidth = 1;
-        line(px, 0, px, h);
-        line(0, py, w, py);
-        const glow = g.createRadialGradient(px, py, 0, px, py, 42);
-        glow.addColorStop(0, col.a4(0.4));
-        glow.addColorStop(1, col.a4(0));
+      // かかっているエフェクトの位置（固定中は点線の輪＋名前。指で動かしているものは十字線つき）
+      const list = fxActiveList();
+      // 指で動かしているものを最後（一番上）に描く
+      list.sort((p, q) => (p === fxUi.touchEffect) - (q === fxUi.touchEffect));
+      g.font = "700 9px 'JetBrains Mono', monospace";
+      g.textBaseline = 'middle';
+      g.textAlign = 'left';
+      list.forEach(k => {
+        const a = fxActive(k);
+        const c = FX_INFO[k].color;
+        const px = a.x * w;
+        const py = (1 - a.y) * h;
+        const touched = fxUi.touching && fxUi.touchEffect === k;
+        if (touched) {
+          g.strokeStyle = hexA(c, 0.22);
+          g.lineWidth = 1;
+          line(px, 0, px, h);
+          line(0, py, w, py);
+        }
+        const r = touched ? 42 : 30;
+        const glow = g.createRadialGradient(px, py, 0, px, py, r);
+        glow.addColorStop(0, hexA(c, touched ? 0.42 : 0.28));
+        glow.addColorStop(1, hexA(c, 0));
         g.fillStyle = glow;
-        g.fillRect(px - 42, py - 42, 84, 84);
+        g.fillRect(px - r, py - r, r * 2, r * 2);
         // エコー・ゲートは刻みに合わせて輪が広がる
-        const p = audioEngine.fx.params;
+        const p = a.params;
         if (p && p.period) {
-          const ph = (((now - audioEngine.fx.engagedAt) / 1000) % p.period) / p.period;
-          g.strokeStyle = col.a3(0.6 * (1 - ph));
+          const ph = (((now - a.engagedAt) / 1000) % p.period) / p.period;
+          g.strokeStyle = hexA(c, 0.6 * (1 - ph));
           g.lineWidth = 1.5;
           g.beginPath(); g.arc(px, py, 10 + ph * 26, 0, Math.PI * 2); g.stroke();
         }
-        g.fillStyle = col.a3(1);
-        g.beginPath(); g.arc(px, py, 6, 0, Math.PI * 2); g.fill();
-        g.strokeStyle = col.a3(0.85);
+        g.fillStyle = hexA(c, 1);
+        g.beginPath(); g.arc(px, py, touched ? 6 : 5, 0, Math.PI * 2); g.fill();
+        g.strokeStyle = hexA(c, 0.85);
         g.lineWidth = 1.5;
-        if (!fxUi.touching) g.setLineDash([3, 3]);   // HOLDで固定中は点線の輪
-        g.beginPath(); g.arc(px, py, 11, 0, Math.PI * 2); g.stroke();
+        if (!touched) g.setLineDash([3, 3]);
+        g.beginPath(); g.arc(px, py, touched ? 11 : 9, 0, Math.PI * 2); g.stroke();
         g.setLineDash([]);
-      }
+        if (!touched) {
+          const label = FX_INFO[k].short;
+          const tx = px + 14 + g.measureText(label).width > w - 4 ? px - 14 - g.measureText(label).width : px + 14;
+          g.fillStyle = hexA(c, 0.95);
+          g.fillText(label, tx, py);
+        }
+      });
     }
 
-    /** 毎フレーム：テンポのランプ・表示窓・パッドの描画 */
+    /** 毎フレーム：テンポのランプ・表示窓・FXボタンのランプ・パッドの描画 */
     function fxTick(now) {
       const beatMs = 60000 / state.fx.bpm;
       const ph = (((now - fxUi.beatAnchor) % beatMs) + beatMs) % beatMs;
@@ -2491,18 +2524,20 @@ registerProcessor('livepad-tape', LivepadTape);
         fxUi.beatLit = lit;
         document.getElementById('fxTempoLed').classList.toggle('is-beat', lit);
       }
-      const engaged = fxIsEngaged();
-      if (engaged !== fxUi.wasEngaged) {
-        document.getElementById('fxPad').classList.toggle('is-engaged', engaged);
+      const list = fxActiveList();
+      const sig = list.join(',');
+      if (sig !== fxUi.activeSig) {
+        fxUi.activeSig = sig;
+        document.getElementById('fxPad').classList.toggle('is-engaged', list.length > 0);
+        updateFxLamps();
         fxUi.dirty = true;
       }
       updateFxDisplay(now);
       while (fxUi.trail.length && now - fxUi.trail[0].t > 450) fxUi.trail.shift();
-      if (fxUi.dirty || engaged || fxUi.trail.length || fxUi.wasEngaged) {
+      if (fxUi.dirty || list.length || fxUi.trail.length) {
         drawFxPad(now);
         fxUi.dirty = false;
       }
-      fxUi.wasEngaged = engaged;
     }
 
     function fxSetPoint(x, y) {
@@ -2511,6 +2546,13 @@ registerProcessor('livepad-tape', LivepadTape);
       fxUi.trail.push({ x, y, t: performance.now() });
       if (fxUi.trail.length > 64) fxUi.trail.shift();
       fxUi.dirty = true;
+    }
+
+    /** 指で動かすエフェクトをかける（すでにかかっていれば、その位置を動かす） */
+    function fxTouchEffect(eff, x, y) {
+      fxUi.touchEffect = eff;
+      if (fxActive(eff)) audioEngine.fxMove(eff, x, y);
+      else audioEngine.fxEngage(eff, x, y);
     }
 
     function fxTapTempo() {
@@ -2523,7 +2565,7 @@ registerProcessor('livepad-tape', LivepadTape);
       if (taps.length >= 2) {
         const interval = (taps[taps.length - 1] - taps[0]) / (taps.length - 1);
         state.fx.bpm = Math.round(Math.max(50, Math.min(220, 60000 / interval)));
-        audioEngine.fxUpdate();
+        audioEngine.fxUpdateAll();
         renderFxPad();
         storage.saveState();
       }
@@ -2537,7 +2579,7 @@ registerProcessor('livepad-tape', LivepadTape);
         return { x: clamp01((e.clientX - r.left) / r.width), y: clamp01(1 - (e.clientY - r.top) / r.height) };
       };
 
-      // XYパッド：指を置いている間だけエフェクトがかかる
+      // XYパッド：指を置いている間だけかかる（HOLD中は離しても残る → 別のFXに切り替えて重ねられる）
       pad.addEventListener('pointerdown', (e) => {
         if (e.pointerType === 'mouse' && e.button !== 0) return;
         if (fxUi.pointerId !== null) return;
@@ -2547,34 +2589,59 @@ registerProcessor('livepad-tape', LivepadTape);
         fxUi.touching = true;
         const { x, y } = posOf(e);
         fxSetPoint(x, y);
-        if (fxIsEngaged()) audioEngine.fxMove(x, y);
-        else audioEngine.fxEngage(x, y);
+        fxTouchEffect(state.fx.effect, x, y);
         pad.classList.add('is-used');
       });
       pad.addEventListener('pointermove', (e) => {
         if (e.pointerId !== fxUi.pointerId) return;
         const { x, y } = posOf(e);
         fxSetPoint(x, y);
-        audioEngine.fxMove(x, y);
+        audioEngine.fxMove(fxUi.touchEffect, x, y);
       });
       const end = (e) => {
         if (e && e.pointerId !== undefined && e.pointerId !== fxUi.pointerId) return;
         if (fxUi.pointerId === null) return;
+        const eff = fxUi.touchEffect;
         fxUi.pointerId = null;
         fxUi.touching = false;
-        if (!state.fx.hold) audioEngine.fxRelease();
+        fxUi.touchEffect = null;
+        if (!state.fx.hold && eff) audioEngine.fxRelease(eff);
         fxUi.dirty = true;
       };
       ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => pad.addEventListener(t, end));
       window.addEventListener('blur', () => end());
 
-      // FX 1〜4
+      // FX 1〜4：押すと選択（パッドで動かす対象）。長押しで、かかっているそのFXだけ外す
       document.querySelectorAll('.fx-btn').forEach(btn => {
+        const k = btn.dataset.fx;
+        let lpTimer = null;
+        let lpFired = false;
+        const cancelLp = () => { clearTimeout(lpTimer); lpTimer = null; };
+        btn.addEventListener('pointerdown', (e) => {
+          if (e.pointerType === 'mouse' && e.button !== 0) return;
+          lpFired = false;
+          cancelLp();
+          lpTimer = setTimeout(() => {
+            lpTimer = null;
+            if (!fxActive(k)) return;
+            lpFired = true;
+            if (fxUi.touchEffect === k) fxUi.touchEffect = null;
+            audioEngine.fxRelease(k);
+            showToast(`${FX_INFO[k].label}を外しました`);
+          }, 550);
+        });
+        ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => btn.addEventListener(t, cancelLp));
+        btn.addEventListener('contextmenu', (e) => e.preventDefault());
         btn.addEventListener('click', () => {
-          const k = btn.dataset.fx;
+          if (lpFired) { lpFired = false; return; }
           if (k === state.fx.effect) return;
+          const prev = state.fx.effect;
           state.fx.effect = k;
-          audioEngine.fxSelect(k);
+          // パッドを触りながら切り替えた：HOLD中なら前のFXはその位置で固定、そうでなければ外して乗り換える
+          if (fxUi.touching) {
+            if (!state.fx.hold && fxUi.touchEffect === prev) audioEngine.fxRelease(prev);
+            fxTouchEffect(k, fxUi.x, fxUi.y);
+          }
           renderFxPad();
           storage.saveState();
         });
@@ -2590,10 +2657,10 @@ registerProcessor('livepad-tape', LivepadTape);
         });
       });
 
-      // HOLD：指を離してもかけたまま
+      // HOLD：指を離してもかけたまま。OFFにすると固定中のものが全部外れる
       document.getElementById('btnFxHold').addEventListener('click', () => {
         state.fx.hold = !state.fx.hold;
-        if (!state.fx.hold && !fxUi.touching) audioEngine.fxRelease();
+        if (!state.fx.hold) audioEngine.fxReleaseAll(fxUi.touching ? fxUi.touchEffect : null);
         renderFxPad();
         storage.saveState();
       });
@@ -2606,7 +2673,7 @@ registerProcessor('livepad-tape', LivepadTape);
       });
       tempo.addEventListener('click', (e) => { if (e.detail === 0) fxTapTempo(); });   // キーボード操作
 
-      // FX DEPTH：帯の触った高さがそのままかかり具合になる
+      // FX DEPTH：帯の触った高さがそのままかかり具合になる（重ねたもの全部に共通）
       const depthEl = document.getElementById('fxDepth');
       const setDepth = (v) => {
         state.fx.depth = Math.round(clamp01(v) * 100) / 100;
@@ -3358,7 +3425,8 @@ registerProcessor('livepad-tape', LivepadTape);
       }
 
       // ---- FX PAD（XYパッドのエフェクト） --------------------------------------
-      /** 音の通り道を作る：BGM（全体のときはSEも）を「元の音」と「エフェクト行き」に分け、最後にマスターで合流 */
+      /** 音の通り道を作る：BGM（全体のときはSEも）を「ゲート → フィルター → エコー → テープ」の順に通してマスターへ。
+       *  かかっていないエフェクトは素通りするので、何もしなければ元の音のまま。HOLDで固定したものは重ねてかけられる */
       buildFx() {
         const ctx = this.ctx;
         const gain = (v) => { const n = ctx.createGain(); n.gain.value = v; return n; };
@@ -3370,65 +3438,76 @@ registerProcessor('livepad-tape', LivepadTape);
           return n;
         };
         const fx = {
-          engaged: false, effect: null, params: null, x: 0.5, y: 0.5, engagedAt: 0,
-          releaseTimer: null, pendingReset: null, tapeFailed: false,
-          input: gain(1), out: gain(1),
-          bgmDry: gain(1), bgmSend: gain(0), seDry: gain(1), seSend: gain(0)
+          active: { gate: null, filter: null, echo: null, tape: null },   // かかっているエフェクトと、その指の位置
+          resetTimers: {},
+          echoMuted: false,
+          tapeFailed: false,
+          seDirect: gain(1), seSend: gain(0)
         };
-        this.bgmVolumeGain.connect(fx.bgmDry); fx.bgmDry.connect(this.mainGain);
-        this.bgmVolumeGain.connect(fx.bgmSend); fx.bgmSend.connect(fx.input);
-        this.seMasterGain.connect(fx.seDry); fx.seDry.connect(this.mainGain);
-        this.seMasterGain.connect(fx.seSend); fx.seSend.connect(fx.input);
-        fx.out.connect(this.mainGain);
-
-        // 各エフェクト：入口（feed）→ 処理 → 出口（wet）。選ばれていないものは入口を閉じておく
-        const unit = () => ({ feed: gain(0), wet: gain(0) });
-
-        // フィルター（左半分：ローパスでこもらせる／右半分：ハイパスで薄くする）
-        const filter = unit();
-        filter.lpf = biquad('lowpass', 20000, -3);
-        filter.hpf = biquad('highpass', 10, -3);
-        filter.comp = gain(1);   // クセ（共振）を強くしたときに音が大きくなりすぎないように下げる
-        filter.feed.connect(filter.lpf); filter.lpf.connect(filter.hpf);
-        filter.hpf.connect(filter.comp); filter.comp.connect(filter.wet);
-
-        // エコー（ディレイ＋繰り返し。繰り返すたびに少しこもらせる）
-        const echo = unit();
-        echo.delay = ctx.createDelay(2.0);
-        echo.delay.delayTime.value = 0.25;
-        echo.tone = biquad('lowpass', 4200, -3);
-        echo.fb = gain(0);
-        echo.feed.connect(echo.delay); echo.delay.connect(echo.tone);
-        echo.tone.connect(echo.fb); echo.fb.connect(echo.delay);
-        echo.delay.connect(echo.wet);
+        // 各段：入口 → 素通り（dry）＋ 加工（wet）→ 出口
+        const stage = () => {
+          const st = { in: gain(1), dry: gain(1), wet: gain(0), out: gain(1) };
+          st.in.connect(st.dry);
+          st.dry.connect(st.out);
+          st.wet.connect(st.out);
+          return st;
+        };
 
         // ゲート（四角い波で音量を細かく上げ下げする。角を少し丸めてプチプチ音を防ぐ）
-        const gate = unit();
+        const gate = stage();
         gate.vca = gain(1);
         gate.lfoSmooth = biquad('lowpass', 180, -3);
         gate.lfoAmt = gain(0);
         gate.lfo = null;
-        gate.feed.connect(gate.vca); gate.vca.connect(gate.wet);
+        gate.in.connect(gate.vca); gate.vca.connect(gate.wet);
         gate.lfoSmooth.connect(gate.lfoAmt); gate.lfoAmt.connect(gate.vca.gain);
 
-        // テープストップ（AudioWorkletで読み出す速さを落とす。読み込みが終わったらつなぐ）
-        const tape = unit();
+        // フィルター（左半分：ローパスでこもらせる／右半分：ハイパスで薄くする）
+        const filter = stage();
+        filter.lpf = biquad('lowpass', 20000, -3);
+        filter.hpf = biquad('highpass', 10, -3);
+        filter.comp = gain(1);   // クセ（共振）を強くしたときに音が大きくなりすぎないように下げる
+        filter.in.connect(filter.lpf); filter.lpf.connect(filter.hpf);
+        filter.hpf.connect(filter.comp); filter.comp.connect(filter.wet);
+
+        // エコー（元の音に足す。繰り返すたびに少しこもらせる。指を離しても残響は自然に消える）
+        const echo = stage();
+        echo.feed = gain(0);
+        echo.delay = ctx.createDelay(2.0);
+        echo.delay.delayTime.value = 0.25;
+        echo.tone = biquad('lowpass', 4200, -3);
+        echo.fb = gain(0);
+        echo.in.connect(echo.feed); echo.feed.connect(echo.delay);
+        echo.delay.connect(echo.tone); echo.tone.connect(echo.fb); echo.fb.connect(echo.delay);
+        echo.delay.connect(echo.wet);
+        echo.wet.gain.value = state.fx.depth;
+
+        // テープストップ（AudioWorkletで読み出す速さを落とす。読み込みが終わったらつなぐ。最後の段なのでエコーも止まる）
+        const tape = stage();
         tape.hp = biquad('highpass', 25, -3);   // 止まりかけの低いうなりを消す
         tape.node = null;
         tape.hp.connect(tape.wet);
 
-        fx.units = { filter, echo, gate, tape };
-        Object.values(fx.units).forEach(u => {
-          fx.input.connect(u.feed);
-          u.wet.connect(fx.out);
-        });
+        fx.stages = { gate, filter, echo, tape };
+        gate.out.connect(filter.in);
+        filter.out.connect(echo.in);
+        echo.out.connect(tape.in);
+        tape.out.connect(this.mainGain);
+        fx.chainIn = gate.in;
+
+        // BGMはいつもこの通り道を通る。SEは「全体」のときだけ
+        this.bgmVolumeGain.connect(fx.chainIn);
+        this.seMasterGain.connect(fx.seDirect); fx.seDirect.connect(this.mainGain);
+        this.seMasterGain.connect(fx.seSend); fx.seSend.connect(fx.chainIn);
+
         this.fx = fx;
+        this.fxApplyRouting(0);
         this.loadTapeWorklet();
       }
 
       async loadTapeWorklet() {
         const ctx = this.ctx;
-        const tape = this.fx.units.tape;
+        const tape = this.fx.stages.tape;
         if (!ctx.audioWorklet || typeof AudioWorkletNode === 'undefined') {
           this.fx.tapeFailed = true;
           return;
@@ -3443,7 +3522,7 @@ registerProcessor('livepad-tape', LivepadTape);
               numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2],
               channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'speakers'
             });
-            tape.feed.connect(node);
+            tape.in.connect(node);
             node.connect(tape.hp);
             tape.node = node;
             return;
@@ -3456,64 +3535,66 @@ registerProcessor('livepad-tape', LivepadTape);
         this.fx.tapeFailed = true;
       }
 
-      /** BGM／全体の切り替えと、かかり具合（FX DEPTH）に合わせて、元の音とエフェクト音の量を決める */
+      /** かかっているエフェクト・BGM／全体・かかり具合（FX DEPTH）に合わせて、各段の素通りと加工の量を決める */
       fxApplyRouting(tc = 0.015) {
         const fx = this.fx;
         if (!fx) return;
         const now = this.ctx.currentTime;
-        const set = (param, v) => param.setTargetAtTime(v, now, tc);
+        const set = (param, v) => (tc > 0 ? param.setTargetAtTime(v, now, tc) : param.setValueAtTime(v, now));
         const depth = state.fx.depth;
-        const active = fx.engaged ? fx.effect : null;
-        // フィルター・ゲート・テープは「元の音と入れ替える」、エコーは「元の音に足す」
-        const insert = !!active && FX_INFO[active].mode === 'insert';
         const withSe = state.fx.target === 'all';
-        const dry = insert ? 1 - depth : 1;
-        set(fx.bgmDry.gain, dry);
-        set(fx.seDry.gain, withSe ? dry : 1);
-        set(fx.bgmSend.gain, active ? 1 : 0);
-        set(fx.seSend.gain, active && withSe ? 1 : 0);
-        Object.entries(fx.units).forEach(([k, u]) => {
-          set(u.feed.gain, k === active ? 1 : 0);
-          // エコーは指を離しても残響が自然に消えるよう、選ばれている間は出口を開けておく
-          const wet = k === 'echo' ? (state.fx.effect === 'echo' ? depth : 0) : (k === active ? depth : 0);
-          set(u.wet.gain, wet);
+        set(fx.seDirect.gain, withSe ? 0 : 1);
+        set(fx.seSend.gain, withSe ? 1 : 0);
+        FX_ORDER.forEach(k => {
+          const st = fx.stages[k];
+          const on = !!fx.active[k];
+          if (k === 'echo') {
+            // エコーは元の音に足す（素通りはいつも1）。入口だけ開け閉めし、残響は出口から自然に消えていく
+            set(st.feed.gain, on ? 1 : 0);
+            set(st.wet.gain, fx.echoMuted ? 0 : depth);
+          } else {
+            // フィルター・ゲート・テープは元の音と入れ替える
+            set(st.dry.gain, on ? 1 - depth : 1);
+            set(st.wet.gain, on ? depth : 0);
+          }
         });
       }
 
-      /** 指の位置（fx.x / fx.y）からエフェクトの値を計算して音に反映 */
-      fxUpdate(starting = false) {
+      /** そのエフェクトの指の位置から値を計算して音に反映 */
+      fxUpdate(eff, starting = false) {
         const fx = this.fx;
-        if (!fx || !fx.engaged) return null;
+        const a = fx && fx.active[eff];
+        if (!a) return null;
         const now = this.ctx.currentTime;
         const set = (param, v, tc) => param.setTargetAtTime(v, now, tc);
-        const p = computeFxParams(fx.effect, fx.x, fx.y, state.fx.bpm);
-        fx.params = p;
-        const u = fx.units[fx.effect];
-        if (fx.effect === 'filter') {
-          set(u.lpf.frequency, Math.min(p.lpf, this.ctx.sampleRate * 0.45), 0.012);
-          set(u.hpf.frequency, p.hpf, 0.012);
-          set(u.lpf.Q, p.lpfQ, 0.03);
-          set(u.hpf.Q, p.hpfQ, 0.03);
-          set(u.comp.gain, p.comp, 0.03);
-        } else if (fx.effect === 'echo') {
-          set(u.delay.delayTime, p.time, starting ? 0.002 : 0.06);
-          set(u.fb.gain, p.feedback, 0.03);
-        } else if (fx.effect === 'gate') {
-          if (!u.lfo) {
+        const p = computeFxParams(eff, a.x, a.y, state.fx.bpm);
+        a.params = p;
+        const st = fx.stages[eff];
+        if (eff === 'filter') {
+          set(st.lpf.frequency, Math.min(p.lpf, this.ctx.sampleRate * 0.45), 0.012);
+          set(st.hpf.frequency, p.hpf, 0.012);
+          set(st.lpf.Q, p.lpfQ, 0.03);
+          set(st.hpf.Q, p.hpfQ, 0.03);
+          set(st.comp.gain, p.comp, 0.03);
+        } else if (eff === 'echo') {
+          set(st.delay.delayTime, p.time, starting ? 0.002 : 0.06);
+          set(st.fb.gain, p.feedback, 0.03);
+        } else if (eff === 'gate') {
+          if (!st.lfo) {
             const o = this.ctx.createOscillator();
             o.type = 'square';
             o.frequency.value = p.rate;
-            o.connect(u.lfoSmooth);
+            o.connect(st.lfoSmooth);
             o.start();
-            u.lfo = o;
+            st.lfo = o;
           } else {
-            set(u.lfo.frequency, p.rate, 0.01);
+            set(st.lfo.frequency, p.rate, 0.01);
           }
-          set(u.lfoAmt.gain, p.depth / 2, 0.01);
-          set(u.vca.gain, 1 - p.depth / 2, 0.01);
-        } else if (fx.effect === 'tape') {
-          if (u.node) {
-            u.node.port.postMessage(starting
+          set(st.lfoAmt.gain, p.depth / 2, 0.01);
+          set(st.vca.gain, 1 - p.depth / 2, 0.01);
+        } else if (eff === 'tape') {
+          if (st.node) {
+            st.node.port.postMessage(starting
               ? { reset: true, target: p.speed, glide: p.glide }
               : { target: p.speed, glide: p.glide });
           }
@@ -3521,97 +3602,78 @@ registerProcessor('livepad-tape', LivepadTape);
         return p;
       }
 
-      /** 指を置いた：エフェクトをかけ始める */
-      fxEngage(x, y) {
+      /** テンポが変わったとき：かかっているもの全部を計算し直す */
+      fxUpdateAll() {
+        FX_ORDER.forEach(k => this.fxUpdate(k));
+      }
+
+      /** 指を置いた：そのエフェクトをかけ始める（すでにかかっていれば位置を動かす） */
+      fxEngage(eff, x, y) {
         this.ensureInit();
         const fx = this.fx;
         if (!fx) return;
-        if (fx.releaseTimer) {
-          clearTimeout(fx.releaseTimer);
-          fx.releaseTimer = null;
-          if (fx.pendingReset && fx.pendingReset !== state.fx.effect) this.fxResetUnit(fx.pendingReset);
-          fx.pendingReset = null;
+        if (fx.resetTimers[eff]) {
+          clearTimeout(fx.resetTimers[eff]);
+          fx.resetTimers[eff] = null;
         }
-        fx.engaged = true;
-        fx.effect = state.fx.effect;
-        fx.engagedAt = performance.now();
-        fx.x = x;
-        fx.y = y;
-        if (fx.effect === 'tape' && fx.tapeFailed) showToast('このブラウザではテープストップを使えません');
-        this.fxUpdate(true);
+        const was = fx.active[eff];
+        fx.active[eff] = { x, y, engagedAt: was ? was.engagedAt : performance.now(), params: null };
+        if (eff === 'echo') fx.echoMuted = false;
+        if (eff === 'tape' && fx.tapeFailed) showToast('このブラウザではテープストップを使えません');
+        this.fxUpdate(eff, !was);
         this.fxApplyRouting(0.008);
       }
 
       /** 指を動かした */
-      fxMove(x, y) {
-        const fx = this.fx;
-        if (!fx || !fx.engaged) return;
-        fx.x = x;
-        fx.y = y;
-        this.fxUpdate();
+      fxMove(eff, x, y) {
+        const a = this.fx && this.fx.active[eff];
+        if (!a) return;
+        a.x = x;
+        a.y = y;
+        this.fxUpdate(eff);
       }
 
-      /** 指を離した：元の音に戻す（エコーの残響はそのまま自然に消える） */
-      fxRelease() {
+      /** そのエフェクトを外す（エコーの残響はそのまま自然に消える） */
+      fxRelease(eff) {
         const fx = this.fx;
-        if (!fx || !fx.engaged) return;
-        const eff = fx.effect;
-        fx.engaged = false;
+        if (!fx || !fx.active[eff]) return;
+        fx.active[eff] = null;
         this.fxApplyRouting(0.03);
-        if (fx.releaseTimer) clearTimeout(fx.releaseTimer);
-        fx.pendingReset = eff;
-        fx.releaseTimer = setTimeout(() => {
-          fx.releaseTimer = null;
-          fx.pendingReset = null;
-          if (!fx.engaged) this.fxResetUnit(eff);
+        clearTimeout(fx.resetTimers[eff]);
+        fx.resetTimers[eff] = setTimeout(() => {
+          fx.resetTimers[eff] = null;
+          if (!fx.active[eff]) this.fxResetUnit(eff);
         }, 200);
+      }
+
+      /** かかっているものを全部外す（except だけは残す） */
+      fxReleaseAll(except = null) {
+        FX_ORDER.forEach(k => { if (k !== except) this.fxRelease(k); });
       }
 
       /** エフェクトを元の状態に戻す（ゲートの波を止める・テープの位置を戻す） */
       fxResetUnit(eff) {
-        const u = this.fx.units[eff];
+        const st = this.fx.stages[eff];
         const now = this.ctx.currentTime;
-        if (eff === 'gate' && u.lfo) {
-          try { u.lfo.stop(); } catch (e) { /* 停止済み */ }
-          u.lfo.disconnect();
-          u.lfo = null;
-          u.lfoAmt.gain.setTargetAtTime(0, now, 0.01);
-          u.vca.gain.setTargetAtTime(1, now, 0.01);
-        } else if (eff === 'tape' && u.node) {
-          u.node.port.postMessage({ reset: true });
+        if (eff === 'gate' && st.lfo) {
+          try { st.lfo.stop(); } catch (e) { /* 停止済み */ }
+          st.lfo.disconnect();
+          st.lfo = null;
+          st.lfoAmt.gain.setTargetAtTime(0, now, 0.01);
+          st.vca.gain.setTargetAtTime(1, now, 0.01);
+        } else if (eff === 'tape' && st.node) {
+          st.node.port.postMessage({ reset: true });
         }
       }
 
-      /** FX 1〜4 の切り替え（かけている途中なら、新しいエフェクトにすぐ切り替える） */
-      fxSelect(effect) {
-        const fx = this.fx;
-        if (!fx) return;
-        if (fx.engaged && fx.effect !== effect) {
-          const old = fx.effect;
-          fx.effect = effect;
-          fx.engagedAt = performance.now();
-          if (effect === 'tape' && fx.tapeFailed) showToast('このブラウザではテープストップを使えません');
-          this.fxUpdate(true);
-          this.fxApplyRouting(0.02);
-          setTimeout(() => { if (!(fx.engaged && fx.effect === old)) this.fxResetUnit(old); }, 200);
-        } else {
-          this.fxApplyRouting(0.08);
-        }
-      }
-
-      /** PANIC STOP：エフェクトを外し、エコーの残響も止める */
+      /** PANIC STOP：全部外し、エコーの残響も止める */
       fxPanic() {
         const fx = this.fx;
         if (!fx) return;
-        const eff = fx.effect;
-        fx.engaged = false;
-        if (fx.releaseTimer) { clearTimeout(fx.releaseTimer); fx.releaseTimer = null; }
-        fx.pendingReset = null;
+        fx.echoMuted = true;
+        this.fxReleaseAll();
         this.fxApplyRouting(0.03);
-        const now = this.ctx.currentTime;
-        fx.units.echo.fb.gain.setTargetAtTime(0, now, 0.02);
-        fx.units.echo.wet.gain.setTargetAtTime(0, now, 0.04);
-        if (eff) setTimeout(() => { if (!fx.engaged) this.fxResetUnit(eff); }, 200);
+        fx.stages.echo.fb.gain.setTargetAtTime(0, this.ctx.currentTime, 0.02);
       }
 
       async getDecodedBuffer(fileId) {
@@ -5402,7 +5464,7 @@ registerProcessor('livepad-tape', LivepadTape);
       audioEngine.applyEq();
       renderFxPad();
       audioEngine.fxApplyRouting();
-      audioEngine.fxUpdate();
+      audioEngine.fxUpdateAll();
       renderBgmList();
       renderBankTabs();
       renderPads();
