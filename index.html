@@ -545,8 +545,8 @@
       color: #64748b;
       transition: border-color .12s ease, background-color .12s ease, color .12s ease;
     }
+    /* EQ DECK・MIXER は中身の高さで決まるので、浮かせる直前の高さを測って同じ大きさにする（floatPanel） */
     .slot-placeholder.is-short { flex: none; height: 64px; }
-    .dock-slot.is-empty { min-height: 0 !important; }
     .dock-slot.is-empty > .slot-placeholder { display: flex; }
     .dock-slot.is-drop-target > .slot-placeholder {
       border-color: rgb(var(--ac-400));
@@ -681,21 +681,195 @@
 
     .eq-curve-box {
       position: relative;
-      height: 46px;
+      height: 80px;
       flex-shrink: 0;
       border-radius: 8px;
       background: #0b0d11;
       border: 1px solid #222836;
       overflow: hidden;
     }
-    #panel-eq.is-floating .eq-curve-box { flex: 1; min-height: 46px; }
+    #panel-eq.is-floating .eq-curve-box { flex: 1; min-height: 60px; }
     .eq-curve-box canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 
     .eq-knob-wrap { display: flex; align-items: center; justify-content: center; gap: 6px; }
-    .eq-knob { width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%; touch-action: none; cursor: ns-resize; }
+    .eq-knob { width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; touch-action: none; cursor: ns-resize; }
     .eq-knob:focus-visible { outline: 2px solid rgb(var(--ac-400)); outline-offset: 2px; }
     .eq-knob svg { display: block; width: 100%; height: 100%; }
     .eq-knob.is-dragging .knob-body { fill: #283041; }
+
+    /* ===== FX PAD（指でなぞってエフェクトをかけるXYパッド） ===== */
+    .fx-slot { flex: none; height: clamp(230px, 40%, 380px); }
+    /* iPhone 4×2：SEパッドが潰れないよう SE DECK を優先し、FX PAD は下にスクロールして使う */
+    .device-shell.mode-iphone .fx-slot { height: 200px; }
+    .device-shell.mode-iphone #slot-se { min-height: 250px; }
+    .device-shell.mode-iphone .fx-btn,
+    .device-shell.mode-iphone .fx-display { height: 36px; }
+    #panel-fx:not(.is-floating) { width: 100%; max-width: 1240px; margin: 0 auto; }
+
+    .fx-target { display: flex; gap: 2px; padding: 2px; border-radius: 7px; background: #0b0d11; border: 1px solid #262c3a; }
+    .fx-target button {
+      font-size: 9px; font-weight: 800; letter-spacing: .04em; padding: 3px 8px; border-radius: 5px;
+      color: #64748b; transition: color .12s ease, background-color .12s ease, box-shadow .12s ease;
+    }
+    .fx-target button:hover { color: #cbd5e1; }
+    .fx-target button.is-active { color: rgb(var(--ac-300)); background: rgb(var(--ac-500) / .16); box-shadow: inset 0 0 0 1px rgb(var(--ac-500) / .45); }
+
+    /* 表示窓（エフェクト名・今の値・テンポ） */
+    .fx-display {
+      flex: none;
+      width: 124px;
+      height: 42px;
+      padding: 0 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      background: #07080b;
+      border: 1px solid #222836;
+      box-shadow: inset 0 2px 10px rgba(0,0,0,.75);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      color: rgb(var(--ac-300));
+      text-shadow: 0 0 8px rgb(var(--ac-400) / .8), 0 0 18px rgb(var(--ac-500) / .35);
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    /* FX 1〜4（エフェクトの選択） */
+    .fx-btn {
+      position: relative;
+      height: 42px;
+      min-width: 0;
+      padding: 4px 4px 3px;
+      border-radius: 10px;
+      border: 1px solid #2a3242;
+      background: linear-gradient(180deg, #1b202b 0%, #141821 100%);
+      color: #94a3b8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      text-align: center;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 2px 4px rgba(0,0,0,.35);
+      transition: transform .06s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease, color .12s ease;
+      touch-action: manipulation;
+      cursor: pointer;
+    }
+    .fx-btn:hover { border-color: #3a4458; color: #cbd5e1; }
+    .fx-btn:active { transform: scale(.96); }
+    .fx-btn-top { display: flex; align-items: center; gap: 4px; font-family: 'JetBrains Mono', monospace; font-size: 8px; font-weight: 700; color: #4b5568; letter-spacing: .06em; }
+    .fx-btn-led { width: 5px; height: 5px; border-radius: 50%; background: #2a3242; transition: background-color .12s ease, box-shadow .12s ease; }
+    .fx-btn-name { font-size: 10px; font-weight: 800; line-height: 1.15; word-break: keep-all; }
+    .fx-btn.is-active {
+      color: #fff;
+      border-color: rgb(var(--ac-400) / .75);
+      background: linear-gradient(180deg, rgb(var(--ac-500) / .26) 0%, rgb(var(--ac-600) / .10) 100%);
+      box-shadow: 0 0 14px rgb(var(--ac-500) / .28), inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    .fx-btn.is-active .fx-btn-top { color: rgb(var(--ac-300)); }
+    .fx-btn.is-active .fx-btn-led { background: rgb(var(--ac-300)); box-shadow: 0 0 8px rgb(var(--ac-400)); }
+
+    /* FX DEPTH（かかり具合）の縦長の帯 */
+    .fx-depth {
+      --d: .85;
+      position: relative;
+      width: 42px;
+      flex-shrink: 0;
+      border-radius: 10px;
+      border: 1.5px solid rgb(var(--ac-400) / .35);
+      background: #0a0c10;
+      overflow: hidden;
+      touch-action: none;
+      cursor: ns-resize;
+    }
+    .fx-depth:focus-visible { outline: 2px solid rgb(var(--ac-400)); outline-offset: 2px; }
+    .fx-depth-fill {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      height: calc(var(--d) * 100%);
+      background: linear-gradient(180deg, rgb(var(--ac-400) / .42) 0%, rgb(var(--ac-600) / .12) 100%);
+      border-top: 2px solid rgb(var(--ac-300));
+      box-shadow: 0 -4px 14px rgb(var(--ac-400) / .35);
+      pointer-events: none;
+    }
+    .fx-depth-label, .fx-depth-value {
+      position: absolute; left: 0; right: 0; text-align: center; pointer-events: none;
+      font-family: 'JetBrains Mono', monospace; font-weight: 800;
+    }
+    .fx-depth-label { top: 6px; font-size: 8px; line-height: 1.15; letter-spacing: .04em; color: #94a3b8; }
+    .fx-depth-value { bottom: 5px; font-size: 10px; color: #e2e8f0; }
+
+    /* XYパッド本体 */
+    .fx-pad {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      border-radius: 12px;
+      border: 1.5px solid rgb(var(--ac-400) / .35);
+      background: radial-gradient(120% 120% at 50% 45%, #121620 0%, #090b0f 100%);
+      overflow: hidden;
+      touch-action: none;
+      cursor: crosshair;
+      container-type: size;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: border-color .12s ease, box-shadow .12s ease;
+    }
+    .fx-pad.is-engaged {
+      border-color: rgb(var(--ac-400) / .9);
+      box-shadow: 0 0 0 1px rgb(var(--ac-400) / .2), 0 0 24px rgb(var(--ac-500) / .25), inset 0 0 36px rgb(var(--ac-500) / .08);
+    }
+    .fx-pad canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .fx-axis { position: absolute; font-size: 9px; font-weight: 700; color: #475569; pointer-events: none; white-space: nowrap; }
+    .fx-axis-x0 { left: 8px; bottom: 5px; }
+    .fx-axis-x1 { right: 8px; bottom: 5px; }
+    .fx-axis-y { left: 4px; top: 50%; transform: translateY(-50%); writing-mode: vertical-rl; text-orientation: upright; letter-spacing: .04em; }
+    .fx-pad-hint {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #3b4559; pointer-events: none; transition: opacity .15s ease;
+    }
+    .fx-pad.is-engaged .fx-pad-hint, .fx-pad.is-used .fx-pad-hint { opacity: 0; }
+    @container (max-height: 120px) {
+      .fx-axis-y { display: none; }
+    }
+
+    /* HOLD・TEMPO（パッドの右の四角いボタン） */
+    .fx-side-btn {
+      position: relative;
+      width: 58px;
+      flex: 1;
+      min-height: 36px;
+      max-height: 64px;
+      border-radius: 10px;
+      border: 1.5px solid rgb(var(--ac-400) / .35);
+      background: #0f1218;
+      color: #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      touch-action: manipulation;
+      cursor: pointer;
+      transition: transform .06s ease, border-color .12s ease, background-color .12s ease, box-shadow .12s ease, color .12s ease;
+    }
+    .fx-side-btn:hover { border-color: rgb(var(--ac-400) / .7); }
+    .fx-side-btn:active { transform: scale(.95); }
+    .fx-side-btn.is-on {
+      color: #1a1205;
+      border-color: #fde68a;
+      background: linear-gradient(180deg, #fcd34d 0%, #f59e0b 100%);
+      box-shadow: 0 0 16px rgba(245,158,11,.5), inset 0 1px 0 rgba(255,255,255,.4);
+    }
+    .fx-bpm { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: rgb(var(--ac-300)); letter-spacing: 0; }
+    .fx-tempo-led { width: 5px; height: 5px; border-radius: 50%; background: #2a3242; }
+    .fx-tempo-led.is-beat { background: rgb(var(--ac-300)); box-shadow: 0 0 8px rgb(var(--ac-400)); }
 
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -1006,9 +1180,9 @@
         </div>
       </aside>
 
-      <!-- 右カラム：SE DECK の定位置 -->
-      <section class="flex-1 min-w-0 bg-[#0f1115] p-2.5 flex flex-col min-h-0 overflow-hidden">
-        <div id="slot-se" class="dock-slot flex-1 min-h-0 flex flex-col" data-slot="se">
+      <!-- 右カラム：上に SE DECK、下に FX PAD の定位置（縦が狭い画面ではスクロール） -->
+      <section class="flex-1 min-w-0 bg-[#0f1115] p-2.5 flex flex-col gap-2 min-h-0 overflow-y-auto no-scrollbar">
+        <div id="slot-se" class="dock-slot flex-1 min-h-[200px] flex flex-col" data-slot="se">
           <section id="panel-se" data-panel="se" class="deck-panel se-panel flex-1 min-h-0 flex flex-col gap-2">
             <!-- タイトル（ドラッグで浮遊）＋バンクタブ -->
             <div class="panel-head flex items-center justify-between gap-2 shrink-0">
@@ -1033,6 +1207,75 @@
           </section>
           <div class="slot-placeholder" data-placeholder="se">
             <span class="placeholder-title">SE DECK はフロート中</span>
+            <span class="placeholder-sub">ここへドラッグ、または 📌 で元に戻せます</span>
+          </div>
+        </div>
+
+        <!-- FX PAD の定位置（指でなぞってエフェクトをかけるXYパッド） -->
+        <div id="slot-fx" class="dock-slot fx-slot flex flex-col" data-slot="fx">
+          <section id="panel-fx" data-panel="fx" class="deck-panel bg-[#181c26] rounded-xl border border-[#282f3d] p-2.5 flex flex-col gap-2 flex-1 min-h-0">
+            <div class="panel-head flex items-center justify-between gap-2 shrink-0">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span class="panel-grip"></span>
+                  <span class="w-2 h-2 rounded-full bg-rose-400 shadow-[0_0_8px_#fb7185] shrink-0"></span>
+                  <span class="text-[11px] font-bold tracking-wider text-slate-200 whitespace-nowrap">FX PAD</span>
+                </div>
+                <div class="fx-target" role="group" aria-label="エフェクトをかける対象">
+                  <button type="button" data-fx-target="bgm" title="BGMだけにかける（SEはそのままはっきり聞こえる）">BGM</button>
+                  <button type="button" data-fx-target="all" title="BGMとSEの両方にかける">全体</button>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <span class="hidden lg:inline text-[10px] text-slate-500">指を置いている間だけかかります</span>
+                <button type="button" class="panel-pin" data-pin="fx" title="元の位置に戻す" aria-label="FX PADを元の位置に戻す"></button>
+              </div>
+            </div>
+
+            <!-- 表示窓 ＋ FX 1〜4（エフェクトの選択） -->
+            <div class="flex items-stretch gap-2 shrink-0">
+              <div id="fxDisplay" class="fx-display">FILTER</div>
+              <div class="grid grid-cols-4 gap-1.5 flex-1 min-w-0">
+                <button type="button" class="fx-btn" data-fx="filter" title="フィルター：左でこもった音、右でシャリシャリした音（真ん中は元の音）。上ほどクセが強くなります">
+                  <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 1</span><span class="fx-btn-name">フィルター</span>
+                </button>
+                <button type="button" class="fx-btn" data-fx="echo" title="エコー：横で繰り返しの間隔（曲のテンポに合わせる）、上ほど長く響きます。指を離すと残響が自然に消えます">
+                  <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 2</span><span class="fx-btn-name">エコー</span>
+                </button>
+                <button type="button" class="fx-btn" data-fx="gate" title="ゲート：音を細かく刻みます。右ほど細かく、上ほど深く刻みます">
+                  <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 3</span><span class="fx-btn-name">ゲート</span>
+                </button>
+                <button type="button" class="fx-btn" data-fx="tape" title="テープストップ：レコードを手で止めたように音程が下がります。右ほどすぐ止まり、上ほど遅くなります">
+                  <span class="fx-btn-top"><span class="fx-btn-led"></span>FX 4</span><span class="fx-btn-name">テープ<wbr>ストップ</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- FX DEPTH ＋ XYパッド ＋ HOLD / TEMPO -->
+            <div class="flex-1 min-h-0 flex gap-2">
+              <div id="fxDepth" class="fx-depth" role="slider" tabindex="0" aria-label="FX DEPTH（かかり具合）" aria-valuemin="0" aria-valuemax="100" title="かかり具合（元の音にエフェクトをどれだけ混ぜるか）。上下にドラッグ／ダブルクリックで85に戻る">
+                <div class="fx-depth-fill"></div>
+                <span class="fx-depth-label">FX<br>DEPTH</span>
+                <span id="fxDepthValue" class="fx-depth-value">85</span>
+              </div>
+              <div id="fxPad" class="fx-pad" aria-label="エフェクトのXYパッド（指でなぞるとかかる）">
+                <canvas id="fxPadCanvas"></canvas>
+                <span id="fxAxisY" class="fx-axis fx-axis-y"></span>
+                <span id="fxAxisX0" class="fx-axis fx-axis-x0"></span>
+                <span id="fxAxisX1" class="fx-axis fx-axis-x1"></span>
+                <span class="fx-pad-hint">指でなぞるとエフェクトがかかります</span>
+              </div>
+              <div class="flex flex-col gap-2 shrink-0">
+                <button id="btnFxHold" type="button" class="fx-side-btn" aria-pressed="false" title="ON：指を離してもエフェクトをかけたままにする（もう一度押すと解除）">HOLD</button>
+                <button id="btnFxTempo" type="button" class="fx-side-btn" title="曲に合わせて4回ほどタップすると、エコーとゲートの間隔が曲のテンポに揃います">
+                  TEMPO<span class="flex items-center gap-1"><span id="fxTempoLed" class="fx-tempo-led"></span><span id="fxBpm" class="fx-bpm">120</span></span>
+                </button>
+              </div>
+            </div>
+            <div class="panel-resize" data-resize="fx" title="ドラッグで大きさを変更"></div>
+          </section>
+          <div class="slot-placeholder" data-placeholder="fx">
+            <span class="placeholder-title">FX PAD はフロート中</span>
             <span class="placeholder-sub">ここへドラッグ、または 📌 で元に戻せます</span>
           </div>
         </div>
@@ -1406,6 +1649,7 @@
       seVolume: 1.0,          // MIXERのSEフェーダー（全SE共通の音量）
       duckAmount: 0.8,        // 手動DUCKの下げ幅（今のBGM音量の何倍にするか）
       eq: createDefaultEq(),  // BGM専用EQ（EQ DECK）
+      fx: createDefaultFx(),  // FX PAD（XYパッドのエフェクト）
       panels: createDefaultPanels(),   // パネルの浮遊状態と位置
       themeColor: DEFAULT_THEME,
       banks: createDefaultBanks(),
@@ -1477,6 +1721,7 @@
             themeColor: state.themeColor,
             duckAmount: state.duckAmount,
             eq: state.eq,
+            fx: state.fx,
             panels: state.panels
           };
           store.put(payload);
@@ -1917,6 +2162,504 @@
         new ResizeObserver(() => drawEqCurve()).observe(document.querySelector('.eq-curve-box'));
       }
       renderEqDeck();
+    }
+
+    // =========================================================================
+    // FX PAD（KAOSS PADのように、指でなぞった位置でエフェクトをかける）
+    //   横（X）と縦（Y）で2つの値を同時に動かす。縦は「上ほど強く」で統一
+    //   指を置いている間だけかかる（HOLD中は指を離してもかかったまま）
+    // =========================================================================
+    const FX_ORDER = ['filter', 'echo', 'gate', 'tape'];
+    const FX_INFO = {
+      filter: { name: 'FILTER', x0: 'こもる', x1: 'シャリシャリ', y: 'クセ強く', mode: 'insert' },
+      echo: { name: 'ECHO', x0: '間隔が短い', x1: '長い', y: '長く響く', mode: 'send' },
+      gate: { name: 'GATE', x0: 'ゆっくり', x1: '細かく', y: '深く刻む', mode: 'insert' },
+      tape: { name: 'TAPE STOP', x0: 'ゆっくり止まる', x1: 'すぐ止まる', y: '遅く', mode: 'insert' }
+    };
+    // エコーの間隔（拍）とゲートの刻み（1拍をいくつに分けるか）。横の位置で段階的に切り替える
+    const ECHO_STEPS = [
+      { beats: 0.25, label: '1/16' }, { beats: 0.5, label: '1/8' }, { beats: 0.75, label: '1/8.' },
+      { beats: 1, label: '1/4' }, { beats: 1.5, label: '1/4.' }, { beats: 2, label: '1/2' }
+    ];
+    const GATE_STEPS = [
+      { perBeat: 1, label: '1/4' }, { perBeat: 2, label: '1/8' }, { perBeat: 4, label: '1/16' }, { perBeat: 8, label: '1/32' }
+    ];
+    const FX_FILTER_FLAT = [0.47, 0.53];   // フィルターの真ん中：元の音のまま
+    const FX_DEFAULT_DEPTH = 0.85;
+
+    // state の初期化時（この行より前）にも呼ばれるので、ここでは定数を使わず値を直接書く
+    function createDefaultFx() {
+      return { effect: 'filter', depth: 0.85, bpm: 120, hold: false, target: 'bgm' };
+    }
+
+    function normalizeFx(f) {
+      const d = createDefaultFx();
+      if (!f || typeof f !== 'object') return d;
+      return {
+        effect: FX_ORDER.includes(f.effect) ? f.effect : d.effect,
+        depth: typeof f.depth === 'number' && isFinite(f.depth) ? Math.max(0, Math.min(1, f.depth)) : d.depth,
+        bpm: typeof f.bpm === 'number' && isFinite(f.bpm) ? Math.round(Math.max(50, Math.min(220, f.bpm))) : d.bpm,
+        hold: !!f.hold,
+        target: f.target === 'all' ? 'all' : 'bgm'
+      };
+    }
+
+    function clamp01(v) {
+      return Math.max(0, Math.min(1, v));
+    }
+
+    function fxStepIndex(x, n) {
+      return Math.max(0, Math.min(n - 1, Math.floor(x * n)));
+    }
+
+    function fmtHz(f) {
+      return f >= 1000 ? `${(f / 1000).toFixed(f >= 10000 ? 0 : 1)}k` : `${Math.round(f)}`;
+    }
+
+    /** 指の位置（x・y：0〜1、yは上が1）→ エフェクトの値と表示窓の文字 */
+    function computeFxParams(effect, x, y, bpm) {
+      const beat = 60 / Math.max(50, Math.min(220, bpm || 120));
+      if (effect === 'echo') {
+        const s = ECHO_STEPS[fxStepIndex(x, ECHO_STEPS.length)];
+        return { time: Math.min(1.9, beat * s.beats), feedback: 0.15 + y * 0.7, label: `ECHO ${s.label}`, period: Math.min(1.9, beat * s.beats) };
+      }
+      if (effect === 'gate') {
+        const s = GATE_STEPS[fxStepIndex(x, GATE_STEPS.length)];
+        const rate = (1 / beat) * s.perBeat;
+        return { rate, depth: 0.35 + y * 0.65, label: `GATE ${s.label}`, period: 1 / rate };
+      }
+      if (effect === 'tape') {
+        const speed = 0.75 * (1 - y);
+        const glide = 0.5 * Math.pow(0.04 / 0.5, x);   // 左：ゆっくり止まる／右：すぐ止まる
+        return { speed, glide, label: speed < 0.03 ? 'TAPE STOP' : `TAPE ${Math.round(speed * 100)}%` };
+      }
+      // フィルター：Qはローパス・ハイパスではdB（-3 ≒ クセなし）
+      const qDb = -3 + Math.pow(y, 1.3) * 21;
+      const comp = Math.pow(10, (-Math.max(0, qDb) * 0.55) / 20);
+      if (x < FX_FILTER_FLAT[0]) {
+        const f = 90 * Math.pow(20000 / 90, x / FX_FILTER_FLAT[0]);
+        return { lpf: f, hpf: 10, lpfQ: qDb, hpfQ: -3, comp, label: `LPF ${fmtHz(f)}` };
+      }
+      if (x > FX_FILTER_FLAT[1]) {
+        const f = 20 * Math.pow(7000 / 20, (x - FX_FILTER_FLAT[1]) / (1 - FX_FILTER_FLAT[1]));
+        return { lpf: 20000, hpf: f, lpfQ: -3, hpfQ: qDb, comp, label: `HPF ${fmtHz(f)}` };
+      }
+      return { lpf: 20000, hpf: 10, lpfQ: -3, hpfQ: -3, comp: 1, label: 'FILTER FLAT' };
+    }
+
+    // テープストップ用の AudioWorklet（入ってきた音をためておき、ゆっくり読み出す）
+    const TAPE_WORKLET_SRC = `
+class LivepadTape extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this.size = Math.ceil(sampleRate * 16);
+    this.bufL = new Float32Array(this.size);
+    this.bufR = new Float32Array(this.size);
+    this.w = 0;
+    this.lag = 0;
+    this.speed = 1;
+    this.target = 1;
+    this.coef = 1 - Math.exp(-1 / (0.3 * sampleRate));
+    this.port.onmessage = (e) => {
+      const d = e.data || {};
+      if (d.reset) { this.lag = 0; this.speed = 1; this.target = 1; }
+      if (typeof d.target === 'number') this.target = Math.max(0, Math.min(1, d.target));
+      if (typeof d.glide === 'number') this.coef = 1 - Math.exp(-1 / (Math.max(0.005, d.glide) * sampleRate));
+    };
+  }
+  process(inputs, outputs) {
+    const input = inputs[0] || [];
+    const out = outputs[0];
+    const outL = out[0];
+    const outR = out[1] || out[0];
+    const inL = input[0];
+    const inR = input[1] || input[0];
+    const n = outL.length;
+    const size = this.size;
+    const bL = this.bufL;
+    const bR = this.bufR;
+    const target = this.target;
+    const coef = this.coef;
+    const maxLag = size - 4;
+    let w = this.w;
+    let lag = this.lag;
+    let speed = this.speed;
+    for (let i = 0; i < n; i++) {
+      bL[w] = inL ? inL[i] : 0;
+      bR[w] = inR ? inR[i] : 0;
+      speed += (target - speed) * coef;
+      lag += 1 - speed;
+      if (lag > maxLag) lag = maxLag;
+      let r = w - lag;
+      if (r < 0) r += size;
+      const i0 = r | 0;
+      const f = r - i0;
+      const i1 = i0 + 1 === size ? 0 : i0 + 1;
+      const g = speed < 0.2 ? speed * 5 : 1;
+      outL[i] = (bL[i0] + (bL[i1] - bL[i0]) * f) * g;
+      if (outR !== outL) outR[i] = (bR[i0] + (bR[i1] - bR[i0]) * f) * g;
+      w = w + 1 === size ? 0 : w + 1;
+    }
+    this.w = w;
+    this.lag = lag;
+    this.speed = speed;
+    return true;
+  }
+}
+registerProcessor('livepad-tape', LivepadTape);
+`;
+
+    // ---- FX PAD：画面の更新と操作 --------------------------------------------
+    const fxUi = {
+      pointerId: null, touching: false, x: 0.5, y: 0.5, trail: [],
+      flash: '', flashUntil: 0, shownText: '', taps: [], beatAnchor: 0, beatLit: false,
+      dirty: true, wasEngaged: false, colors: null
+    };
+
+    function fxIsEngaged() {
+      return !!(audioEngine.fx && audioEngine.fx.engaged);
+    }
+
+    function fxColors() {
+      if (!fxUi.colors) {
+        const css = getComputedStyle(document.documentElement);
+        const rgb = (k) => (css.getPropertyValue(`--ac-${k}`).trim() || '34 211 238').split(/\s+/).map(Number);
+        fxUi.colors = { a3: rgb('300'), a4: rgb('400') };
+      }
+      const c = fxUi.colors;
+      return {
+        a4: (al) => `rgba(${c.a4[0]},${c.a4[1]},${c.a4[2]},${al})`,
+        a3: (al) => `rgba(${c.a3[0]},${c.a3[1]},${c.a3[2]},${al})`
+      };
+    }
+
+    /** 表示窓に一時的に文字を出す（テンポやDEPTHを変えたとき） */
+    function fxFlash(text, ms = 1200) {
+      fxUi.flash = text;
+      fxUi.flashUntil = performance.now() + ms;
+      updateFxDisplay();
+    }
+
+    function updateFxDisplay(now = performance.now()) {
+      let text;
+      if (now < fxUi.flashUntil) text = fxUi.flash;
+      else if (fxIsEngaged() && audioEngine.fx.params) text = audioEngine.fx.params.label;
+      else text = FX_INFO[state.fx.effect].name;
+      if (text !== fxUi.shownText) {
+        document.getElementById('fxDisplay').textContent = text;
+        fxUi.shownText = text;
+      }
+    }
+
+    function renderFxPad() {
+      const f = state.fx;
+      document.querySelectorAll('.fx-btn').forEach(btn => {
+        const on = btn.dataset.fx === f.effect;
+        btn.classList.toggle('is-active', on);
+        btn.setAttribute('aria-pressed', String(on));
+      });
+      document.querySelectorAll('[data-fx-target]').forEach(btn => {
+        const on = btn.dataset.fxTarget === f.target;
+        btn.classList.toggle('is-active', on);
+        btn.setAttribute('aria-pressed', String(on));
+      });
+      const hold = document.getElementById('btnFxHold');
+      hold.classList.toggle('is-on', f.hold);
+      hold.setAttribute('aria-pressed', String(f.hold));
+      document.getElementById('fxBpm').textContent = String(f.bpm);
+      const depth = document.getElementById('fxDepth');
+      depth.style.setProperty('--d', f.depth.toFixed(3));
+      depth.setAttribute('aria-valuenow', String(Math.round(f.depth * 100)));
+      document.getElementById('fxDepthValue').textContent = String(Math.round(f.depth * 100));
+      const info = FX_INFO[f.effect];
+      document.getElementById('fxAxisX0').textContent = `← ${info.x0}`;
+      document.getElementById('fxAxisX1').textContent = `${info.x1} →`;
+      document.getElementById('fxAxisY').textContent = `↑ ${info.y}`;
+      fxUi.dirty = true;
+      updateFxDisplay();
+    }
+
+    function drawFxPad(now) {
+      const canvas = document.getElementById('fxPadCanvas');
+      const box = canvas.parentElement;
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.max(1, box.clientWidth);
+      const h = Math.max(1, box.clientHeight);
+      if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+      }
+      const g = canvas.getContext('2d');
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, w, h);
+      const col = fxColors();
+      const engaged = fxIsEngaged();
+      const eff = state.fx.effect;
+      const line = (x0, y0, x1, y1) => { g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); };
+
+      // 方眼
+      g.strokeStyle = 'rgba(148,163,184,0.055)';
+      g.lineWidth = 1;
+      for (let i = 1; i < 8; i++) { const x = Math.round((w * i) / 8) + 0.5; line(x, 0, x, h); }
+      for (let j = 1; j < 4; j++) { const y = Math.round((h * j) / 4) + 0.5; line(0, y, w, y); }
+
+      // エフェクトごとの目印（エコー・ゲートは段階の区切り、フィルターは真ん中の「元の音」）
+      g.font = "700 9px 'JetBrains Mono', monospace";
+      g.textAlign = 'center';
+      g.textBaseline = 'top';
+      if (eff === 'echo' || eff === 'gate') {
+        const steps = eff === 'echo' ? ECHO_STEPS : GATE_STEPS;
+        const n = steps.length;
+        const cur = engaged ? fxStepIndex(fxUi.x, n) : -1;
+        for (let k = 0; k < n; k++) {
+          const x0 = (w * k) / n;
+          if (k === cur) {
+            g.fillStyle = col.a4(0.07);
+            g.fillRect(x0, 0, w / n, h);
+          }
+          if (k > 0) {
+            g.strokeStyle = 'rgba(148,163,184,0.12)';
+            g.setLineDash([3, 4]);
+            line(Math.round(x0) + 0.5, 0, Math.round(x0) + 0.5, h);
+            g.setLineDash([]);
+          }
+          g.fillStyle = k === cur ? col.a3(0.95) : 'rgba(100,116,139,0.6)';
+          g.fillText(steps[k].label, x0 + w / n / 2, 6);
+        }
+      } else if (eff === 'filter') {
+        const fx0 = w * FX_FILTER_FLAT[0];
+        const fx1 = w * FX_FILTER_FLAT[1];
+        g.fillStyle = 'rgba(148,163,184,0.05)';
+        g.fillRect(fx0, 0, fx1 - fx0, h);
+        g.fillStyle = 'rgba(100,116,139,0.6)';
+        g.fillText('LPF', fx0 / 2, 6);
+        g.fillText('HPF', fx1 + (w - fx1) / 2, 6);
+        g.fillText('FLAT', w / 2, 6);
+      } else if (eff === 'tape') {
+        g.fillStyle = 'rgba(100,116,139,0.6)';
+        g.fillText('STOP', w / 2, 6);
+      }
+
+      // なぞった軌跡
+      const tr = fxUi.trail;
+      g.lineCap = 'round';
+      for (let i = 1; i < tr.length; i++) {
+        const a = 1 - (now - tr[i].t) / 450;
+        if (a <= 0) continue;
+        g.strokeStyle = col.a4(a * 0.55);
+        g.lineWidth = 1 + a * 4;
+        line(tr[i - 1].x * w, (1 - tr[i - 1].y) * h, tr[i].x * w, (1 - tr[i].y) * h);
+      }
+
+      // 指の位置
+      if (engaged) {
+        const px = fxUi.x * w;
+        const py = (1 - fxUi.y) * h;
+        g.strokeStyle = col.a4(0.22);
+        g.lineWidth = 1;
+        line(px, 0, px, h);
+        line(0, py, w, py);
+        const glow = g.createRadialGradient(px, py, 0, px, py, 42);
+        glow.addColorStop(0, col.a4(0.4));
+        glow.addColorStop(1, col.a4(0));
+        g.fillStyle = glow;
+        g.fillRect(px - 42, py - 42, 84, 84);
+        // エコー・ゲートは刻みに合わせて輪が広がる
+        const p = audioEngine.fx.params;
+        if (p && p.period) {
+          const ph = (((now - audioEngine.fx.engagedAt) / 1000) % p.period) / p.period;
+          g.strokeStyle = col.a3(0.6 * (1 - ph));
+          g.lineWidth = 1.5;
+          g.beginPath(); g.arc(px, py, 10 + ph * 26, 0, Math.PI * 2); g.stroke();
+        }
+        g.fillStyle = col.a3(1);
+        g.beginPath(); g.arc(px, py, 6, 0, Math.PI * 2); g.fill();
+        g.strokeStyle = col.a3(0.85);
+        g.lineWidth = 1.5;
+        if (!fxUi.touching) g.setLineDash([3, 3]);   // HOLDで固定中は点線の輪
+        g.beginPath(); g.arc(px, py, 11, 0, Math.PI * 2); g.stroke();
+        g.setLineDash([]);
+      }
+    }
+
+    /** 毎フレーム：テンポのランプ・表示窓・パッドの描画 */
+    function fxTick(now) {
+      const beatMs = 60000 / state.fx.bpm;
+      const ph = (((now - fxUi.beatAnchor) % beatMs) + beatMs) % beatMs;
+      const lit = ph < Math.min(110, beatMs * 0.3);
+      if (lit !== fxUi.beatLit) {
+        fxUi.beatLit = lit;
+        document.getElementById('fxTempoLed').classList.toggle('is-beat', lit);
+      }
+      const engaged = fxIsEngaged();
+      if (engaged !== fxUi.wasEngaged) {
+        document.getElementById('fxPad').classList.toggle('is-engaged', engaged);
+        fxUi.dirty = true;
+      }
+      updateFxDisplay(now);
+      while (fxUi.trail.length && now - fxUi.trail[0].t > 450) fxUi.trail.shift();
+      if (fxUi.dirty || engaged || fxUi.trail.length || fxUi.wasEngaged) {
+        drawFxPad(now);
+        fxUi.dirty = false;
+      }
+      fxUi.wasEngaged = engaged;
+    }
+
+    function fxSetPoint(x, y) {
+      fxUi.x = x;
+      fxUi.y = y;
+      fxUi.trail.push({ x, y, t: performance.now() });
+      if (fxUi.trail.length > 64) fxUi.trail.shift();
+      fxUi.dirty = true;
+    }
+
+    function fxTapTempo() {
+      const now = performance.now();
+      const taps = fxUi.taps;
+      if (taps.length && now - taps[taps.length - 1] > 2000) taps.length = 0;
+      taps.push(now);
+      if (taps.length > 6) taps.shift();
+      fxUi.beatAnchor = now;
+      if (taps.length >= 2) {
+        const interval = (taps[taps.length - 1] - taps[0]) / (taps.length - 1);
+        state.fx.bpm = Math.round(Math.max(50, Math.min(220, 60000 / interval)));
+        audioEngine.fxUpdate();
+        renderFxPad();
+        storage.saveState();
+      }
+      fxFlash(`BPM ${state.fx.bpm}`);
+    }
+
+    function initFxPad() {
+      const pad = document.getElementById('fxPad');
+      const posOf = (e) => {
+        const r = pad.getBoundingClientRect();
+        return { x: clamp01((e.clientX - r.left) / r.width), y: clamp01(1 - (e.clientY - r.top) / r.height) };
+      };
+
+      // XYパッド：指を置いている間だけエフェクトがかかる
+      pad.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        if (fxUi.pointerId !== null) return;
+        e.preventDefault();
+        fxUi.pointerId = e.pointerId;
+        try { pad.setPointerCapture(e.pointerId); } catch (err) { /* 古いブラウザ */ }
+        fxUi.touching = true;
+        const { x, y } = posOf(e);
+        fxSetPoint(x, y);
+        if (fxIsEngaged()) audioEngine.fxMove(x, y);
+        else audioEngine.fxEngage(x, y);
+        pad.classList.add('is-used');
+      });
+      pad.addEventListener('pointermove', (e) => {
+        if (e.pointerId !== fxUi.pointerId) return;
+        const { x, y } = posOf(e);
+        fxSetPoint(x, y);
+        audioEngine.fxMove(x, y);
+      });
+      const end = (e) => {
+        if (e && e.pointerId !== undefined && e.pointerId !== fxUi.pointerId) return;
+        if (fxUi.pointerId === null) return;
+        fxUi.pointerId = null;
+        fxUi.touching = false;
+        if (!state.fx.hold) audioEngine.fxRelease();
+        fxUi.dirty = true;
+      };
+      ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => pad.addEventListener(t, end));
+      window.addEventListener('blur', () => end());
+
+      // FX 1〜4
+      document.querySelectorAll('.fx-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const k = btn.dataset.fx;
+          if (k === state.fx.effect) return;
+          state.fx.effect = k;
+          audioEngine.fxSelect(k);
+          renderFxPad();
+          storage.saveState();
+        });
+      });
+
+      // BGMだけ／全体
+      document.querySelectorAll('[data-fx-target]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.fx.target = btn.dataset.fxTarget === 'all' ? 'all' : 'bgm';
+          audioEngine.fxApplyRouting(0.03);
+          renderFxPad();
+          storage.saveState();
+        });
+      });
+
+      // HOLD：指を離してもかけたまま
+      document.getElementById('btnFxHold').addEventListener('click', () => {
+        state.fx.hold = !state.fx.hold;
+        if (!state.fx.hold && !fxUi.touching) audioEngine.fxRelease();
+        renderFxPad();
+        storage.saveState();
+      });
+
+      // TEMPO：曲に合わせてタップ（反応を速くするため押した瞬間に数える）
+      const tempo = document.getElementById('btnFxTempo');
+      tempo.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        fxTapTempo();
+      });
+      tempo.addEventListener('click', (e) => { if (e.detail === 0) fxTapTempo(); });   // キーボード操作
+
+      // FX DEPTH：帯の触った高さがそのままかかり具合になる
+      const depthEl = document.getElementById('fxDepth');
+      const setDepth = (v) => {
+        state.fx.depth = Math.round(clamp01(v) * 100) / 100;
+        audioEngine.fxApplyRouting(0.02);
+        renderFxPad();
+        fxFlash(`DEPTH ${Math.round(state.fx.depth * 100)}`, 900);
+      };
+      const depthAt = (e) => {
+        const r = depthEl.getBoundingClientRect();
+        return 1 - (e.clientY - r.top) / r.height;
+      };
+      depthEl.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        e.preventDefault();
+        const id = e.pointerId;
+        try { depthEl.setPointerCapture(id); } catch (err) { /* 古いブラウザ */ }
+        setDepth(depthAt(e));
+        const move = (ev) => { if (ev.pointerId === id) setDepth(depthAt(ev)); };
+        const up = (ev) => {
+          if (ev.pointerId !== id) return;
+          depthEl.removeEventListener('pointermove', move);
+          depthEl.removeEventListener('pointerup', up);
+          depthEl.removeEventListener('pointercancel', up);
+          storage.saveState();
+        };
+        depthEl.addEventListener('pointermove', move);
+        depthEl.addEventListener('pointerup', up);
+        depthEl.addEventListener('pointercancel', up);
+      });
+      depthEl.addEventListener('dblclick', () => { setDepth(FX_DEFAULT_DEPTH); storage.saveState(); });
+      let depthSaveTimer = null;
+      const saveSoon = () => {
+        clearTimeout(depthSaveTimer);
+        depthSaveTimer = setTimeout(() => storage.saveState(), 400);
+      };
+      depthEl.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        setDepth(state.fx.depth + (e.deltaY < 0 ? 0.05 : -0.05));
+        saveSoon();
+      }, { passive: false });
+      depthEl.addEventListener('keydown', (e) => {
+        const step = { ArrowUp: 0.05, ArrowRight: 0.05, ArrowDown: -0.05, ArrowLeft: -0.05 }[e.key];
+        if (step === undefined) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setDepth(state.fx.depth + step);
+        saveSoon();
+      });
+
+      if (window.ResizeObserver) {
+        new ResizeObserver(() => { fxUi.dirty = true; }).observe(pad);
+      }
+      renderFxPad();
     }
 
     const storage = new DeckStorage();
@@ -2442,6 +3185,7 @@
         duckingEnabled: state.ducking.enabled,
         duckAmount: state.duckAmount,
         eq: state.eq,
+        fx: state.fx,
         themeColor: state.themeColor
       };
     }
@@ -2457,6 +3201,7 @@
       if (typeof d.duckingEnabled === 'boolean') state.ducking.enabled = d.duckingEnabled;
       if (typeof d.duckAmount === 'number') state.duckAmount = d.duckAmount;
       if (d.eq) state.eq = normalizeEq(d.eq);
+      if (d.fx) state.fx = normalizeFx(d.fx);
       if (d.themeColor && THEMES[d.themeColor]) state.themeColor = d.themeColor;
       state.activeBankIndex = Math.min(state.activeBankIndex, state.banks.length - 1);
       state.bgm.trackIndex = 0;
@@ -2499,6 +3244,7 @@
 
         this.currentBgmDeckGain = null;
         this.currentBgmSource = null;
+        this.fx = null;   // FX PAD の音の通り道（buildFx で作る）
       }
 
       ensureInit() {
@@ -2525,7 +3271,6 @@
           this.bgmVolumeGain = this.ctx.createGain();
           this.bgmVolumeGain.gain.value = state.bgm.volume;
 
-          this.seMasterGain.connect(this.mainGain);
           // 手動DUCK用のゲイン（AUTO DUCKINGとは別。MIXERのDUCKボタンでBGMを下げる）
           this.bgmManualGain = this.ctx.createGain();
           this.bgmManualGain.gain.value = state.bgm.manualDuck ? state.duckAmount : 1.0;
@@ -2537,7 +3282,8 @@
           for (let i = 0; i < eqChain.length - 1; i++) eqChain[i].connect(eqChain[i + 1]);
           eqChain[eqChain.length - 1].connect(this.bgmVolumeGain);
           this.applyEq(true);
-          this.bgmVolumeGain.connect(this.mainGain);
+          // BGMフェーダー・SEフェーダーの後ろに FX PAD をつなぐ（ここからマスターへ）
+          this.buildFx();
 
           this.mainGain.connect(compressor);
           compressor.connect(this.ctx.destination);
@@ -2609,6 +3355,263 @@
         setP(n.mid.gain, t.mid);
         setP(n.voice.gain, t.voice);
         setP(n.high.gain, t.high);
+      }
+
+      // ---- FX PAD（XYパッドのエフェクト） --------------------------------------
+      /** 音の通り道を作る：BGM（全体のときはSEも）を「元の音」と「エフェクト行き」に分け、最後にマスターで合流 */
+      buildFx() {
+        const ctx = this.ctx;
+        const gain = (v) => { const n = ctx.createGain(); n.gain.value = v; return n; };
+        const biquad = (type, freq, q) => {
+          const n = ctx.createBiquadFilter();
+          n.type = type;
+          n.frequency.value = freq;
+          n.Q.value = q;
+          return n;
+        };
+        const fx = {
+          engaged: false, effect: null, params: null, x: 0.5, y: 0.5, engagedAt: 0,
+          releaseTimer: null, pendingReset: null, tapeFailed: false,
+          input: gain(1), out: gain(1),
+          bgmDry: gain(1), bgmSend: gain(0), seDry: gain(1), seSend: gain(0)
+        };
+        this.bgmVolumeGain.connect(fx.bgmDry); fx.bgmDry.connect(this.mainGain);
+        this.bgmVolumeGain.connect(fx.bgmSend); fx.bgmSend.connect(fx.input);
+        this.seMasterGain.connect(fx.seDry); fx.seDry.connect(this.mainGain);
+        this.seMasterGain.connect(fx.seSend); fx.seSend.connect(fx.input);
+        fx.out.connect(this.mainGain);
+
+        // 各エフェクト：入口（feed）→ 処理 → 出口（wet）。選ばれていないものは入口を閉じておく
+        const unit = () => ({ feed: gain(0), wet: gain(0) });
+
+        // フィルター（左半分：ローパスでこもらせる／右半分：ハイパスで薄くする）
+        const filter = unit();
+        filter.lpf = biquad('lowpass', 20000, -3);
+        filter.hpf = biquad('highpass', 10, -3);
+        filter.comp = gain(1);   // クセ（共振）を強くしたときに音が大きくなりすぎないように下げる
+        filter.feed.connect(filter.lpf); filter.lpf.connect(filter.hpf);
+        filter.hpf.connect(filter.comp); filter.comp.connect(filter.wet);
+
+        // エコー（ディレイ＋繰り返し。繰り返すたびに少しこもらせる）
+        const echo = unit();
+        echo.delay = ctx.createDelay(2.0);
+        echo.delay.delayTime.value = 0.25;
+        echo.tone = biquad('lowpass', 4200, -3);
+        echo.fb = gain(0);
+        echo.feed.connect(echo.delay); echo.delay.connect(echo.tone);
+        echo.tone.connect(echo.fb); echo.fb.connect(echo.delay);
+        echo.delay.connect(echo.wet);
+
+        // ゲート（四角い波で音量を細かく上げ下げする。角を少し丸めてプチプチ音を防ぐ）
+        const gate = unit();
+        gate.vca = gain(1);
+        gate.lfoSmooth = biquad('lowpass', 180, -3);
+        gate.lfoAmt = gain(0);
+        gate.lfo = null;
+        gate.feed.connect(gate.vca); gate.vca.connect(gate.wet);
+        gate.lfoSmooth.connect(gate.lfoAmt); gate.lfoAmt.connect(gate.vca.gain);
+
+        // テープストップ（AudioWorkletで読み出す速さを落とす。読み込みが終わったらつなぐ）
+        const tape = unit();
+        tape.hp = biquad('highpass', 25, -3);   // 止まりかけの低いうなりを消す
+        tape.node = null;
+        tape.hp.connect(tape.wet);
+
+        fx.units = { filter, echo, gate, tape };
+        Object.values(fx.units).forEach(u => {
+          fx.input.connect(u.feed);
+          u.wet.connect(fx.out);
+        });
+        this.fx = fx;
+        this.loadTapeWorklet();
+      }
+
+      async loadTapeWorklet() {
+        const ctx = this.ctx;
+        const tape = this.fx.units.tape;
+        if (!ctx.audioWorklet || typeof AudioWorkletNode === 'undefined') {
+          this.fx.tapeFailed = true;
+          return;
+        }
+        const urls = [];
+        try { urls.push(URL.createObjectURL(new Blob([TAPE_WORKLET_SRC], { type: 'text/javascript' }))); } catch (e) { /* Blob が使えない環境 */ }
+        urls.push('data:text/javascript;charset=utf-8,' + encodeURIComponent(TAPE_WORKLET_SRC));
+        for (const url of urls) {
+          try {
+            await ctx.audioWorklet.addModule(url);
+            const node = new AudioWorkletNode(ctx, 'livepad-tape', {
+              numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2],
+              channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'speakers'
+            });
+            tape.feed.connect(node);
+            node.connect(tape.hp);
+            tape.node = node;
+            return;
+          } catch (e) {
+            console.warn('テープストップの読み込みに失敗:', e);
+          } finally {
+            if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+          }
+        }
+        this.fx.tapeFailed = true;
+      }
+
+      /** BGM／全体の切り替えと、かかり具合（FX DEPTH）に合わせて、元の音とエフェクト音の量を決める */
+      fxApplyRouting(tc = 0.015) {
+        const fx = this.fx;
+        if (!fx) return;
+        const now = this.ctx.currentTime;
+        const set = (param, v) => param.setTargetAtTime(v, now, tc);
+        const depth = state.fx.depth;
+        const active = fx.engaged ? fx.effect : null;
+        // フィルター・ゲート・テープは「元の音と入れ替える」、エコーは「元の音に足す」
+        const insert = !!active && FX_INFO[active].mode === 'insert';
+        const withSe = state.fx.target === 'all';
+        const dry = insert ? 1 - depth : 1;
+        set(fx.bgmDry.gain, dry);
+        set(fx.seDry.gain, withSe ? dry : 1);
+        set(fx.bgmSend.gain, active ? 1 : 0);
+        set(fx.seSend.gain, active && withSe ? 1 : 0);
+        Object.entries(fx.units).forEach(([k, u]) => {
+          set(u.feed.gain, k === active ? 1 : 0);
+          // エコーは指を離しても残響が自然に消えるよう、選ばれている間は出口を開けておく
+          const wet = k === 'echo' ? (state.fx.effect === 'echo' ? depth : 0) : (k === active ? depth : 0);
+          set(u.wet.gain, wet);
+        });
+      }
+
+      /** 指の位置（fx.x / fx.y）からエフェクトの値を計算して音に反映 */
+      fxUpdate(starting = false) {
+        const fx = this.fx;
+        if (!fx || !fx.engaged) return null;
+        const now = this.ctx.currentTime;
+        const set = (param, v, tc) => param.setTargetAtTime(v, now, tc);
+        const p = computeFxParams(fx.effect, fx.x, fx.y, state.fx.bpm);
+        fx.params = p;
+        const u = fx.units[fx.effect];
+        if (fx.effect === 'filter') {
+          set(u.lpf.frequency, Math.min(p.lpf, this.ctx.sampleRate * 0.45), 0.012);
+          set(u.hpf.frequency, p.hpf, 0.012);
+          set(u.lpf.Q, p.lpfQ, 0.03);
+          set(u.hpf.Q, p.hpfQ, 0.03);
+          set(u.comp.gain, p.comp, 0.03);
+        } else if (fx.effect === 'echo') {
+          set(u.delay.delayTime, p.time, starting ? 0.002 : 0.06);
+          set(u.fb.gain, p.feedback, 0.03);
+        } else if (fx.effect === 'gate') {
+          if (!u.lfo) {
+            const o = this.ctx.createOscillator();
+            o.type = 'square';
+            o.frequency.value = p.rate;
+            o.connect(u.lfoSmooth);
+            o.start();
+            u.lfo = o;
+          } else {
+            set(u.lfo.frequency, p.rate, 0.01);
+          }
+          set(u.lfoAmt.gain, p.depth / 2, 0.01);
+          set(u.vca.gain, 1 - p.depth / 2, 0.01);
+        } else if (fx.effect === 'tape') {
+          if (u.node) {
+            u.node.port.postMessage(starting
+              ? { reset: true, target: p.speed, glide: p.glide }
+              : { target: p.speed, glide: p.glide });
+          }
+        }
+        return p;
+      }
+
+      /** 指を置いた：エフェクトをかけ始める */
+      fxEngage(x, y) {
+        this.ensureInit();
+        const fx = this.fx;
+        if (!fx) return;
+        if (fx.releaseTimer) {
+          clearTimeout(fx.releaseTimer);
+          fx.releaseTimer = null;
+          if (fx.pendingReset && fx.pendingReset !== state.fx.effect) this.fxResetUnit(fx.pendingReset);
+          fx.pendingReset = null;
+        }
+        fx.engaged = true;
+        fx.effect = state.fx.effect;
+        fx.engagedAt = performance.now();
+        fx.x = x;
+        fx.y = y;
+        if (fx.effect === 'tape' && fx.tapeFailed) showToast('このブラウザではテープストップを使えません');
+        this.fxUpdate(true);
+        this.fxApplyRouting(0.008);
+      }
+
+      /** 指を動かした */
+      fxMove(x, y) {
+        const fx = this.fx;
+        if (!fx || !fx.engaged) return;
+        fx.x = x;
+        fx.y = y;
+        this.fxUpdate();
+      }
+
+      /** 指を離した：元の音に戻す（エコーの残響はそのまま自然に消える） */
+      fxRelease() {
+        const fx = this.fx;
+        if (!fx || !fx.engaged) return;
+        const eff = fx.effect;
+        fx.engaged = false;
+        this.fxApplyRouting(0.03);
+        if (fx.releaseTimer) clearTimeout(fx.releaseTimer);
+        fx.pendingReset = eff;
+        fx.releaseTimer = setTimeout(() => {
+          fx.releaseTimer = null;
+          fx.pendingReset = null;
+          if (!fx.engaged) this.fxResetUnit(eff);
+        }, 200);
+      }
+
+      /** エフェクトを元の状態に戻す（ゲートの波を止める・テープの位置を戻す） */
+      fxResetUnit(eff) {
+        const u = this.fx.units[eff];
+        const now = this.ctx.currentTime;
+        if (eff === 'gate' && u.lfo) {
+          try { u.lfo.stop(); } catch (e) { /* 停止済み */ }
+          u.lfo.disconnect();
+          u.lfo = null;
+          u.lfoAmt.gain.setTargetAtTime(0, now, 0.01);
+          u.vca.gain.setTargetAtTime(1, now, 0.01);
+        } else if (eff === 'tape' && u.node) {
+          u.node.port.postMessage({ reset: true });
+        }
+      }
+
+      /** FX 1〜4 の切り替え（かけている途中なら、新しいエフェクトにすぐ切り替える） */
+      fxSelect(effect) {
+        const fx = this.fx;
+        if (!fx) return;
+        if (fx.engaged && fx.effect !== effect) {
+          const old = fx.effect;
+          fx.effect = effect;
+          fx.engagedAt = performance.now();
+          if (effect === 'tape' && fx.tapeFailed) showToast('このブラウザではテープストップを使えません');
+          this.fxUpdate(true);
+          this.fxApplyRouting(0.02);
+          setTimeout(() => { if (!(fx.engaged && fx.effect === old)) this.fxResetUnit(old); }, 200);
+        } else {
+          this.fxApplyRouting(0.08);
+        }
+      }
+
+      /** PANIC STOP：エフェクトを外し、エコーの残響も止める */
+      fxPanic() {
+        const fx = this.fx;
+        if (!fx) return;
+        const eff = fx.effect;
+        fx.engaged = false;
+        if (fx.releaseTimer) { clearTimeout(fx.releaseTimer); fx.releaseTimer = null; }
+        fx.pendingReset = null;
+        this.fxApplyRouting(0.03);
+        const now = this.ctx.currentTime;
+        fx.units.echo.fb.gain.setTargetAtTime(0, now, 0.02);
+        fx.units.echo.wet.gain.setTargetAtTime(0, now, 0.04);
+        if (eff) setTimeout(() => { if (!fx.engaged) this.fxResetUnit(eff); }, 200);
       }
 
       async getDecodedBuffer(fileId) {
@@ -2812,6 +3815,7 @@
         if (state.bgm.isPlaying) {
           this.stopBgm(0.15);
         }
+        this.fxPanic();
         this.updateDucking();
       }
 
@@ -3195,6 +4199,8 @@
       Object.entries(th.ac2).forEach(([k, v]) => root.setProperty(`--ac2-${k}`, v));
       renderThemeGroup();
       drawEqCurve();
+      fxUi.colors = null;
+      fxUi.dirty = true;
     }
 
     function renderThemeGroup() {
@@ -3953,14 +4959,14 @@
     // =========================================================================
     // パネル（BGM DECK / SE DECK / MIXER）の浮遊・移動・大きさ変更・元に戻す
     // =========================================================================
-    const PANEL_IDS = ['bgm', 'se', 'mixer', 'eq'];
-    const PANEL_NAMES = { bgm: 'BGM DECK', se: 'SE DECK', mixer: 'MIXER', eq: 'EQ DECK' };
-    const PANEL_MIN = { bgm: { w: 240, h: 280 }, se: { w: 360, h: 240 }, mixer: { w: 300, h: 250 }, eq: { w: 260, h: 220 } };
+    const PANEL_IDS = ['bgm', 'se', 'mixer', 'eq', 'fx'];
+    const PANEL_NAMES = { bgm: 'BGM DECK', se: 'SE DECK', mixer: 'MIXER', eq: 'EQ DECK', fx: 'FX PAD' };
+    const PANEL_MIN = { bgm: { w: 240, h: 280 }, se: { w: 360, h: 240 }, mixer: { w: 300, h: 250 }, eq: { w: 260, h: 260 }, fx: { w: 360, h: 240 } };
     const PIN_SVG = `<svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 17v5"></path><path d="M9 4h6l-1 6 3 4H7l3-4z"></path></svg>`;
     let panelZ = 1;
 
     function createDefaultPanels() {
-      return { bgm: { floating: false }, se: { floating: false }, mixer: { floating: false }, eq: { floating: false } };
+      return { bgm: { floating: false }, se: { floating: false }, mixer: { floating: false }, eq: { floating: false }, fx: { floating: false } };
     }
 
     function pointInRect(x, y, r) {
@@ -3997,10 +5003,18 @@
 
     function floatPanel(id, rect) {
       const p = $(`panel-${id}`);
+      const slot = $(`slot-${id}`);
+      // 戻し先の枠を、浮かせる前のパネルと同じ高さにする（中身の高さで大きさが決まるパネルだけ）
+      const ph = slot.querySelector('.slot-placeholder');
+      if (ph.classList.contains('is-short')) {
+        const dockedH = p.parentElement === slot ? Math.round(p.getBoundingClientRect().height) : 0;
+        if (dockedH > 0) state.panels[id].dockH = dockedH;
+        ph.style.height = `${state.panels[id].dockH || 64}px`;
+      }
       Object.assign(state.panels[id], { floating: true }, rect);
       p.classList.add('is-floating');
       $('floatLayer').appendChild(p);
-      $(`slot-${id}`).classList.add('is-empty');
+      slot.classList.add('is-empty');
       applyPanelGeometry(id);
       bringPanelToFront(id);
     }
@@ -4049,9 +5063,9 @@
             if (!state.panels[id].floating) {
               let w = pr.width;
               let h = pr.height;
-              if (id === 'se') {
-                w = Math.min(w, Math.max(PANEL_MIN.se.w, shellRect.width * 0.6));
-                h = Math.min(h, Math.max(PANEL_MIN.se.h, shellRect.height * 0.6));
+              if (id === 'se' || id === 'fx') {
+                w = Math.min(w, Math.max(PANEL_MIN[id].w, shellRect.width * 0.6));
+                h = Math.min(h, Math.max(PANEL_MIN[id].h, shellRect.height * 0.6));
               } else if (id === 'bgm') {
                 h = Math.min(h, Math.max(PANEL_MIN.bgm.h, shellRect.height * 0.7));
               }
@@ -4174,6 +5188,7 @@
       }
 
       updateBgmFaderDuck(dt);
+      fxTick(now);
 
       const levels = audioEngine.getStereoLevels();
       const renderMeter = (id, level) => {
@@ -4385,6 +5400,9 @@
       updateDuckAmountUI();
       renderEqDeck();
       audioEngine.applyEq();
+      renderFxPad();
+      audioEngine.fxApplyRouting();
+      audioEngine.fxUpdate();
       renderBgmList();
       renderBankTabs();
       renderPads();
@@ -4772,11 +5790,14 @@
         state.bgm.manualDuck = false;
         state.duckAmount = 0.8;
         state.eq = createDefaultEq();
+        state.fx = createDefaultFx();
         audioEngine.applyManualDuck();
         audioEngine.applyEq();
+        audioEngine.fxApplyRouting();
         updateManualDuckUI();
         updateDuckAmountUI();
         renderEqDeck();
+        renderFxPad();
         renderBgmList();
         renderBankTabs();
         renderPads();
@@ -4918,6 +5939,7 @@
         if (saved.themeColor && THEMES[saved.themeColor]) state.themeColor = saved.themeColor;
         if (typeof saved.duckAmount === 'number') state.duckAmount = saved.duckAmount;
         if (saved.eq) state.eq = normalizeEq(saved.eq);
+        if (saved.fx) state.fx = normalizeFx(saved.fx);
         if (saved.panels) {
           state.panels = createDefaultPanels();
           PANEL_IDS.forEach(id => { if (saved.panels[id]) state.panels[id] = { ...saved.panels[id] }; });
@@ -4936,6 +5958,7 @@
       updateManualDuckUI();
       updateDuckAmountUI();
       initEqDeck();
+      initFxPad();
       initPanels();
       bindEvents();
       configureStartupOverlay();
