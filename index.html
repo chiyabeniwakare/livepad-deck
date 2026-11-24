@@ -779,7 +779,6 @@
     .rec-status { min-width: 0; font-size: 10.5px; font-weight: 700; color: #fecaca; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .rec-meter { flex: 1; min-width: 30px; max-width: 120px; height: 5px; border-radius: 3px; background: rgb(var(--n-0b0d11)); overflow: hidden; }
     .rec-meter > span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #22c55e, #eab308 70%, #ef4444); transition: width .06s linear; }
-    .rec-stop { flex: none; height: 24px; padding: 0 10px; border-radius: 6px; font-size: 10.5px; font-weight: 800; color: #fff; background: #dc2626; border: 1px solid #f87171; }
     .rec-cancel { flex: none; width: 24px; height: 24px; border-radius: 6px; font-size: 15px; line-height: 1; color: rgb(var(--n-94a3b8)); }
     .rec-cancel:hover { color: rgb(var(--n-e2e8f0)); background: rgb(var(--n-1a2030)); }
 
@@ -789,7 +788,7 @@
     .sampler-pad.is-recording { border-style: solid !important; border-color: #ef4444 !important; animation: recPulse 1s ease-in-out infinite; }
     .pad-rec-overlay {
       position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-      background: rgba(69,10,10,.88); border-radius: inherit; pointer-events: none; text-align: center;
+      background: rgba(60,8,8,.96); border-radius: inherit; pointer-events: none; text-align: center;
     }
     .pad-rec-dot { width: 12px; height: 12px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 10px #ef4444; animation: recBlink 1s steps(2, start) infinite; }
     .pad-rec-time { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 800; color: #fff; }
@@ -797,7 +796,7 @@
 
     /* 編集画面：録音と波形 */
     .edit-rec { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px; border-radius: 9px; background: rgba(239,68,68,.07); border: 1px solid rgba(239,68,68,.35); }
-    .edit-rec-btn { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 12px; border-radius: 7px; font-size: 11px; font-weight: 800; color: #fecaca; background: rgba(239,68,68,.15); border: 1px solid rgba(248,113,113,.55); }
+    .edit-rec-btn { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 12px; border-radius: 7px; font-size: 11px; font-weight: 800; color: #fecaca; background: rgba(239,68,68,.15); border: 1px solid rgba(248,113,113,.55); }
     .edit-rec-btn.is-recording { color: #fff; background: #dc2626; }
     .edit-rec-btn.is-recording .rec-arm-dot { background: #fff; animation: recBlink 1s steps(2, start) infinite; }
     .edit-rec-time { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: rgb(var(--n-cbd5e1)); min-width: 40px; }
@@ -1836,7 +1835,6 @@
                 <span id="recStatus" class="rec-status">Tap a pad to record</span>
                 <span class="rec-meter"><span id="recMeterFill"></span></span>
               </div>
-              <button id="btnRecStop" type="button" class="rec-stop hidden">■ STOP</button>
               <button id="btnRecCancel" type="button" class="rec-cancel" title="RECをやめる（Esc）" aria-label="RECをやめる">×</button>
             </div>
 
@@ -4449,11 +4447,11 @@ registerProcessor('livepad-rec', LivepadRec);
         b += HF.a(64, 30, 82, 30);
         // ② パッドをタップ → 録音中
         b += HF.r(86, 4, 92, 52, 'hf-box', 7, ' style="stroke:#ef4444;stroke-width:2"');
-        b += HF.c(132, 18, 4, '', red) + HF.t(132, 32, '1.4s', 'hf-tb', 'middle') + HF.t(132, 46, 'TAP TO STOP', 'hf-ts', 'middle');
+        b += HF.c(132, 18, 4, '', red) + HF.t(132, 32, '1.4s', 'hf-tb', 'middle') + HF.t(132, 46, 'RELEASE TO STOP', 'hf-ts', 'middle');
         b += HF.a(182, 30, 200, 30);
         // ③ もう一度タップ → パッドに入る
         b += HF.r(204, 4, 92, 52, 'hf-boxa', 7) + HF.t(250, 24, 'REC 23:15', 'hf-tb', 'middle') + HF.t(250, 40, 'すぐ鳴らせる', 'hf-tj', 'middle');
-        b += HF.t(32, 64, '① REC', 'hf-tj', 'middle') + HF.t(132, 68, '② パッドをタップ', 'hf-tj', 'middle') + HF.t(250, 68, '③ もう一度タップ', 'hf-tj', 'middle');
+        b += HF.t(32, 64, '① REC', 'hf-tj', 'middle') + HF.t(132, 68, '② 押している間 録音', 'hf-tj', 'middle') + HF.t(250, 68, '③ 離すと完成', 'hf-tj', 'middle');
         // 録る音
         b += HF.r(4, 84, 54, 20, 'hf-boxa', 5) + HF.t(31, 94, 'MIC', 'hf-tb', 'middle') + HF.t(66, 94, 'マイクの音', 'hf-tj');
         b += HF.r(150, 84, 72, 20, 'hf-box', 5) + HF.t(186, 94, 'RESAMPLE', 'hf-tb', 'middle') + HF.t(228, 94, '今鳴っている音', 'hf-tj');
@@ -4869,11 +4867,12 @@ registerProcessor('livepad-rec', LivepadRec);
           { name: 'AUTO DUCKING', fig: 'autoDuck', text: 'ONにすると、SEが鳴っている間だけBGMの音量を自動で下げ、鳴り終わると戻します。SEがBGMに埋もれません。' },
           { name: 'TABS', text: '上のタブでパッドのセットを切り替えます。タブの右の ✎ で、選んでいるタブの名前を変えられます。' },
           { name: 'REC（その場で録音）', fig: 'seRec', text: [
-            '右上の <b>● REC</b> を押すと録音の待機になり、パッドが赤い点線になります。録りたいパッドをタップすると録音が始まり、<b>同じパッドをもう一度タップ</b>（または ■ STOP）で止まって、そのままそのパッドで鳴らせます。最長30秒',
+            '右上の <b>● REC</b> を押すと録音の待機になり、パッドが赤い点線になります。録りたいパッドを<b>押している間だけ録音</b>し、離すと止まって、そのままそのパッドで鳴らせます。PCはキーを押している間も同じです。最長30秒',
             '<b>MIC</b>：マイクの音を録ります。録音中はBGMを大きく下げます。iPhoneはマイクを使っている間だけ音が小さくなることがあるので、マイクは録音の間だけ使い、終わるとすぐ止めます',
             '<b>RESAMPLE</b>：アプリが今鳴らしている音（BGM＋SE＋FX）を録ります。録音中にほかのパッドを鳴らしたりFXをかけたりすると、それも一緒に録れます',
-            '頭と最後の無音は自動で切ります。もう音が入っているパッドは、1回目のタップで「TAP AGAIN TO OVERWRITE」が出て、もう一度タップすると上書きで録音します',
-            'パッドの ✎（編集画面）にも <b>REC</b> があり、録ってから試聴して保存できます。編集画面の波形の左右のつまみで、始まりと終わりを詰められます（読み込んだファイルも同じ。保存したときに反映）',
+            '頭と最後の無音は自動で切ります。もう音が入っているパッドは、1回目に押すと「HOLD AGAIN TO OVERWRITE」が出て、もう一度押している間に上書きで録音します',
+            '初めてマイクを使うときは許可の確認が出ます。許可する前に指を離していたら録音はせず、もう一度押している間に録音します',
+            'パッドの ✎（編集画面）にも <b>REC</b> があり、<b>HOLD TO REC</b> を押している間だけ録音して、試聴してから保存できます。編集画面の波形の左右のつまみで、始まりと終わりを詰められます（読み込んだファイルも同じ。保存したときに反映）',
             'Esc か × で待機をやめます（PANIC にはなりません）'
           ] }
         ]
@@ -7872,10 +7871,10 @@ registerProcessor('livepad-rec', LivepadRec);
           const recHere = samplerBusy() && sampler.target && sampler.target.kind === 'pad' && sampler.target.padId === pad.id;
           if (recHere) {
             el.classList.add('is-recording');
-            el.insertAdjacentHTML('beforeend', `<div class="pad-rec-overlay"><span class="pad-rec-dot"></span><span class="pad-rec-time">${sampler.phase === 'starting' ? 'MIC…' : ''}</span><span class="pad-rec-sub">TAP TO STOP</span></div>`);
+            el.insertAdjacentHTML('beforeend', `<div class="pad-rec-overlay"><span class="pad-rec-dot"></span><span class="pad-rec-time">${sampler.phase === 'starting' ? 'MIC…' : ''}</span><span class="pad-rec-sub">RELEASE TO STOP</span></div>`);
           } else if (recUi.confirmPadId === pad.id) {
             el.classList.add('rec-confirm');
-            el.insertAdjacentHTML('beforeend', `<div class="pad-rec-overlay"><span class="pad-rec-sub">TAP AGAIN<br>TO OVERWRITE</span></div>`);
+            el.insertAdjacentHTML('beforeend', `<div class="pad-rec-overlay"><span class="pad-rec-sub">HOLD AGAIN<br>TO OVERWRITE</span></div>`);
           }
         }
 
@@ -7891,8 +7890,8 @@ registerProcessor('livepad-rec', LivepadRec);
         el.addEventListener('pointerdown', (e) => {
           if (e.button !== 0 && e.pointerType === 'mouse') return;
           e.preventDefault();
-          if (recConsumesTap(pad)) {   // REC待機中：鳴らさずに録音のほうへ
-            recPadTap(pad);
+          if (recConsumesTap(pad)) {   // REC待機中：鳴らさずに、押している間だけ録音
+            recPadDown(pad, `p:${e.pointerId}`);
             return;
           }
           el.classList.add('is-pressed');
@@ -8173,7 +8172,10 @@ registerProcessor('livepad-rec', LivepadRec);
     }
 
     // ---- SE DECK の REC（待機 → パッドをタップで録音開始 → もう一度タップで止める） ----
-    const recUi = { armed: false, confirmPadId: null, confirmTimer: null, tick: 0 };
+    const recUi = { armed: false, confirmPadId: null, confirmTimer: null, tick: 0, holder: null, stopWanted: false };
+
+    // 押している間だけ録音：離した指はパッドの外でも拾う（録音中にパッドが描き直されても止められるように）
+    ['pointerup', 'pointercancel'].forEach(t => window.addEventListener(t, (e) => recHoldEnd(`p:${e.pointerId}`), true));
 
     function setRecArmed(on) {
       if (on && state.perfLock) return;
@@ -8197,11 +8199,10 @@ registerProcessor('livepad-rec', LivepadRec);
         b.classList.toggle('is-active', b.dataset.recSrc === state.recSource);
         b.disabled = padRec;
       });
-      $('btnRecStop').classList.toggle('hidden', !padRec);
       if (!padRec) {
         $('recStatus').textContent = state.recSource === 'mic'
-          ? 'Tap a pad to record from the mic'
-          : 'Tap a pad to record what is playing';
+          ? 'Hold a pad to record from the mic — release to stop'
+          : 'Hold a pad to record what is playing — release to stop';
         $('recMeterFill').style.width = '0%';
       }
     }
@@ -8214,7 +8215,7 @@ registerProcessor('livepad-rec', LivepadRec);
         const t = sampler.phase === 'starting' ? 'WAITING FOR MIC…' : `● REC ${sec.toFixed(1)}s`;
         const lv = Math.min(100, Math.round(Math.sqrt(sampler.level) * 100));
         if (sampler.target && sampler.target.kind === 'pad') {
-          $('recStatus').textContent = sampler.phase === 'starting' ? t : `${t} — tap the pad again to stop`;
+          $('recStatus').textContent = sampler.phase === 'starting' ? t : `${t} — release to stop`;
           $('recMeterFill').style.width = `${lv}%`;
           const el = document.getElementById(`pad-${sampler.target.padId}`);
           const tm = el && el.querySelector('.pad-rec-time');
@@ -8229,23 +8230,51 @@ registerProcessor('livepad-rec', LivepadRec);
     }
 
     /** REC待機中のタップを録音側で受け取るか（false＝普通に鳴らす）。
-     *  録音中は、録音中のパッドだけが「止める」になり、ほかのパッドは普通に鳴る（RESAMPLE で一緒に録れる） */
+     *  録音中は、録音中のパッド以外は普通に鳴る（RESAMPLE で一緒に録れる） */
     function recConsumesTap(pad) {
       if (!recUi.armed) return false;
-      if (sampler.target && sampler.target.kind === 'pad' && (sampler.phase === 'recording' || sampler.phase === 'starting')) {
-        return sampler.target.padId === pad.id;
-      }
+      if (sampler.target && sampler.target.kind === 'pad' && samplerBusy()) return sampler.target.padId === pad.id;
       return true;
     }
 
-    /** REC待機中にパッドをタップしたとき */
-    async function recPadTap(pad) {
-      if (sampler.phase === 'recording' && sampler.target && sampler.target.kind === 'pad') {
-        if (sampler.target.padId === pad.id) samplerFinishFromUi();
+    /** 押している間だけ録音：押した（holder＝'p:指のID' か 'k:キー'） */
+    async function recHoldStart(target, holder) {
+      if (samplerBusy()) return;
+      recUi.holder = holder;
+      recUi.stopWanted = false;
+      const p = samplerStart(state.recSource, target);
+      renderPads();
+      renderRecBar();
+      renderEditRec();
+      cancelAnimationFrame(recUi.tick);
+      recUi.tick = requestAnimationFrame(recTick);
+      const ok = await p;
+      if (ok && recUi.stopWanted) {
+        // マイクの許可を待っている間に離していた：録らずに終わる
+        samplerCancel();
+        recUi.holder = null;
+        showToast('マイクの準備ができました。もう一度、押している間だけ録音します');
+      }
+      renderPads();
+      renderRecBar();
+      renderEditRec();
+    }
+
+    /** 離した：録音を止めて入れる */
+    function recHoldEnd(holder) {
+      if (!recUi.holder || recUi.holder !== holder) return;
+      recUi.holder = null;
+      if (sampler.phase === 'starting') {
+        recUi.stopWanted = true;
         return;
       }
+      if (sampler.phase === 'recording') samplerFinishFromUi();
+    }
+
+    /** REC待機中にパッドを押したとき */
+    function recPadDown(pad, holder) {
       if (samplerBusy()) return;
-      // 音が入っているパッドは、もう一度タップしたら上書き
+      // 音が入っているパッドは、1回目は確認だけ。もう一度押している間に上書きで録音
       if (pad.sourceType !== 'empty' && recUi.confirmPadId !== pad.id) {
         recUi.confirmPadId = pad.id;
         clearTimeout(recUi.confirmTimer);
@@ -8255,14 +8284,7 @@ registerProcessor('livepad-rec', LivepadRec);
       }
       recUi.confirmPadId = null;
       clearTimeout(recUi.confirmTimer);
-      const ok = samplerStart(state.recSource, { kind: 'pad', padId: pad.id });
-      renderPads();
-      renderRecBar();
-      cancelAnimationFrame(recUi.tick);
-      recUi.tick = requestAnimationFrame(recTick);
-      await ok;
-      renderPads();
-      renderRecBar();
+      recHoldStart({ kind: 'pad', padId: pad.id }, holder);
     }
 
     /** 録音を止めて、行き先（パッド／編集画面）に入れる */
@@ -8382,22 +8404,15 @@ registerProcessor('livepad-rec', LivepadRec);
         b.disabled = busy;
       });
       $('btnEditRec').classList.toggle('is-recording', busy);
-      $('editRecLabel').textContent = busy ? 'STOP' : 'START';
+      $('editRecLabel').textContent = busy ? 'RECORDING' : 'HOLD TO REC';
       if (!busy) $('editRecMeterFill').style.width = '0%';
     }
 
-    async function toggleEditRec() {
-      if (samplerBusy()) {
-        if (sampler.target && sampler.target.kind === 'modal' && sampler.phase === 'recording') samplerFinishFromUi();
-        return;
-      }
+    /** 編集画面の REC：押している間だけ録音 */
+    function editRecDown(holder) {
+      if (samplerBusy()) return;
       $('editRecTime').textContent = '0.0s';
-      const p = samplerStart(state.recSource, { kind: 'modal' });
-      renderEditRec();
-      cancelAnimationFrame(recUi.tick);
-      recUi.tick = requestAnimationFrame(recTick);
-      await p;
-      renderEditRec();
+      recHoldStart({ kind: 'modal' }, holder);
     }
 
     /** 編集画面で録り終わった：まだ保存はせず「選択中の新しい音」にする（保存ボタンで確定） */
@@ -8598,7 +8613,27 @@ registerProcessor('livepad-rec', LivepadRec);
         panel.classList.toggle('hidden');
         renderEditRec();
       });
-      $('btnEditRec').addEventListener('click', toggleEditRec);
+      const recBtn = $('btnEditRec');
+      recBtn.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        e.preventDefault();
+        editRecDown(`p:${e.pointerId}`);
+      });
+      recBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+      // キーボードでボタンを選んでいるときは Space / Enter を押している間
+      recBtn.addEventListener('keydown', (e) => {
+        if ((e.code === 'Space' || e.code === 'Enter') && !e.repeat) {
+          e.preventDefault();
+          e.stopPropagation();
+          editRecDown('k:btn');
+        }
+      });
+      recBtn.addEventListener('keyup', (e) => {
+        if (e.code === 'Space' || e.code === 'Enter') {
+          e.preventDefault();
+          recHoldEnd('k:btn');
+        }
+      });
       document.querySelectorAll('#editRecPanel [data-rec-src], #recBar [data-rec-src]').forEach(b => {
         b.addEventListener('click', () => {
           if (samplerBusy()) return;
@@ -8612,7 +8647,6 @@ registerProcessor('livepad-rec', LivepadRec);
       // SE DECK の REC
       $('btnRecArm').addEventListener('click', () => setRecArmed(!recUi.armed));
       $('btnRecCancel').addEventListener('click', () => setRecArmed(false));
-      $('btnRecStop').addEventListener('click', () => samplerFinishFromUi());
       renderRecBar();
     }
 
@@ -10527,8 +10561,8 @@ registerProcessor('livepad-rec', LivepadRec);
         e.preventDefault();
         if (e.repeat || heldKeys.has(e.code)) return;
         const pad = state.banks[state.activeBankIndex].pads[idx];
-        if (pad && recConsumesTap(pad)) {   // REC待機中はキーでも録音するパッドを選べる
-          recPadTap(pad);
+        if (pad && recConsumesTap(pad)) {   // REC待機中はキーを押している間だけ録音
+          recPadDown(pad, `k:${e.code}`);
           return;
         }
         if (!pad || pad.sourceType === 'empty') return;
@@ -10540,6 +10574,7 @@ registerProcessor('livepad-rec', LivepadRec);
 
       document.addEventListener('keyup', (e) => {
         if (e.code === 'Space' && !isTyping(e.target)) e.preventDefault();   // ボタンにフォーカスがあっても押されないように
+        recHoldEnd(`k:${e.code}`);
         releaseKey(e.code);
       });
 
