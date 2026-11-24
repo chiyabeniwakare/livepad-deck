@@ -750,6 +750,62 @@
       .kbd { display: inline-flex; }
     }
 
+    /* ---- サンプラー（REC） ---- */
+    .rec-arm-btn, .edit-rec-open {
+      display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 6px;
+      font-size: 10px; font-weight: 800; letter-spacing: .08em; color: rgb(var(--n-cbd5e1));
+      background: rgb(var(--n-11141b)); border: 1px solid rgb(var(--n-2a3242));
+      transition: background-color .12s ease, border-color .12s ease, color .12s ease;
+    }
+    .edit-rec-open { height: auto; padding: 6px 10px; font-size: 12px; border-radius: 8px; }
+    .rec-arm-btn:hover, .edit-rec-open:hover { border-color: rgba(248,113,113,.6); }
+    .rec-arm-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,.7); flex: none; }
+    .rec-arm-btn.is-on { color: #fff; background: #dc2626; border-color: #f87171; box-shadow: 0 0 12px rgba(239,68,68,.5); }
+    .rec-arm-btn.is-on .rec-arm-dot { background: #fff; box-shadow: none; animation: recBlink 1s steps(2, start) infinite; }
+    #deviceShell.is-locked .rec-arm-btn { display: none; }
+    @keyframes recBlink { to { visibility: hidden; } }
+    @keyframes recPulse { 0%, 100% { box-shadow: 0 0 0 2px rgba(239,68,68,.9), 0 0 18px rgba(239,68,68,.55); } 50% { box-shadow: 0 0 0 2px rgba(239,68,68,.5), 0 0 6px rgba(239,68,68,.25); } }
+
+    .rec-bar {
+      display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 10px;
+      background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.45);
+    }
+    .rec-bar.is-recording { background: rgba(239,68,68,.16); }
+    .rec-src { display: flex; gap: 2px; padding: 2px; border-radius: 7px; background: rgb(var(--n-0b0d11)); border: 1px solid rgb(var(--n-262c3a)); flex: none; }
+    .rec-src button { padding: 2px 8px; border-radius: 5px; font-size: 9.5px; font-weight: 800; letter-spacing: .06em; color: rgb(var(--n-64748b)); }
+    .rec-src button.is-active { color: #fecaca; background: rgba(239,68,68,.22); box-shadow: inset 0 0 0 1px rgba(248,113,113,.55); }
+    .rec-src button:disabled { opacity: .5; }
+    .rec-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+    .rec-status { min-width: 0; font-size: 10.5px; font-weight: 700; color: #fecaca; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rec-meter { flex: 1; min-width: 30px; max-width: 120px; height: 5px; border-radius: 3px; background: rgb(var(--n-0b0d11)); overflow: hidden; }
+    .rec-meter > span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #22c55e, #eab308 70%, #ef4444); transition: width .06s linear; }
+    .rec-stop { flex: none; height: 24px; padding: 0 10px; border-radius: 6px; font-size: 10.5px; font-weight: 800; color: #fff; background: #dc2626; border: 1px solid #f87171; }
+    .rec-cancel { flex: none; width: 24px; height: 24px; border-radius: 6px; font-size: 15px; line-height: 1; color: rgb(var(--n-94a3b8)); }
+    .rec-cancel:hover { color: rgb(var(--n-e2e8f0)); background: rgb(var(--n-1a2030)); }
+
+    /* REC待機中のパッド：赤い点線の枠。上書き確認・録音中は表示を重ねる */
+    .sampler-pad.rec-armable { border-color: rgba(248,113,113,.55) !important; border-style: dashed !important; }
+    .sampler-pad.rec-confirm { border-style: solid !important; border-color: #f87171 !important; }
+    .sampler-pad.is-recording { border-style: solid !important; border-color: #ef4444 !important; animation: recPulse 1s ease-in-out infinite; }
+    .pad-rec-overlay {
+      position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+      background: rgba(69,10,10,.88); border-radius: inherit; pointer-events: none; text-align: center;
+    }
+    .pad-rec-dot { width: 12px; height: 12px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 10px #ef4444; animation: recBlink 1s steps(2, start) infinite; }
+    .pad-rec-time { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 800; color: #fff; }
+    .pad-rec-sub { font-size: 9px; font-weight: 800; letter-spacing: .06em; color: #fecaca; line-height: 1.3; }
+
+    /* 編集画面：録音と波形 */
+    .edit-rec { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px; border-radius: 9px; background: rgba(239,68,68,.07); border: 1px solid rgba(239,68,68,.35); }
+    .edit-rec-btn { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 12px; border-radius: 7px; font-size: 11px; font-weight: 800; color: #fecaca; background: rgba(239,68,68,.15); border: 1px solid rgba(248,113,113,.55); }
+    .edit-rec-btn.is-recording { color: #fff; background: #dc2626; }
+    .edit-rec-btn.is-recording .rec-arm-dot { background: #fff; animation: recBlink 1s steps(2, start) infinite; }
+    .edit-rec-time { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: rgb(var(--n-cbd5e1)); min-width: 40px; }
+    .edit-trim { display: flex; flex-direction: column; gap: 6px; }
+    .edit-trim-canvas { width: 100%; height: 64px; border-radius: 8px; background: #07090d; border: 1px solid rgb(var(--n-2a3242)); touch-action: none; cursor: ew-resize; }
+    .edit-trim-btn { padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; color: rgb(var(--n-cbd5e1)); background: rgb(var(--n-1c2230)); border: 1px solid rgb(var(--n-30384b)); }
+    .edit-trim-btn:hover { border-color: rgb(var(--ac-500) / .6); }
+
     /* 設定：SEパッドのキーの並び（4×4の小さな図） */
     .keymap-btn {
       display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 6px 9px;
@@ -1765,8 +1821,23 @@
               </div>
               <div class="flex items-center gap-1.5 shrink-0">
                 <span class="hidden xl:inline text-[10px] text-slate-500">DROP AUDIO FILES ONTO PADS</span>
+                <button id="btnRecArm" type="button" class="rec-arm-btn" aria-pressed="false" title="REC：押してからパッドをタップすると、その場で録音してパッドに入れます"><span class="rec-arm-dot"></span>REC</button>
                 <button type="button" class="panel-pin" data-pin="se" title="元の位置に戻す" aria-label="SE DECKを元の位置に戻す"></button>
               </div>
+            </div>
+
+            <!-- REC待機中のバー（録る音の種類・状態・止める／やめる） -->
+            <div id="recBar" class="rec-bar hidden shrink-0">
+              <div class="rec-src" role="group" aria-label="録る音">
+                <button type="button" data-rec-src="mic" title="マイクの音を録る（録音中はBGMを下げます）">MIC</button>
+                <button type="button" data-rec-src="resample" title="アプリが今鳴らしている音（BGM＋SE＋FX）を録る">RESAMPLE</button>
+              </div>
+              <div class="rec-info">
+                <span id="recStatus" class="rec-status">Tap a pad to record</span>
+                <span class="rec-meter"><span id="recMeterFill"></span></span>
+              </div>
+              <button id="btnRecStop" type="button" class="rec-stop hidden">■ STOP</button>
+              <button id="btnRecCancel" type="button" class="rec-cancel" title="RECをやめる（Esc）" aria-label="RECをやめる">×</button>
             </div>
 
             <!-- パッドグリッド -->
@@ -1951,8 +2022,30 @@
               ファイルを選択 (MP3/WAV/M4A)
               <input id="inputPadAudioFile" type="file" accept="audio/*" class="hidden" />
             </label>
+            <button id="btnEditRecOpen" type="button" class="edit-rec-open" title="その場で録音してこのパッドに入れる"><span class="rec-arm-dot"></span>REC</button>
             <button id="btnRevertSynth" type="button" class="px-2.5 py-1.5 rounded-lg bg-[rgb(var(--n-1c2230))] hover:bg-[rgb(var(--n-262e40))] text-slate-300 text-xs font-bold border border-[rgb(var(--n-30384b))]">内蔵音に戻す</button>
             <button id="btnClearPad" type="button" class="px-2.5 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 text-xs font-bold border border-red-500/30">クリア</button>
+          </div>
+          <!-- 録音（REC を押すと開く） -->
+          <div id="editRecPanel" class="edit-rec hidden">
+            <div class="rec-src" role="group" aria-label="録る音">
+              <button type="button" data-rec-src="mic" title="マイクの音を録る（録音中はBGMを下げます）">MIC</button>
+              <button type="button" data-rec-src="resample" title="アプリが今鳴らしている音（BGM＋SE＋FX）を録る">RESAMPLE</button>
+            </div>
+            <button id="btnEditRec" type="button" class="edit-rec-btn"><span class="rec-arm-dot"></span><span id="editRecLabel">START</span></button>
+            <span id="editRecTime" class="edit-rec-time">0.0s</span>
+            <span class="rec-meter"><span id="editRecMeterFill"></span></span>
+          </div>
+          <!-- 波形：左右のつまみで始まりと終わりを詰める（保存したときに反映） -->
+          <div id="editTrim" class="edit-trim hidden">
+            <canvas id="editTrimCanvas" class="edit-trim-canvas"></canvas>
+            <div class="flex items-center justify-between gap-2">
+              <span id="editTrimInfo" class="text-[10px] font-mono-num text-slate-400">0.00s – 0.00s</span>
+              <div class="flex items-center gap-1.5">
+                <button id="btnTrimPreview" type="button" class="edit-trim-btn">▶ PREVIEW</button>
+                <button id="btnTrimReset" type="button" class="edit-trim-btn">RESET</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -2421,6 +2514,7 @@
       layout: createDefaultLayout(),   // 広い画面のDECKの並び（タイル型）と保存したレイアウト
       themeColor: DEFAULT_THEME,
       keyMap: 'standard',    // SEパッドを鳴らすキーの並び：standard / numpad（端末ごと）
+      recSource: 'mic',      // REC で録る音：mic / resample（端末ごと）
       tone: 'dark',          // 背景の色調：dark / dim / navy / warm / light / auto
       toneTint: false,       // テーマカラーの色味を背景にも少し乗せる
       banks: createDefaultBanks(),
@@ -2495,6 +2589,7 @@
             tone: state.tone,
             toneTint: state.toneTint,
             keyMap: state.keyMap,
+            recSource: state.recSource,
             duckAmount: state.duckAmount,
             eq: state.eq,
             fx: state.fx,
@@ -3466,6 +3561,53 @@ class LivepadLofi extends AudioWorkletProcessor {
   }
 }
 registerProcessor('livepad-lofi', LivepadLofi);
+
+// REC：入ってきた音（マイク／アプリ自身の音）を少しずつためて、メインの処理へ送る
+class LivepadRec extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this.on = false;
+    this.size = 8192;
+    this.bL = new Float32Array(this.size);
+    this.bR = new Float32Array(this.size);
+    this.n = 0;
+    this.peak = 0;
+    this.port.onmessage = (e) => {
+      const d = e.data || {};
+      if (d.start) { this.on = true; this.n = 0; this.peak = 0; }
+      if (d.stop) {
+        this.flush();
+        this.on = false;
+        this.port.postMessage({ done: true });
+      }
+      if (d.cancel) { this.on = false; this.n = 0; }
+    };
+  }
+  flush() {
+    if (this.n === 0) return;
+    this.port.postMessage({ l: this.bL.slice(0, this.n), r: this.bR.slice(0, this.n), peak: this.peak });
+    this.n = 0;
+    this.peak = 0;
+  }
+  process(inputs) {
+    if (!this.on) return true;
+    const input = inputs[0] || [];
+    const iL = input[0];
+    const iR = input[1] || input[0];
+    const len = iL ? iL.length : 128;   // 無音で入力がないときも、時間が飛ばないよう 0 をためる
+    for (let i = 0; i < len; i++) {
+      const l = iL ? iL[i] : 0;
+      const r = iR ? iR[i] : 0;
+      this.bL[this.n] = l;
+      this.bR[this.n] = r;
+      const a = Math.max(l < 0 ? -l : l, r < 0 ? -r : r);
+      if (a > this.peak) this.peak = a;
+      if (++this.n === this.size) this.flush();
+    }
+    return true;
+  }
+}
+registerProcessor('livepad-rec', LivepadRec);
 `;
 
     // ---- FX PAD：画面の更新と操作 --------------------------------------------
@@ -4299,6 +4441,24 @@ registerProcessor('livepad-lofi', LivepadLofi);
         b += HF.t(186, 73, '≡ を引く：並べ替え', 'hf-tj');
         return HF.svg(300, 92, b);
       },
+      seRec() {
+        let b = '';
+        const red = ' style="fill:#ef4444"';
+        // ① REC を押す
+        b += HF.r(4, 18, 56, 24, 'hf-boxa', 6) + HF.c(16, 30, 3.5, '', red) + HF.t(38, 30, 'REC', 'hf-tb', 'middle');
+        b += HF.a(64, 30, 82, 30);
+        // ② パッドをタップ → 録音中
+        b += HF.r(86, 4, 92, 52, 'hf-box', 7, ' style="stroke:#ef4444;stroke-width:2"');
+        b += HF.c(132, 18, 4, '', red) + HF.t(132, 32, '1.4s', 'hf-tb', 'middle') + HF.t(132, 46, 'TAP TO STOP', 'hf-ts', 'middle');
+        b += HF.a(182, 30, 200, 30);
+        // ③ もう一度タップ → パッドに入る
+        b += HF.r(204, 4, 92, 52, 'hf-boxa', 7) + HF.t(250, 24, 'REC 23:15', 'hf-tb', 'middle') + HF.t(250, 40, 'すぐ鳴らせる', 'hf-tj', 'middle');
+        b += HF.t(32, 64, '① REC', 'hf-tj', 'middle') + HF.t(132, 68, '② パッドをタップ', 'hf-tj', 'middle') + HF.t(250, 68, '③ もう一度タップ', 'hf-tj', 'middle');
+        // 録る音
+        b += HF.r(4, 84, 54, 20, 'hf-boxa', 5) + HF.t(31, 94, 'MIC', 'hf-tb', 'middle') + HF.t(66, 94, 'マイクの音', 'hf-tj');
+        b += HF.r(150, 84, 72, 20, 'hf-box', 5) + HF.t(186, 94, 'RESAMPLE', 'hf-tb', 'middle') + HF.t(228, 94, '今鳴っている音', 'hf-tj');
+        return HF.svg(300, 110, b);
+      },
       bgmFolders() {
         let b = '';
         // 見出し（開いている：▼、閉じている：▶）と、その中の曲
@@ -4707,7 +4867,15 @@ registerProcessor('livepad-lofi', LivepadLofi);
             '<b>TOGGLE</b>：1回押すとくり返し鳴り続け、もう1回押すと止まる'
           ] },
           { name: 'AUTO DUCKING', fig: 'autoDuck', text: 'ONにすると、SEが鳴っている間だけBGMの音量を自動で下げ、鳴り終わると戻します。SEがBGMに埋もれません。' },
-          { name: 'TABS', text: '上のタブでパッドのセットを切り替えます。タブの右の ✎ で、選んでいるタブの名前を変えられます。' }
+          { name: 'TABS', text: '上のタブでパッドのセットを切り替えます。タブの右の ✎ で、選んでいるタブの名前を変えられます。' },
+          { name: 'REC（その場で録音）', fig: 'seRec', text: [
+            '右上の <b>● REC</b> を押すと録音の待機になり、パッドが赤い点線になります。録りたいパッドをタップすると録音が始まり、<b>同じパッドをもう一度タップ</b>（または ■ STOP）で止まって、そのままそのパッドで鳴らせます。最長30秒',
+            '<b>MIC</b>：マイクの音を録ります。録音中はBGMを大きく下げます。iPhoneはマイクを使っている間だけ音が小さくなることがあるので、マイクは録音の間だけ使い、終わるとすぐ止めます',
+            '<b>RESAMPLE</b>：アプリが今鳴らしている音（BGM＋SE＋FX）を録ります。録音中にほかのパッドを鳴らしたりFXをかけたりすると、それも一緒に録れます',
+            '頭と最後の無音は自動で切ります。もう音が入っているパッドは、1回目のタップで「TAP AGAIN TO OVERWRITE」が出て、もう一度タップすると上書きで録音します',
+            'パッドの ✎（編集画面）にも <b>REC</b> があり、録ってから試聴して保存できます。編集画面の波形の左右のつまみで、始まりと終わりを詰められます（読み込んだファイルも同じ。保存したときに反映）',
+            'Esc か × で待機をやめます（PANIC にはなりません）'
+          ] }
         ]
       },
       eq: {
@@ -5489,10 +5657,14 @@ registerProcessor('livepad-lofi', LivepadLofi);
           this.bgmManualGain = this.ctx.createGain();
           this.bgmManualGain.gain.value = state.bgm.manualDuck ? state.duckAmount : 1.0;
           this.bgmDuckGain.connect(this.bgmManualGain);
+          // マイクで録音している間だけBGMを下げるゲイン（BGMが一緒に録音されないように）
+          this.recDuckGain = this.ctx.createGain();
+          this.recDuckGain.gain.value = 1.0;
+          this.bgmManualGain.connect(this.recDuckGain);
           // BGM専用EQ（手動DUCKの後、BGMフェーダーの手前）。SEはここを通らない
           this.eqNodes = buildEqNodes(this.ctx);
           const eqChain = EQ_CHAIN.map(c => this.eqNodes[c.key]);
-          this.bgmManualGain.connect(eqChain[0]);
+          this.recDuckGain.connect(eqChain[0]);
           for (let i = 0; i < eqChain.length - 1; i++) eqChain[i].connect(eqChain[i + 1]);
           // KEY（PITCH DECK）：速さはそのままで音程だけ変える段。0のときは素通り（Workletの読み込み後につなぐ）
           const kg = (v) => { const n = this.ctx.createGain(); n.gain.value = v; return n; };
@@ -5743,6 +5915,10 @@ registerProcessor('livepad-lofi', LivepadLofi);
         fx.chains.bgm.out.connect(this.mainGain);
         this.seMasterGain.connect(fx.chains.se.in);
         fx.chains.se.out.connect(this.mainGain);
+        // RESAMPLE 用：MASTERフェーダーの手前の音（BGM＋SE＋FX）を集めておく
+        this.recBus = this.ctx.createGain();
+        fx.chains.bgm.out.connect(this.recBus);
+        fx.chains.se.out.connect(this.recBus);
         this.fx = fx;
         this.fxApplyRouting(0);
         this.loadFxWorklets();
@@ -5789,6 +5965,7 @@ registerProcessor('livepad-lofi', LivepadLofi);
               make(S.freeze, 'livepad-freeze');
               make(S.backspin, 'livepad-backspin');
             });
+            this.workletReady = true;   // 録音（livepad-rec）もこれで使える
             const ks = this.keyStage;
             ks.node = new AudioWorkletNode(ctx, 'livepad-pitch', opts);
             ks.in.connect(ks.node);
@@ -6014,6 +6191,31 @@ registerProcessor('livepad-lofi', LivepadLofi);
           this.fxEachStage('reverb', (st) => { st.feed.disconnect(); });
           fx.reverbOn = false;
         }, 6000);
+      }
+
+      // ---- 録音（サンプラー） ---------------------------------------------------
+      /** 録音用のノード（1つだけ作って使い回す）。出力は音量0で destination へ（処理を止めないため） */
+      recNode() {
+        this.ensureInit();
+        if (!this.workletReady) return null;
+        if (!this._recNode) {
+          const n = new AudioWorkletNode(this.ctx, 'livepad-rec', {
+            numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1],
+            channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'speakers'
+          });
+          const sink = this.ctx.createGain();
+          sink.gain.value = 0;
+          n.connect(sink);
+          sink.connect(this.ctx.destination);
+          this._recNode = n;
+        }
+        return this._recNode;
+      }
+
+      /** マイク録音中はBGMを大きく下げる（約−16dB。BGMが一緒に録音されにくいように） */
+      setRecDuck(on) {
+        if (!this.recDuckGain) return;
+        this.recDuckGain.gain.setTargetAtTime(on ? 0.15 : 1, this.ctx.currentTime, on ? 0.05 : 0.15);
       }
 
       /** PANIC STOP：全部外し、エコー・リバーブの残響も止める */
@@ -7664,6 +7866,19 @@ registerProcessor('livepad-lofi', LivepadLofi);
           </div>
         `;
 
+        // REC：待機中は赤い枠、上書き確認中・録音中は上に表示を重ねる
+        if (recUi.armed) {
+          el.classList.add('rec-armable');
+          const recHere = samplerBusy() && sampler.target && sampler.target.kind === 'pad' && sampler.target.padId === pad.id;
+          if (recHere) {
+            el.classList.add('is-recording');
+            el.insertAdjacentHTML('beforeend', `<div class="pad-rec-overlay"><span class="pad-rec-dot"></span><span class="pad-rec-time">${sampler.phase === 'starting' ? 'MIC…' : ''}</span><span class="pad-rec-sub">TAP TO STOP</span></div>`);
+          } else if (recUi.confirmPadId === pad.id) {
+            el.classList.add('rec-confirm');
+            el.insertAdjacentHTML('beforeend', `<div class="pad-rec-overlay"><span class="pad-rec-sub">TAP AGAIN<br>TO OVERWRITE</span></div>`);
+          }
+        }
+
         const editBtn = el.querySelector('.pad-edit-btn');
         if (editBtn) {
           editBtn.addEventListener('pointerdown', e => e.stopPropagation());
@@ -7676,6 +7891,10 @@ registerProcessor('livepad-lofi', LivepadLofi);
         el.addEventListener('pointerdown', (e) => {
           if (e.button !== 0 && e.pointerType === 'mouse') return;
           e.preventDefault();
+          if (recConsumesTap(pad)) {   // REC待機中：鳴らさずに録音のほうへ
+            recPadTap(pad);
+            return;
+          }
           el.classList.add('is-pressed');
           audioEngine.triggerPadDown(pad);
         });
@@ -7728,6 +7947,371 @@ registerProcessor('livepad-lofi', LivepadLofi);
       }
     }
 
+    // =========================================================================
+    // サンプラー（その場で録音してパッドに入れる）
+    //   MIC      ：マイクの音。録音中はBGMを下げる。マイクは録音の間だけ使い、終わったらすぐ止める
+    //   RESAMPLE ：アプリ自身が鳴らしている音（BGM＋SE＋FX、MASTERの手前）
+    //   どちらも、頭と最後の無音を自動で切って WAV にする
+    // =========================================================================
+    const REC_MAX_SEC = 30;
+    const REC_SOURCES = { mic: 'MIC', resample: 'RESAMPLE' };
+
+    const sampler = {
+      phase: 'idle',      // idle / starting / recording / processing
+      source: 'mic',
+      target: null,       // { kind: 'pad', padId } または { kind: 'modal' }
+      chunksL: [],
+      chunksR: [],
+      frames: 0,
+      level: 0,
+      startedAt: 0,
+      stream: null,
+      micNode: null,
+      maxTimer: null,
+      doneResolve: null
+    };
+
+    function samplerBusy() {
+      return sampler.phase !== 'idle';
+    }
+
+    /** 録音を始める。マイクの許可待ちの間は 'starting' */
+    async function samplerStart(source, target) {
+      if (samplerBusy()) return false;
+      audioEngine.ensureInit();
+      const node = audioEngine.recNode();
+      if (!node) {
+        showToast('このブラウザでは録音できません（読み込み中なら少し待ってから）');
+        return false;
+      }
+      sampler.phase = 'starting';
+      sampler.source = source;
+      sampler.target = target;
+      sampler.chunksL = [];
+      sampler.chunksR = [];
+      sampler.frames = 0;
+      sampler.level = 0;
+      try {
+        if (source === 'mic') {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('nomic');
+          // 通話用の自動処理（エコー除去・雑音除去・自動音量）は切って、そのままの音を録る
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+          });
+          if (sampler.phase !== 'starting') {   // 許可待ちの間にキャンセルされた
+            stream.getTracks().forEach(t => t.stop());
+            return false;
+          }
+          sampler.stream = stream;
+          sampler.micNode = audioEngine.ctx.createMediaStreamSource(stream);
+          sampler.micNode.connect(node);
+          audioEngine.setRecDuck(true);
+        } else {
+          audioEngine.recBus.connect(node);
+        }
+      } catch (err) {
+        console.warn('録音を始められません:', err);
+        samplerCleanup();
+        sampler.phase = 'idle';
+        showToast(err && err.name === 'NotAllowedError' ? 'マイクの使用が許可されませんでした' : 'マイクを使えませんでした');
+        return false;
+      }
+      node.port.onmessage = (e) => {
+        const d = e.data || {};
+        if (d.l) {
+          sampler.chunksL.push(d.l);
+          sampler.chunksR.push(d.r);
+          sampler.frames += d.l.length;
+          sampler.level = Math.max(d.peak, sampler.level * 0.6);
+        }
+        if (d.done && sampler.doneResolve) {
+          const r = sampler.doneResolve;
+          sampler.doneResolve = null;
+          r();
+        }
+      };
+      node.port.postMessage({ start: true });
+      sampler.phase = 'recording';
+      sampler.startedAt = performance.now();
+      clearTimeout(sampler.maxTimer);
+      sampler.maxTimer = setTimeout(() => {
+        if (sampler.phase === 'recording') {
+          showToast(`録音は${REC_MAX_SEC}秒までです`);
+          samplerFinishFromUi();
+        }
+      }, REC_MAX_SEC * 1000);
+      return true;
+    }
+
+    /** マイク・つないだ線を片付ける */
+    function samplerCleanup() {
+      clearTimeout(sampler.maxTimer);
+      sampler.maxTimer = null;
+      const node = audioEngine._recNode;
+      if (sampler.micNode) {
+        try { sampler.micNode.disconnect(); } catch (e) { /* 切断済み */ }
+        sampler.micNode = null;
+      }
+      if (sampler.stream) {
+        sampler.stream.getTracks().forEach(t => t.stop());   // iPhoneの「電話モード」を早く抜けるよう、すぐ止める
+        sampler.stream = null;
+        audioEngine.setRecDuck(false);
+      }
+      if (node && audioEngine.recBus) {
+        try { audioEngine.recBus.disconnect(node); } catch (e) { /* つないでいない */ }
+      }
+    }
+
+    /** 録音を止めて、音（チャンネルごとの Float32Array）を返す。無音なら null */
+    async function samplerStop() {
+      if (sampler.phase !== 'recording') return null;
+      sampler.phase = 'processing';
+      const node = audioEngine._recNode;
+      await new Promise((resolve) => {
+        sampler.doneResolve = resolve;
+        node.port.postMessage({ stop: true });
+        setTimeout(() => { if (sampler.doneResolve) { sampler.doneResolve = null; resolve(); } }, 800);
+      });
+      const source = sampler.source;
+      samplerCleanup();
+      const join = (chunks) => {
+        const out = new Float32Array(sampler.frames);
+        let o = 0;
+        chunks.forEach(c => { out.set(c, o); o += c.length; });
+        return out;
+      };
+      const L = join(sampler.chunksL);
+      const R = join(sampler.chunksR);
+      sampler.chunksL = [];
+      sampler.chunksR = [];
+      sampler.phase = 'idle';
+      // マイクは1本なので左右同じ → 1チャンネルにして容量を半分に
+      const channels = source === 'mic' ? [L] : [L, R];
+      return trimSilence(channels, audioEngine.ctx.sampleRate, source);
+    }
+
+    function samplerCancel() {
+      if (!samplerBusy()) return;
+      const node = audioEngine._recNode;
+      if (node) node.port.postMessage({ cancel: true });
+      samplerCleanup();
+      sampler.chunksL = [];
+      sampler.chunksR = [];
+      sampler.phase = 'idle';
+      sampler.doneResolve = null;
+    }
+
+    /** 頭と最後の無音を切り、つなぎ目のプチッという音を防ぐために少しだけフェード。マイクは小さすぎたら持ち上げる */
+    function trimSilence(channels, sr, source) {
+      const n = channels[0].length;
+      let peak = 0;
+      channels.forEach(c => { for (let i = 0; i < n; i++) { const a = Math.abs(c[i]); if (a > peak) peak = a; } });
+      if (peak < 0.003) return null;
+      const th = Math.max(source === 'mic' ? 0.006 : 0.0008, peak * (source === 'mic' ? 0.05 : 0.02));
+      const loud = (i) => channels.some(c => Math.abs(c[i]) > th);
+      let a = 0;
+      while (a < n && !loud(a)) a++;
+      let b = n - 1;
+      while (b > a && !loud(b)) b--;
+      const start = Math.max(0, a - Math.round(sr * 0.012));
+      const end = Math.min(n, b + Math.round(sr * 0.15));
+      const gain = source === 'mic' && peak < 0.5 ? Math.min(10, 0.9 / peak) : 1;
+      const fin = Math.round(sr * 0.003);
+      const fout = Math.round(sr * 0.02);
+      const len = end - start;
+      const out = channels.map(c => {
+        const o = c.slice(start, end);
+        for (let i = 0; i < len; i++) {
+          let g = gain;
+          if (i < fin) g *= i / fin;
+          if (i > len - fout) g *= (len - i) / fout;
+          o[i] *= g;
+        }
+        return o;
+      });
+      return { channels: out, sampleRate: sr };
+    }
+
+    /** 16bit の WAV ファイルにする */
+    function encodeWav(channels, sampleRate) {
+      const nch = channels.length;
+      const len = channels[0].length;
+      const buf = new ArrayBuffer(44 + len * nch * 2);
+      const v = new DataView(buf);
+      const str = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+      str(0, 'RIFF'); v.setUint32(4, 36 + len * nch * 2, true); str(8, 'WAVE');
+      str(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, nch, true);
+      v.setUint32(24, sampleRate, true); v.setUint32(28, sampleRate * nch * 2, true); v.setUint16(32, nch * 2, true); v.setUint16(34, 16, true);
+      str(36, 'data'); v.setUint32(40, len * nch * 2, true);
+      let o = 44;
+      for (let i = 0; i < len; i++) {
+        for (let c = 0; c < nch; c++) {
+          const x = Math.max(-1, Math.min(1, channels[c][i]));
+          v.setInt16(o, x < 0 ? x * 0x8000 : x * 0x7fff, true);
+          o += 2;
+        }
+      }
+      return new Blob([buf], { type: 'audio/wav' });
+    }
+
+    /** 録った音の名前（パッド表示名・ファイル名） */
+    function recNames(source) {
+      const d = new Date();
+      const p2 = (x) => String(x).padStart(2, '0');
+      const hm = `${p2(d.getHours())}:${p2(d.getMinutes())}`;
+      const label = source === 'mic' ? 'REC' : 'RESAMPLE';
+      return {
+        pad: `${label} ${hm}`,
+        file: `${label} ${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())} ${p2(d.getHours())}-${p2(d.getMinutes())}-${p2(d.getSeconds())}.wav`
+      };
+    }
+
+    function recResultToFile(result, source) {
+      const names = recNames(source);
+      const blob = encodeWav(result.channels, result.sampleRate);
+      return { file: new File([blob], names.file, { type: 'audio/wav' }), padName: names.pad, sec: result.channels[0].length / result.sampleRate };
+    }
+
+    // ---- SE DECK の REC（待機 → パッドをタップで録音開始 → もう一度タップで止める） ----
+    const recUi = { armed: false, confirmPadId: null, confirmTimer: null, tick: 0 };
+
+    function setRecArmed(on) {
+      if (on && state.perfLock) return;
+      if (!on && samplerBusy() && sampler.target && sampler.target.kind === 'pad') samplerCancel();
+      recUi.armed = on;
+      recUi.confirmPadId = null;
+      clearTimeout(recUi.confirmTimer);
+      renderRecBar();
+      renderPads();
+    }
+
+    function renderRecBar() {
+      const bar = $('recBar');
+      const btn = $('btnRecArm');
+      const padRec = samplerBusy() && sampler.target && sampler.target.kind === 'pad';
+      bar.classList.toggle('hidden', !recUi.armed);
+      btn.classList.toggle('is-on', recUi.armed);
+      btn.setAttribute('aria-pressed', String(recUi.armed));
+      bar.classList.toggle('is-recording', padRec);
+      document.querySelectorAll('#recBar [data-rec-src]').forEach(b => {
+        b.classList.toggle('is-active', b.dataset.recSrc === state.recSource);
+        b.disabled = padRec;
+      });
+      $('btnRecStop').classList.toggle('hidden', !padRec);
+      if (!padRec) {
+        $('recStatus').textContent = state.recSource === 'mic'
+          ? 'Tap a pad to record from the mic'
+          : 'Tap a pad to record what is playing';
+        $('recMeterFill').style.width = '0%';
+      }
+    }
+
+    /** 録音中の表示（時間とレベル）を更新 */
+    function recTick() {
+      recUi.tick = 0;
+      if (sampler.phase === 'recording' || sampler.phase === 'starting') {
+        const sec = sampler.phase === 'recording' ? (performance.now() - sampler.startedAt) / 1000 : 0;
+        const t = sampler.phase === 'starting' ? 'WAITING FOR MIC…' : `● REC ${sec.toFixed(1)}s`;
+        const lv = Math.min(100, Math.round(Math.sqrt(sampler.level) * 100));
+        if (sampler.target && sampler.target.kind === 'pad') {
+          $('recStatus').textContent = sampler.phase === 'starting' ? t : `${t} — tap the pad again to stop`;
+          $('recMeterFill').style.width = `${lv}%`;
+          const el = document.getElementById(`pad-${sampler.target.padId}`);
+          const tm = el && el.querySelector('.pad-rec-time');
+          if (tm) tm.textContent = sampler.phase === 'starting' ? 'MIC…' : `${sec.toFixed(1)}s`;
+        } else {
+          $('editRecTime').textContent = sampler.phase === 'starting' ? 'MIC…' : `${sec.toFixed(1)}s`;
+          $('editRecMeterFill').style.width = `${lv}%`;
+        }
+        sampler.level *= 0.85;
+        recUi.tick = requestAnimationFrame(recTick);
+      }
+    }
+
+    /** REC待機中のタップを録音側で受け取るか（false＝普通に鳴らす）。
+     *  録音中は、録音中のパッドだけが「止める」になり、ほかのパッドは普通に鳴る（RESAMPLE で一緒に録れる） */
+    function recConsumesTap(pad) {
+      if (!recUi.armed) return false;
+      if (sampler.target && sampler.target.kind === 'pad' && (sampler.phase === 'recording' || sampler.phase === 'starting')) {
+        return sampler.target.padId === pad.id;
+      }
+      return true;
+    }
+
+    /** REC待機中にパッドをタップしたとき */
+    async function recPadTap(pad) {
+      if (sampler.phase === 'recording' && sampler.target && sampler.target.kind === 'pad') {
+        if (sampler.target.padId === pad.id) samplerFinishFromUi();
+        return;
+      }
+      if (samplerBusy()) return;
+      // 音が入っているパッドは、もう一度タップしたら上書き
+      if (pad.sourceType !== 'empty' && recUi.confirmPadId !== pad.id) {
+        recUi.confirmPadId = pad.id;
+        clearTimeout(recUi.confirmTimer);
+        recUi.confirmTimer = setTimeout(() => { recUi.confirmPadId = null; renderPads(); }, 2500);
+        renderPads();
+        return;
+      }
+      recUi.confirmPadId = null;
+      clearTimeout(recUi.confirmTimer);
+      const ok = samplerStart(state.recSource, { kind: 'pad', padId: pad.id });
+      renderPads();
+      renderRecBar();
+      cancelAnimationFrame(recUi.tick);
+      recUi.tick = requestAnimationFrame(recTick);
+      await ok;
+      renderPads();
+      renderRecBar();
+    }
+
+    /** 録音を止めて、行き先（パッド／編集画面）に入れる */
+    async function samplerFinishFromUi() {
+      if (sampler.phase !== 'recording') return;
+      const target = sampler.target;
+      const source = sampler.source;
+      const result = await samplerStop();
+      cancelAnimationFrame(recUi.tick);
+      if (target && target.kind === 'modal') {
+        editRecDone(result, source);
+        return;
+      }
+      if (!result) {
+        showToast('音が録れませんでした（無音でした）');
+        renderPads();
+        renderRecBar();
+        return;
+      }
+      const pad = findPadById(target.padId);
+      if (!pad) return;
+      const r = recResultToFile(result, source);
+      try {
+        const oldFileId = pad.fileId;
+        const saved = await storage.saveAudioFile(r.file);
+        pad.sourceType = 'file';
+        pad.fileId = saved.id;
+        pad.fileName = saved.name;
+        pad.name = r.padName;
+        if (oldFileId) storage.deleteAudioFile(oldFileId);
+        await storage.saveState();
+        showToast(`「${r.padName}」をパッドに入れました（${r.sec.toFixed(1)}秒）`);
+      } catch (err) {
+        console.error(err);
+        showToast('録音の保存に失敗しました');
+      }
+      recUi.armed = false;   // 1回録ったら待機を解除
+      renderRecBar();
+      renderPads();
+    }
+
+    function findPadById(id) {
+      for (const bank of state.banks) {
+        const p = bank.pads.find(x => x.id === id);
+        if (p) return p;
+      }
+      return null;
+    }
+
     function setPadVisualPlaying(padId, isPlaying) {
       const el = document.getElementById(`pad-${padId}`);
       if (!el) return;
@@ -7768,6 +8352,9 @@ registerProcessor('livepad-lofi', LivepadLofi);
       document.getElementById('editPadPitch').value = state.editDraft.pitch;
       document.getElementById('editPadPitchVal').textContent = fmtSemitone(state.editDraft.pitch);
       document.getElementById('inputPadAudioFile').value = '';
+      $('editRecPanel').classList.add('hidden');
+      trimUi.buffer = null;
+      trimUi.key = '';
 
       updateEditModalUI();
       const backdrop = document.getElementById('editModalBackdrop');
@@ -7779,8 +8366,254 @@ registerProcessor('livepad-lofi', LivepadLofi);
       const backdrop = document.getElementById('editModalBackdrop');
       backdrop.classList.add('hidden');
       backdrop.classList.remove('flex');
+      if (samplerBusy() && sampler.target && sampler.target.kind === 'modal') samplerCancel();
+      stopTrimPreview();
+      trimUi.buffer = null;
+      trimUi.key = '';
       state.editingPad = null;
       state.editDraft = null;
+    }
+
+    // ---- 編集画面の録音 ----
+    function renderEditRec() {
+      const busy = samplerBusy() && sampler.target && sampler.target.kind === 'modal';
+      document.querySelectorAll('#editRecPanel [data-rec-src]').forEach(b => {
+        b.classList.toggle('is-active', b.dataset.recSrc === state.recSource);
+        b.disabled = busy;
+      });
+      $('btnEditRec').classList.toggle('is-recording', busy);
+      $('editRecLabel').textContent = busy ? 'STOP' : 'START';
+      if (!busy) $('editRecMeterFill').style.width = '0%';
+    }
+
+    async function toggleEditRec() {
+      if (samplerBusy()) {
+        if (sampler.target && sampler.target.kind === 'modal' && sampler.phase === 'recording') samplerFinishFromUi();
+        return;
+      }
+      $('editRecTime').textContent = '0.0s';
+      const p = samplerStart(state.recSource, { kind: 'modal' });
+      renderEditRec();
+      cancelAnimationFrame(recUi.tick);
+      recUi.tick = requestAnimationFrame(recTick);
+      await p;
+      renderEditRec();
+    }
+
+    /** 編集画面で録り終わった：まだ保存はせず「選択中の新しい音」にする（保存ボタンで確定） */
+    function editRecDone(result, source) {
+      renderEditRec();
+      const d = state.editDraft;
+      if (!d) return;
+      if (!result) {
+        showToast('音が録れませんでした（無音でした）');
+        return;
+      }
+      const r = recResultToFile(result, source);
+      r.file.recorded = true;
+      d.pendingFile = r.file;
+      d.sourceType = 'file';
+      const nameEl = document.getElementById('editPadName');
+      if (!nameEl.value.trim() || /^(REC|RESAMPLE) \d\d:\d\d$/.test(nameEl.value.trim())) nameEl.value = r.padName;
+      $('editRecTime').textContent = `${r.sec.toFixed(1)}s`;
+      updateEditModalUI();
+    }
+
+    // ---- 編集画面の波形と切り詰め（始まり・終わり） ----
+    const trimUi = { buffer: null, key: '', start: 0, end: 1, drag: null, preview: null, loading: 0 };
+
+    function trimChanged() {
+      return !!trimUi.buffer && (trimUi.start > 0.0005 || trimUi.end < 0.9995);
+    }
+
+    /** 今の音（選んだばかりのファイル・録った音・保存済みのファイル）を読み込んで波形を出す */
+    async function loadTrimSource() {
+      const d = state.editDraft;
+      const box = $('editTrim');
+      let key = '';
+      if (d && d.pendingFile) key = `p:${d.pendingFile.name}:${d.pendingFile.size}:${d.pendingFile.lastModified}`;
+      else if (d && d.sourceType === 'file' && d.fileId) key = `f:${d.fileId}`;
+      if (!key) {
+        trimUi.buffer = null;
+        trimUi.key = '';
+        box.classList.add('hidden');
+        return;
+      }
+      if (key === trimUi.key) return;
+      trimUi.key = key;
+      trimUi.buffer = null;
+      trimUi.start = 0;
+      trimUi.end = 1;
+      const token = ++trimUi.loading;
+      try {
+        audioEngine.ensureInit();
+        const buf = d.pendingFile
+          ? await audioEngine.ctx.decodeAudioData(await d.pendingFile.arrayBuffer())
+          : await audioEngine.getDecodedBuffer(d.fileId);
+        if (token !== trimUi.loading || !state.editDraft) return;
+        trimUi.buffer = buf;
+        box.classList.toggle('hidden', !buf);
+        drawTrim();
+      } catch (err) {
+        console.warn('波形を読み込めません:', err);
+        box.classList.add('hidden');
+      }
+    }
+
+    function drawTrim() {
+      const cv = $('editTrimCanvas');
+      const buf = trimUi.buffer;
+      if (!buf) return;
+      const dpr = window.devicePixelRatio || 1;
+      const w = cv.clientWidth;
+      const h = cv.clientHeight;
+      if (!w || !h) return;
+      if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
+        cv.width = Math.round(w * dpr);
+        cv.height = Math.round(h * dpr);
+      }
+      const g = cv.getContext('2d');
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, w, h);
+      // 波形（各列の最大・最小）
+      const data = [];
+      for (let c = 0; c < buf.numberOfChannels; c++) data.push(buf.getChannelData(c));
+      const n = buf.length;
+      const per = n / w;
+      // 小さい音でも形が分かるよう、一番大きいところが枠いっぱいになるように拡大（最大20倍）
+      let peak = 0;
+      for (const ch of data) { for (let i = 0; i < n; i += 16) { const v = Math.abs(ch[i]); if (v > peak) peak = v; } }
+      const zoom = peak > 0 ? Math.min(20, 0.95 / peak) : 1;
+      const accent = getComputedStyle(document.documentElement).getPropertyValue('--acb-400').trim() || '34 211 238';
+      for (let x = 0; x < w; x++) {
+        const a = Math.floor(x * per);
+        const b = Math.min(n, Math.floor((x + 1) * per));
+        let mn = 0;
+        let mx = 0;
+        for (let i = a; i < b; i += Math.max(1, Math.floor((b - a) / 64))) {
+          for (const ch of data) { const v = ch[i]; if (v < mn) mn = v; if (v > mx) mx = v; }
+        }
+        const inside = x / w >= trimUi.start && x / w <= trimUi.end;
+        g.fillStyle = inside ? `rgb(${accent.split(' ').join(',')})` : 'rgba(100,116,139,.45)';
+        const y0 = h / 2 - Math.min(1, mx * zoom) * (h / 2 - 2);
+        const y1 = h / 2 - Math.max(-1, mn * zoom) * (h / 2 - 2);
+        g.fillRect(x, y0, 1, Math.max(1, y1 - y0));
+      }
+      // 切り落とす部分を暗く、つまみを描く
+      g.fillStyle = 'rgba(2,6,12,.55)';
+      g.fillRect(0, 0, trimUi.start * w, h);
+      g.fillRect(trimUi.end * w, 0, w - trimUi.end * w, h);
+      [trimUi.start, trimUi.end].forEach((f, i) => {
+        const x = Math.round(f * w) + (i === 0 ? 0.5 : -0.5);
+        g.fillStyle = '#f8fafc';
+        g.fillRect(x - (i === 0 ? 0 : 1), 0, 2, h);
+        g.beginPath();
+        if (i === 0) { g.moveTo(x, 0); g.lineTo(x + 9, 0); g.lineTo(x, 11); }
+        else { g.moveTo(x, h); g.lineTo(x - 9, h); g.lineTo(x, h - 11); }
+        g.fill();
+      });
+      const dur = buf.duration;
+      $('editTrimInfo').textContent = `${(trimUi.start * dur).toFixed(2)}s – ${(trimUi.end * dur).toFixed(2)}s（${((trimUi.end - trimUi.start) * dur).toFixed(2)}s）`;
+    }
+
+    function stopTrimPreview() {
+      if (trimUi.preview) {
+        try { trimUi.preview.stop(); } catch (e) { /* 終了済み */ }
+        trimUi.preview = null;
+      }
+    }
+
+    /** 切り詰めた範囲だけを、パッドの音量・PITCHで試聴 */
+    function playTrimPreview() {
+      const buf = trimUi.buffer;
+      const d = state.editDraft;
+      if (!buf || !d) return;
+      stopTrimPreview();
+      const ctx = audioEngine.ctx;
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.playbackRate.value = Math.pow(2, (d.pitch || 0) / 12);
+      const g = ctx.createGain();
+      g.gain.value = (d.volume || 100) / 100;
+      src.connect(g);
+      g.connect(audioEngine.seMasterGain);
+      const off = trimUi.start * buf.duration;
+      src.start(0, off, Math.max(0.01, (trimUi.end - trimUi.start) * buf.duration));
+      src.onended = () => { if (trimUi.preview === src) trimUi.preview = null; };
+      trimUi.preview = src;
+    }
+
+    /** 切り詰めた範囲を新しい WAV にする（保存のとき） */
+    function makeTrimmedFile() {
+      const buf = trimUi.buffer;
+      if (!buf) return null;
+      const a = Math.floor(trimUi.start * buf.length);
+      const b = Math.max(a + 1, Math.floor(trimUi.end * buf.length));
+      const fade = Math.min(Math.round(buf.sampleRate * 0.004), Math.floor((b - a) / 4));
+      const chans = [];
+      for (let c = 0; c < buf.numberOfChannels; c++) {
+        const o = buf.getChannelData(c).slice(a, b);
+        for (let i = 0; i < fade; i++) { o[i] *= i / fade; o[o.length - 1 - i] *= i / fade; }
+        chans.push(o);
+      }
+      const d = state.editDraft;
+      const base = d && d.pendingFile ? d.pendingFile.name : (d && d.fileName) || 'audio';
+      const name = `${base.replace(/\.[^/.]+$/, '').replace(/ \(trim\)$/, '')} (trim).wav`;
+      return new File([encodeWav(chans, buf.sampleRate)], name, { type: 'audio/wav' });
+    }
+
+    function initEditTrim() {
+      const cv = $('editTrimCanvas');
+      cv.addEventListener('pointerdown', (e) => {
+        if (!trimUi.buffer) return;
+        e.preventDefault();
+        const r = cv.getBoundingClientRect();
+        const f = (e.clientX - r.left) / r.width;
+        // 近いほうのつまみをつかむ
+        trimUi.drag = Math.abs(f - trimUi.start) <= Math.abs(f - trimUi.end) ? 'start' : 'end';
+        cv.setPointerCapture(e.pointerId);
+        moveTrim(e);
+      });
+      const moveTrim = (e) => {
+        if (!trimUi.drag) return;
+        const r = cv.getBoundingClientRect();
+        const f = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+        const minGap = Math.min(0.5, 0.02 / Math.max(0.02, trimUi.buffer.duration));   // 最低でも20ミリ秒は残す
+        if (trimUi.drag === 'start') trimUi.start = Math.min(f, trimUi.end - minGap);
+        else trimUi.end = Math.max(f, trimUi.start + minGap);
+        drawTrim();
+      };
+      cv.addEventListener('pointermove', moveTrim);
+      const end = () => { trimUi.drag = null; };
+      cv.addEventListener('pointerup', end);
+      cv.addEventListener('pointercancel', end);
+      $('btnTrimPreview').addEventListener('click', playTrimPreview);
+      $('btnTrimReset').addEventListener('click', () => {
+        trimUi.start = 0;
+        trimUi.end = 1;
+        drawTrim();
+      });
+      $('btnEditRecOpen').addEventListener('click', () => {
+        const panel = $('editRecPanel');
+        panel.classList.toggle('hidden');
+        renderEditRec();
+      });
+      $('btnEditRec').addEventListener('click', toggleEditRec);
+      document.querySelectorAll('#editRecPanel [data-rec-src], #recBar [data-rec-src]').forEach(b => {
+        b.addEventListener('click', () => {
+          if (samplerBusy()) return;
+          state.recSource = b.dataset.recSrc;
+          renderRecBar();
+          renderEditRec();
+          storage.saveState();
+        });
+      });
+      window.addEventListener('resize', () => { if (trimUi.buffer) drawTrim(); });
+      // SE DECK の REC
+      $('btnRecArm').addEventListener('click', () => setRecArmed(!recUi.armed));
+      $('btnRecCancel').addEventListener('click', () => setRecArmed(false));
+      $('btnRecStop').addEventListener('click', () => samplerFinishFromUi());
+      renderRecBar();
     }
 
     function updateEditModalUI() {
@@ -7789,8 +8622,10 @@ registerProcessor('livepad-lofi', LivepadLofi);
 
       const badge = document.getElementById('editSourceBadge');
       const srcName = document.getElementById('editSourceName');
+      renderEditRec();
+      loadTrimSource();
       if (d.pendingFile) {
-        badge.textContent = 'NEW FILE';
+        badge.textContent = d.pendingFile.recorded ? 'NEW REC' : 'NEW FILE';
         badge.className = 'text-[10px] font-mono-num px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
         srcName.textContent = `選択中: ${d.pendingFile.name}`;
       } else if (d.sourceType === 'file') {
@@ -9181,6 +10016,7 @@ registerProcessor('livepad-lofi', LivepadLofi);
         if (state.perfLock) {
           closeFxOrder();
           closeFolderName();
+          if (recUi.armed) setRecArmed(false);
           closeEditModal();
           closeTabRename();
           closeBgmMenu();
@@ -9438,6 +10274,10 @@ registerProcessor('livepad-lofi', LivepadLofi);
           return;
         }
         audioEngine.ensureInit();
+        if (trimUi.buffer) {   // 波形が出ているときは、詰めた範囲で試聴
+          playTrimPreview();
+          return;
+        }
         if (state.editDraft.pendingFile) {
           const url = URL.createObjectURL(state.editDraft.pendingFile);
           const a = new Audio(url);
@@ -9457,6 +10297,16 @@ registerProcessor('livepad-lofi', LivepadLofi);
         const pad = state.editingPad;
         const d = state.editDraft;
         if (!pad || !d) return;
+        if (samplerBusy() && sampler.target && sampler.target.kind === 'modal') samplerCancel();
+
+        // 波形で始まり・終わりを詰めていたら、その範囲だけの新しい音にする
+        if (trimChanged() && (d.pendingFile || d.sourceType === 'file')) {
+          const f = makeTrimmedFile();
+          if (f) {
+            d.pendingFile = f;
+            d.sourceType = 'file';
+          }
+        }
 
         if (d.pendingFile) {
           const oldId = pad.fileId;
@@ -9652,6 +10502,11 @@ registerProcessor('livepad-lofi', LivepadLofi);
             closeFolderName();
             return;
           }
+          // REC待機中の Esc は待機をやめるだけ（PANIC にはしない）
+          if (recUi.armed) {
+            setRecArmed(false);
+            return;
+          }
           if (isOpen('startupOverlay')) return;
           e.preventDefault();
           $('btnPanicStop').click();
@@ -9672,6 +10527,10 @@ registerProcessor('livepad-lofi', LivepadLofi);
         e.preventDefault();
         if (e.repeat || heldKeys.has(e.code)) return;
         const pad = state.banks[state.activeBankIndex].pads[idx];
+        if (pad && recConsumesTap(pad)) {   // REC待機中はキーでも録音するパッドを選べる
+          recPadTap(pad);
+          return;
+        }
         if (!pad || pad.sourceType === 'empty') return;
         heldKeys.set(e.code, pad);
         const el = document.getElementById(`pad-${pad.id}`);
@@ -9710,6 +10569,7 @@ registerProcessor('livepad-lofi', LivepadLofi);
         if (TONES.some(t => t.id === saved.tone)) state.tone = saved.tone;
         if (typeof saved.toneTint === 'boolean') state.toneTint = saved.toneTint;
         if (KEY_MAPS[saved.keyMap]) state.keyMap = saved.keyMap;
+        if (REC_SOURCES[saved.recSource]) state.recSource = saved.recSource;
         if (typeof saved.duckAmount === 'number') state.duckAmount = saved.duckAmount;
         if (saved.eq) state.eq = normalizeEq(saved.eq);
         if (saved.fx) state.fx = normalizeFx(saved.fx);
@@ -9746,6 +10606,7 @@ registerProcessor('livepad-lofi', LivepadLofi);
       updateDuckAmountUI();
       initEqDeck();
       initFxPad();
+      initEditTrim();
       initPitchDeck();
       initHelp();
       if (window.ResizeObserver) new ResizeObserver(() => fitPadGrid()).observe(document.getElementById('padGrid'));
