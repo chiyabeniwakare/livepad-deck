@@ -697,6 +697,23 @@
       .kbd { display: inline-flex; }
     }
 
+    /* 設定：SEパッドのキーの並び（4×4の小さな図） */
+    .keymap-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 6px 9px;
+      border-radius: 10px; border: 1px solid rgb(var(--n-2a3242)); background: rgb(var(--n-0f1219));
+      transition: border-color .12s ease, background-color .12s ease;
+    }
+    .keymap-btn:hover { border-color: rgb(var(--n-3a4458)); }
+    .keymap-btn.is-on { border-color: rgb(var(--ac-400) / .8); background: rgb(var(--ac-500) / .10); box-shadow: 0 0 0 1px rgb(var(--ac-400) / .35); }
+    .keymap-name { font-size: 10px; font-weight: 800; letter-spacing: .06em; color: rgb(var(--n-94a3b8)); }
+    .keymap-btn.is-on .keymap-name { color: rgb(var(--ac-300)); }
+    .keymap-grid { display: grid; grid-template-columns: repeat(4, 22px); gap: 3px; }
+    .keymap-grid span {
+      height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 3px;
+      border: 1px solid rgb(var(--n-334155)); background: rgb(var(--n-181c26)); color: rgb(var(--n-cbd5e1));
+      font-family: 'JetBrains Mono', monospace; font-size: 8.5px; font-weight: 700;
+    }
+
     /* BGMが空の時の案内と、無効になった操作ボタン */
     .bgm-empty {
       height: 100%;
@@ -1000,6 +1017,9 @@
     .help-btn:hover { color: #fff; border-color: rgb(var(--ac-400) / .7); background: rgb(var(--ac-500) / .12); }
     #deviceShell.is-locked .help-btn { display: none; }
     .help-sheet { max-height: 88vh; }
+    /* 設定：画面より高くなったら中だけスクロール（見出しと × は常に見える） */
+    .settings-sheet { max-height: calc(100dvh - 32px); }
+    .settings-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
     .help-badge {
       width: 20px; height: 20px; border-radius: 50%;
       display: inline-flex; align-items: center; justify-content: center;
@@ -1931,8 +1951,8 @@
 
   <!-- 設定＆データ初期化モーダル -->
   <div id="settingsModalBackdrop" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
-    <div class="bg-[rgb(var(--n-181c26))] border border-[rgb(var(--n-30384b))] rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
-      <div class="px-4 py-3 bg-[rgb(var(--n-14171f))] border-b border-[rgb(var(--n-262c3a))] flex items-center justify-between">
+    <div class="settings-sheet bg-[rgb(var(--n-181c26))] border border-[rgb(var(--n-30384b))] rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col">
+      <div class="px-4 py-3 bg-[rgb(var(--n-14171f))] border-b border-[rgb(var(--n-262c3a))] flex items-center justify-between shrink-0">
         <h3 class="text-sm font-bold text-slate-100">設定・データ管理</h3>
         <button id="btnSettingsClose" type="button" class="text-slate-400 hover:text-slate-50 p-1 rounded-lg hover:bg-slate-800">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
@@ -1941,7 +1961,7 @@
           </svg>
         </button>
       </div>
-      <div class="p-4 space-y-4">
+      <div class="settings-body p-4 space-y-4">
         <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 space-y-2">
           <div class="text-xs font-bold text-accent-300">テーマカラー</div>
           <div id="themeGroup" class="grid grid-cols-6 gap-1"></div>
@@ -1955,6 +1975,12 @@
             テーマカラーの色味を背景にも少し乗せる
           </label>
           <p class="text-[10px] text-slate-500 leading-relaxed">AUTO：iPhone・iPad・PCのダーク／ライトの設定に合わせて自動で切り替えます</p>
+        </div>
+
+        <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 space-y-2">
+          <div class="text-xs font-bold text-accent-300">キーボード（SEパッド）</div>
+          <div id="keyMapGroup" class="grid grid-cols-2 gap-2"></div>
+          <p class="text-[10px] text-slate-500 leading-relaxed">PCのキーボードでSEパッドを鳴らすときのキーの並び。NUMPAD はテンキー用です（テンキーのないPCは、USBのテンキーをつなぐと使えます）。この設定は端末ごとに保存されます</p>
         </div>
 
         <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 space-y-2">
@@ -2276,6 +2302,7 @@
       panels: createDefaultPanels(),   // パネルの浮遊状態と位置
       layout: createDefaultLayout(),   // 広い画面のDECKの並び（タイル型）と保存したレイアウト
       themeColor: DEFAULT_THEME,
+      keyMap: 'standard',    // SEパッドを鳴らすキーの並び：standard / numpad（端末ごと）
       tone: 'dark',          // 背景の色調：dark / dim / navy / warm / light / auto
       toneTint: false,       // テーマカラーの色味を背景にも少し乗せる
       banks: createDefaultBanks(),
@@ -2347,6 +2374,7 @@
             themeColor: state.themeColor,
             tone: state.tone,
             toneTint: state.toneTint,
+            keyMap: state.keyMap,
             duckAmount: state.duckAmount,
             eq: state.eq,
             fx: state.fx,
@@ -4151,11 +4179,12 @@ registerProcessor('livepad-lofi', LivepadLofi);
       },
       seKeys() {
         let b = '';
-        ['1234', 'QWER', 'ASDF', 'ZXCV'].forEach((row, r) => [...row].forEach((k, c) => {
-          const x = 8 + c * 36;
-          const y = 4 + r * 22;
+        // 今のキーの並び（設定の STANDARD／NUMPAD）で描く
+        keyMap().labels.forEach((k, i) => {
+          const x = 8 + (i % 4) * 36;
+          const y = 4 + Math.floor(i / 4) * 22;
           b += HF.r(x, y, 32, 18, 'hf-box', 4) + HF.t(x + 16, y + 9, k, 'hf-t', 'middle');
-        }));
+        });
         b += HF.t(162, 13, 'タップ：鳴らす', 'hf-tj');
         b += HF.t(162, 35, 'PC：キーでも鳴らせる', 'hf-tj');
         b += HF.t(162, 57, '✎：音源・名前・モード', 'hf-tj');
@@ -4470,7 +4499,7 @@ registerProcessor('livepad-lofi', LivepadLofi);
         title: 'SE DECK',
         intro: '効果音（SE）を割り当てて鳴らすパッドです。',
         sections: [
-          { name: 'PADS', fig: 'seKeys', text: 'パッドをタップすると鳴ります。PCではキーボードでも鳴らせます（iPhone 4×2 のときは上の2段）。右上の ✎ で音源・名前・再生モード・色・音量を変えられ、音声ファイルをパッドへドラッグ＆ドロップしても登録できます。' },
+          { name: 'PADS', fig: 'seKeys', text: 'パッドをタップすると鳴ります。PCではキーボードでも鳴らせます（iPhone 4×2 のときは上の2段）。キーの並びは ⚙ の設定で <b>STANDARD</b>（1234 / QWER / ASDF / ZXCV）と <b>NUMPAD</b>（テンキー）を切り替えられ、各パッドの左下に担当のキーが出ます。右上の ✎ で音源・名前・再生モード・色・音量を変えられ、音声ファイルをパッドへドラッグ＆ドロップしても登録できます。' },
           { name: 'PLAY MODE', fig: 'playMode', text: [
             '<b>1-SHOT</b>：押すと最後まで鳴る',
             '<b>GATE</b>：押している間だけ鳴る',
@@ -7058,7 +7087,7 @@ registerProcessor('livepad-lofi', LivepadLofi);
           </div>
 
           <div class="pad-bottom relative z-10 flex items-center justify-between text-[9px] font-mono-num text-slate-400">
-            <span class="flex items-center"><span class="kbd" title="キーボードの ${KEY_LABELS[padIndex]} キーで鳴らせます">${KEY_LABELS[padIndex]}</span><span class="pad-vol whitespace-nowrap">${isEmpty ? '' : `VOL ${pad.volume}%${pad.pitch ? ` P${fmtSemitone(pad.pitch)}` : ''}`}</span></span>
+            <span class="flex items-center"><span class="kbd" title="キーボードの ${keyMap().labels[padIndex]} キーで鳴らせます">${keyMap().labels[padIndex]}</span><span class="pad-vol whitespace-nowrap">${isEmpty ? '' : `VOL ${pad.volume}%${pad.pitch ? ` P${fmtSemitone(pad.pitch)}` : ''}`}</span></span>
             <span class="pad-status-dot flex items-center gap-1 ${isPlaying ? 'text-slate-50 font-bold' : 'opacity-40'}">
               ${!isEmpty ? `<span class="w-1.5 h-1.5 rounded-full" style="background-color: ${isPlaying ? palette.hex : '#64748b'};"></span>${isPlaying ? 'PLAY' : 'IDLE'}` : ''}
             </span>
@@ -7266,10 +7295,51 @@ registerProcessor('livepad-lofi', LivepadLofi);
     }
 
     // =========================================================================
-    // PC：キーボードの割り当て（パッド16個＝ 1234 / QWER / ASDF / ZXCV）
+    // PC：キーボードの割り当て（パッド16個。⚙の設定で切り替え、端末ごとに保存）
+    //   STANDARD：1234 / QWER / ASDF / ZXCV
+    //   NUMPAD  ：テンキー。数字の3×3を画面の左上に合わせ、右の列は − ＋ Enter、下の段に 0 . / *
+    //   キーの文字ではなく場所（code）で判定するので、NumLock の状態に関係なく同じキーで鳴る
     // =========================================================================
-    const KEY_CODES = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'KeyQ', 'KeyW', 'KeyE', 'KeyR', 'KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyZ', 'KeyX', 'KeyC', 'KeyV'];
-    const KEY_LABELS = ['1', '2', '3', '4', 'Q', 'W', 'E', 'R', 'A', 'S', 'D', 'F', 'Z', 'X', 'C', 'V'];
+    const KEY_MAPS = {
+      standard: {
+        label: 'STANDARD',
+        codes: ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'KeyQ', 'KeyW', 'KeyE', 'KeyR', 'KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyZ', 'KeyX', 'KeyC', 'KeyV'],
+        labels: ['1', '2', '3', '4', 'Q', 'W', 'E', 'R', 'A', 'S', 'D', 'F', 'Z', 'X', 'C', 'V']
+      },
+      numpad: {
+        label: 'NUMPAD',
+        codes: ['Numpad7', 'Numpad8', 'Numpad9', 'NumpadSubtract', 'Numpad4', 'Numpad5', 'Numpad6', 'NumpadAdd', 'Numpad1', 'Numpad2', 'Numpad3', 'NumpadEnter', 'Numpad0', 'NumpadDecimal', 'NumpadDivide', 'NumpadMultiply'],
+        labels: ['7', '8', '9', '−', '4', '5', '6', '+', '1', '2', '3', 'Ent', '0', '.', '/', '*']
+      }
+    };
+
+    function keyMap() {
+      return KEY_MAPS[state.keyMap] || KEY_MAPS.standard;
+    }
+
+    /** 設定：キーボードの並びの選択（小さな4×4の図つき） */
+    function renderKeyMapGroup() {
+      const group = document.getElementById('keyMapGroup');
+      if (!group) return;
+      group.innerHTML = '';
+      Object.entries(KEY_MAPS).forEach(([id, m]) => {
+        const sel = id === (KEY_MAPS[state.keyMap] ? state.keyMap : 'standard');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `keymap-btn${sel ? ' is-on' : ''}`;
+        btn.setAttribute('aria-pressed', String(sel));
+        btn.innerHTML = `<span class="keymap-name">${m.label}</span>
+          <span class="keymap-grid">${m.labels.map(l => `<span>${l}</span>`).join('')}</span>`;
+        btn.addEventListener('click', () => {
+          state.keyMap = id;
+          renderKeyMapGroup();
+          renderPads();
+          storage.saveState();
+          showToast(`SEパッドのキー：${m.label}`);
+        });
+        group.appendChild(btn);
+      });
+    }
 
     // =========================================================================
     // DUCK（手動）と、ダッキング中のBGMフェーダー表示
@@ -8821,6 +8891,7 @@ registerProcessor('livepad-lofi', LivepadLofi);
 
       document.getElementById('btnOpenSettings').addEventListener('click', () => {
         renderThemeGroup();
+        renderKeyMapGroup();
         settingsBackdrop.classList.remove('hidden');
         settingsBackdrop.classList.add('flex');
       });
@@ -8925,7 +8996,7 @@ registerProcessor('livepad-lofi', LivepadLofi);
       });
 
       // ---- キーボード（PC） ----
-      // パッド：1234 / QWER / ASDF / ZXCV、Space：BGM再生/一時停止、Esc：PANIC STOP（画面が開いている時は閉じる）
+      // パッド：設定のキーの並び（STANDARD／NUMPAD）、Space：BGM再生/一時停止、Esc：PANIC STOP（画面が開いている時は閉じる）
       const heldKeys = new Map();
       const isOpen = (id) => !$(id).classList.contains('hidden');
       const overlayOpen = () =>
@@ -8969,7 +9040,7 @@ registerProcessor('livepad-lofi', LivepadLofi);
           return;
         }
 
-        const idx = KEY_CODES.indexOf(e.code);
+        const idx = keyMap().codes.indexOf(e.code);
         const padCount = state.layoutMode === 'iphone' ? 8 : 16;
         if (idx < 0 || idx >= padCount) return;
         e.preventDefault();
@@ -9011,6 +9082,7 @@ registerProcessor('livepad-lofi', LivepadLofi);
         if (saved.themeColor && THEMES[saved.themeColor]) state.themeColor = saved.themeColor;
         if (TONES.some(t => t.id === saved.tone)) state.tone = saved.tone;
         if (typeof saved.toneTint === 'boolean') state.toneTint = saved.toneTint;
+        if (KEY_MAPS[saved.keyMap]) state.keyMap = saved.keyMap;
         if (typeof saved.duckAmount === 'number') state.duckAmount = saved.duckAmount;
         if (saved.eq) state.eq = normalizeEq(saved.eq);
         if (saved.fx) state.fx = normalizeFx(saved.fx);
