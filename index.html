@@ -433,7 +433,7 @@
     .mixer-actions {
       grid-column: 5;
       grid-row: 1 / span 3;
-      align-self: center;
+      align-self: end;   /* PANIC STOP・DUCK は下に寄せる */
       width: 100%;
       display: flex;
       flex-direction: column;
@@ -963,6 +963,8 @@
       #panel-fx .fx-display { width: 92px; font-size: 12px; letter-spacing: .04em; }
       #panel-fx .fx-btn-num { display: none; }
       #panel-fx .fx-side-btn { width: 50px; font-size: 9px; }
+      #panel-fx .fx-side { width: 50px; }
+      #panel-fx .fx-side .fx-side-btn { width: 100%; }
     }
 
     /* 狭い画面（iPhone横向きなど）：左右の列それぞれ、タブで選んだパネルを1つだけ大きく表示 */
@@ -1116,6 +1118,12 @@
     #panel-fx:not(.is-floating) { width: 100%; max-width: 1240px; margin: 0 auto; }
 
     .fx-target { display: flex; gap: 2px; padding: 2px; border-radius: 7px; background: rgb(var(--n-0b0d11)); border: 1px solid rgb(var(--n-262c3a)); }
+    /* FX PADの右の列：上に BGM／ALL／SE、下に HOLD・TEMPO（間は空ける） */
+    .fx-side { width: 58px; flex: none; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+    .fx-side-gap { flex: 1 1 0; min-height: 0; }
+    .fx-target.fx-target-col { flex-direction: column; flex: none; border-radius: 10px; padding: 3px; gap: 3px; }
+    .fx-target.fx-target-col button { width: 100%; height: 26px; padding: 0; border-radius: 7px; font-size: 10px; }
+    .fx-side .fx-side-btn { width: 100%; flex: 0 1 58px; min-height: 34px; max-height: 58px; }
     .fx-target button {
       font-size: 9px; font-weight: 800; letter-spacing: .04em; padding: 3px 8px; border-radius: 5px;
       color: rgb(var(--n-64748b)); transition: color .12s ease, background-color .12s ease, box-shadow .12s ease;
@@ -1772,11 +1780,6 @@
                   <span class="text-[11px] font-bold tracking-wider text-slate-200 whitespace-nowrap">FX PAD</span>
                   <button type="button" class="help-btn" data-help="fx" title="FX PADの使い方" aria-label="FX PADの使い方">?</button>
                 </div>
-                <div class="fx-target" role="group" aria-label="選んでいるFXをかける対象（FXごと）">
-                  <button type="button" data-fx-target="bgm" title="BGMだけにかける（SEはそのままはっきり聞こえる）">BGM</button>
-                  <button type="button" data-fx-target="all" title="BGMとSEの両方にかける">ALL</button>
-                  <button type="button" data-fx-target="se" title="SEだけにかける（BGMはそのまま）">SE</button>
-                </div>
               </div>
               <div class="flex items-center gap-1.5 shrink-0">
                 <span class="hidden lg:inline text-[10px] text-slate-500">TOUCH TO APPLY</span>
@@ -1807,7 +1810,14 @@
                 <span id="fxAxisX1" class="fx-axis fx-axis-x1"></span>
                 <span class="fx-pad-hint">TOUCH &amp; DRAG</span>
               </div>
-              <div class="flex flex-col gap-2 shrink-0">
+              <!-- 右の列：上に BGM／ALL／SE（縦並び）、下に HOLD・TEMPO -->
+              <div class="fx-side">
+                <div class="fx-target fx-target-col" role="group" aria-label="選んでいるFXをかける対象（FXごと）">
+                  <button type="button" data-fx-target="bgm" title="BGMだけにかける（SEはそのままはっきり聞こえる）">BGM</button>
+                  <button type="button" data-fx-target="all" title="BGMとSEの両方にかける">ALL</button>
+                  <button type="button" data-fx-target="se" title="SEだけにかける（BGMはそのまま）">SE</button>
+                </div>
+                <div class="fx-side-gap"></div>
                 <button id="btnFxHold" type="button" class="fx-side-btn" aria-pressed="false" title="ON：指を離してもエフェクトをかけたままにする。固定したまま別のFXに切り替えると重ねてかけられる（もう一度押すと全部外れる）">HOLD</button>
                 <button id="btnFxTempo" type="button" class="fx-side-btn" title="曲に合わせて4回ほどタップすると、ECHO・GATE・ROLLの間隔が曲のテンポに揃います">
                   TEMPO<span class="flex items-center gap-1"><span id="fxTempoLed" class="fx-tempo-led"></span><span id="fxBpm" class="fx-bpm">120</span></span>
