@@ -1,0 +1,8 @@
+{
+  "name": "livepad-deck-tools",
+  "private": true,
+  "description": "LIVEPAD DECK のビルド用（Tailwind CSS を先に作って index.html に埋め込む）",
+  "devDependencies": {
+    "tailwindcss": "3.4.19"
+  }
+}
