@@ -1122,8 +1122,18 @@
     .fx-side { width: 58px; flex: none; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
     .fx-side-gap { flex: 1 1 0; min-height: 0; }
     .fx-target.fx-target-col { flex-direction: column; flex: none; border-radius: 10px; padding: 3px; gap: 3px; }
-    .fx-target.fx-target-col button { width: 100%; height: 26px; padding: 0; border-radius: 7px; font-size: 10px; }
-    .fx-side .fx-side-btn { width: 100%; flex: 0 1 58px; min-height: 34px; max-height: 58px; }
+    .fx-target.fx-target-col button { width: 100%; height: 22px; padding: 0; border-radius: 7px; font-size: 10px; }
+    /* LINK：ONの間は BGM／ALL／SE が全FX共通 */
+    .fx-target.fx-target-col .fx-link-btn {
+      height: 17px; display: flex; align-items: center; justify-content: center; gap: 3px;
+      font-size: 8.5px; letter-spacing: .08em; color: rgb(var(--n-64748b));
+      border: 1px dashed rgb(var(--n-2f3849));
+    }
+    .fx-target.fx-target-col .fx-link-btn:hover { color: rgb(var(--n-cbd5e1)); }
+    .fx-target.fx-target-col .fx-link-btn.is-on { color: rgb(var(--n-0b0d11)); background: rgb(var(--ac-400)); border: 1px solid rgb(var(--ac-300)); box-shadow: 0 0 10px rgb(var(--ac-500) / .45); }
+    .fx-target.fx-target-col.is-linked { border-color: rgb(var(--ac-500) / .6); box-shadow: 0 0 0 1px rgb(var(--ac-500) / .2); }
+    html.tone-light .fx-target.fx-target-col .fx-link-btn.is-on { color: #fff; }
+    .fx-side .fx-side-btn { width: 100%; flex: 0 1 58px; min-height: 28px; max-height: 58px; }
     .fx-target button {
       font-size: 9px; font-weight: 800; letter-spacing: .04em; padding: 3px 8px; border-radius: 5px;
       color: rgb(var(--n-64748b)); transition: color .12s ease, background-color .12s ease, box-shadow .12s ease;
@@ -1812,7 +1822,8 @@
               </div>
               <!-- 右の列：上に BGM／ALL／SE（縦並び）、下に HOLD・TEMPO -->
               <div class="fx-side">
-                <div class="fx-target fx-target-col" role="group" aria-label="選んでいるFXをかける対象（FXごと）">
+                <div id="fxTargetGroup" class="fx-target fx-target-col" role="group" aria-label="選んでいるFXをかける対象">
+                  <button id="btnFxLink" type="button" class="fx-link-btn" aria-pressed="false" title="LINK：ONの間は BGM／ALL／SE が全部のFXで共通になります（OFFでFXごと）"><svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>LINK</button>
                   <button type="button" data-fx-target="bgm" title="BGMだけにかける（SEはそのままはっきり聞こえる）">BGM</button>
                   <button type="button" data-fx-target="all" title="BGMとSEの両方にかける">ALL</button>
                   <button type="button" data-fx-target="se" title="SEだけにかける（BGMはそのまま）">SE</button>
@@ -2979,6 +2990,7 @@
       return {
         effect: 'filter', depth: 0.85, bpm: 120,
         order: ids.slice(),                                        // ボタンの並び
+        link: false,                                               // LINK：ONの間は BGM／ALL／SE を全FX共通にする
         holds: Object.fromEntries(ids.map(k => [k, false])),      // HOLD（FXごと）
         targets: Object.fromEntries(ids.map(k => [k, 'bgm']))     // かける対象（FXごと）
       };
@@ -2997,6 +3009,7 @@
           FX_DEFAULT_SEQ.forEach(k => { if (!seen.has(k)) o.push(k); });   // 新しく増えたFXは後ろに足す
           return o;
         })(),
+        link: !!f.link,
         holds: Object.fromEntries(FX_ORDER.map(k => [k, !!(f.holds && f.holds[k])])),
         targets: Object.fromEntries(FX_ORDER.map(k => {
           const t = f.targets && f.targets[k];
@@ -3519,11 +3532,16 @@ registerProcessor('livepad-lofi', LivepadLofi);
         btn.classList.toggle('is-active', on);
         btn.setAttribute('aria-pressed', String(on));
       });
+      // LINK中は全FX共通なので、FXボタンの ALL・SE の札は出さない
+      const link = document.getElementById('btnFxLink');
+      link.classList.toggle('is-on', f.link);
+      link.setAttribute('aria-pressed', String(f.link));
+      document.getElementById('fxTargetGroup').classList.toggle('is-linked', f.link);
       document.querySelectorAll('.fx-btn').forEach(btn => {
         const t = f.targets[btn.dataset.fx];
         const tag = btn.querySelector('.fx-btn-tgt');
         tag.textContent = t === 'all' ? 'ALL' : 'SE';
-        tag.classList.toggle('hidden', t === 'bgm');
+        tag.classList.toggle('hidden', t === 'bgm' || f.link);
       });
       const hold = document.getElementById('btnFxHold');
       // HOLDボタンは、今選んでいるFXのHOLDの状態を表示
@@ -3908,7 +3926,7 @@ registerProcessor('livepad-lofi', LivepadLofi);
             <span class="fxo-desc">${info.desc}</span>
           </button>
           ${f.holds[k] ? '<span class="fxo-tag hold">HOLD</span>' : ''}
-          ${t !== 'bgm' ? `<span class="fxo-tag tgt">${t === 'all' ? 'ALL' : 'SE'}</span>` : ''}
+          ${t !== 'bgm' && !f.link ? `<span class="fxo-tag tgt">${t === 'all' ? 'ALL' : 'SE'}</span>` : ''}
           <span class="fxo-handle" title="ドラッグで並び替え" aria-label="${info.label}をドラッグで並び替え">${GRIP_SVG}</span>
         </div>`;
       }).join('');
@@ -4077,15 +4095,32 @@ registerProcessor('livepad-lofi', LivepadLofi);
       initFxOrderList();
       requestAnimationFrame(() => fxScrollToSelected(false));
 
-      // BGM / ALL / SE：今選んでいるFXをどこにかけるか（FXごと）
+      // BGM / ALL / SE：今選んでいるFXをどこにかけるか（FXごと）。LINK中は全FXまとめて
+      const TARGET_NAME = { bgm: 'BGM', all: 'ALL', se: 'SE' };
+      const setAllTargets = (t) => { FX_ORDER.forEach(k => { state.fx.targets[k] = t; }); };
       document.querySelectorAll('[data-fx-target]').forEach(btn => {
         btn.addEventListener('click', () => {
-          const t = btn.dataset.fxTarget;
-          state.fx.targets[state.fx.effect] = FX_TARGETS.includes(t) ? t : 'bgm';
+          const t = FX_TARGETS.includes(btn.dataset.fxTarget) ? btn.dataset.fxTarget : 'bgm';
+          if (state.fx.link) setAllTargets(t);
+          else state.fx.targets[state.fx.effect] = t;
           audioEngine.fxApplyRouting(0.03);
           renderFxPad();
           storage.saveState();
         });
+      });
+      // LINK：ONにした瞬間、今選んでいるFXの設定を全FXにそろえる。OFFにしても設定はそのまま（ここからFXごとに変えられる）
+      document.getElementById('btnFxLink').addEventListener('click', () => {
+        state.fx.link = !state.fx.link;
+        if (state.fx.link) {
+          const t = state.fx.targets[state.fx.effect];
+          setAllTargets(t);
+          audioEngine.fxApplyRouting(0.03);
+          showToast(`LINK ON：全部のFXを ${TARGET_NAME[t]} にそろえました`);
+        } else {
+          showToast('LINK OFF：BGM／ALL／SE はFXごとに選べます');
+        }
+        renderFxPad();
+        storage.saveState();
       });
 
       // HOLD：指を離してもかけたまま。OFFにすると固定中のものが全部外れる
@@ -4780,7 +4815,8 @@ registerProcessor('livepad-lofi', LivepadLofi);
           { name: 'DEPTH・TEMPO・BGM / ALL / SE', text: [
             '<b>FX DEPTH</b>：かかり具合（元の音とエフェクト音の混ぜ具合）。重ねたもの全部に共通',
             '<b>TEMPO</b>：曲に合わせて4回ほどタップすると、ECHO・GATE・ROLLの間隔が曲に揃います（ランプが拍に合わせて点滅）',
-            '<b>BGM / ALL / SE</b>：選んでいるFXを、BGMだけ・全体・SEだけのどれにかけるか。HOLDと同じくFXごとに選べ、BGM以外にしたFXはボタンに ALL・SE の札が付きます'
+            '<b>BGM / ALL / SE</b>：選んでいるFXを、BGMだけ・全体・SEだけのどれにかけるか。HOLDと同じくFXごとに選べ、BGM以外にしたFXはボタンに ALL・SE の札が付きます',
+            '<b>LINK</b>（BGM／ALL／SE の上）：ONの間は BGM／ALL／SE が<b>全部のFXで共通</b>になり、押すと12個まとめて変わります。ONにした瞬間、今選んでいるFXの設定に全部そろいます。OFFにしても設定はそのままで、そこからFXごとに変えられます'
           ] }
         ]
       }
