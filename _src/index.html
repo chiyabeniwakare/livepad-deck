@@ -752,6 +752,40 @@
       .kbd { display: inline-flex; }
     }
 
+    /* OBS連携 */
+    .obs-pill {
+      display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 9px; border-radius: 8px;
+      font-size: 10px; font-weight: 800; letter-spacing: .08em; color: rgb(var(--n-94a3b8));
+      background: rgb(var(--n-1a1f2b)); border: 1px solid rgb(var(--n-2c3445));
+    }
+    .obs-pill-dot { width: 7px; height: 7px; border-radius: 50%; background: rgb(var(--n-64748b)); }
+    .obs-pill.is-connected .obs-pill-dot, .obs-status.is-connected::before { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+    .obs-pill.is-connecting .obs-pill-dot, .obs-status.is-connecting::before { background: #eab308; }
+    .obs-pill.is-error .obs-pill-dot, .obs-status.is-error::before { background: #ef4444; }
+    .obs-pill.is-live { color: #fecaca; border-color: rgba(239,68,68,.6); }
+    .obs-status { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 800; letter-spacing: .06em; color: rgb(var(--n-94a3b8)); }
+    .obs-status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: rgb(var(--n-64748b)); }
+    .obs-row { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .obs-check { width: 15px; height: 15px; accent-color: rgb(var(--ac-400)); flex: none; }
+    .obs-input, .edit-obs-input {
+      min-width: 0; padding: 6px 9px; border-radius: 8px; font-size: 12px; color: rgb(var(--n-e2e8f0));
+      background: rgb(var(--n-0d1016)); border: 1px solid rgb(var(--n-2a3242));
+    }
+    .obs-input:focus, .edit-obs-input:focus { outline: none; border-color: rgb(var(--ac-400)); }
+    .obs-btn { padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; color: rgb(var(--ac-200)); background: rgb(var(--ac-500) / .14); border: 1px solid rgb(var(--ac-500) / .45); white-space: nowrap; }
+    .obs-btn:hover { background: rgb(var(--ac-500) / .25); }
+    .obs-btn:disabled { opacity: .45; }
+    .obs-sub { padding-top: 10px; border-top: 1px solid rgb(var(--n-262c3a)); display: flex; flex-direction: column; gap: 8px; }
+    #obsCard.is-off .obs-sub { opacity: .55; }
+    .obs-meter { position: relative; height: 8px; border-radius: 4px; background: rgb(var(--n-0b0d11)); overflow: hidden; }
+    .obs-meter > span { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, #22c55e, #eab308 75%, #ef4444); transition: width .05s linear; }
+    .obs-meter > i { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #f8fafc; box-shadow: 0 0 4px rgba(0,0,0,.8); }
+    .edit-obs { padding-top: 12px; border-top: 1px solid rgb(var(--n-262c3a)); }
+    /* しゃべってBGMが下がっている間、DUCKボタンを光らせる */
+    .duck-pad.is-voice { box-shadow: 0 0 0 2px rgba(34,197,94,.65), 0 0 14px rgba(34,197,94,.35); }
+    /* OBS ACTION があるパッドの札 */
+    .pad-obs-tag { padding: 0 3px; border-radius: 3px; font-size: 7.5px; font-weight: 900; letter-spacing: .04em; color: #0b0d11; background: #a78bfa; }
+
     /* テスト版の目印 */
     .dev-badge { flex: none; padding: 1px 6px; border-radius: 5px; font-size: 10px; font-weight: 900; letter-spacing: .1em; color: #1a1205; background: #fbbf24; box-shadow: 0 0 10px rgba(251,191,36,.45); }
 
@@ -1593,6 +1627,7 @@
         </button>
 
         <!-- 設定ボタン -->
+        <button id="btnObsPill" type="button" class="obs-pill hidden" title="OBS連携（押すと設定を開きます）"><span class="obs-pill-dot"></span>OBS</button>
         <button id="btnOpenSettings" type="button" title="設定・データ管理" class="p-1.5 rounded-lg border border-[rgb(var(--n-2c3445))] bg-[rgb(var(--n-1a1f2b))] hover:bg-[rgb(var(--n-222838))] text-slate-300 hover:text-slate-50 transition-all">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="3"></circle>
@@ -2106,6 +2141,30 @@
           <input id="editPadPitch" type="range" min="-12" max="12" step="1" value="0" class="pro-fader accent-cyan w-full">
           <p class="text-[10px] text-slate-500 mt-1">半音単位（±12で1オクターブ）。音声ファイルは高くすると短く、低くすると長くなります</p>
         </div>
+
+        <!-- OBS ACTION（OBS連携中、パッドを押すとOBSも動かす） -->
+        <div class="edit-obs">
+          <div class="flex items-center justify-between gap-2 mb-1.5">
+            <label class="text-xs font-bold text-slate-400" for="editObsType">OBS ACTION</label>
+            <span id="editObsState" class="text-[10px] text-slate-500"></span>
+          </div>
+          <select id="editObsType" class="edit-obs-input w-full">
+            <option value="none">なし</option>
+            <option value="scene">シーンを切り替える</option>
+            <option value="show">ソースを数秒だけ表示する</option>
+            <option value="toggle">ソースの表示・非表示を切り替える</option>
+          </select>
+          <div id="editObsFields" class="grid grid-cols-2 gap-2 mt-2 hidden">
+            <input id="editObsScene" class="edit-obs-input" list="obsSceneList" placeholder="シーン名" autocomplete="off">
+            <input id="editObsSource" class="edit-obs-input" list="obsSourceList" placeholder="ソース名" autocomplete="off">
+            <label id="editObsSecWrap" class="flex items-center gap-1.5 text-xs text-slate-400">
+              <input id="editObsSec" class="edit-obs-input w-20" type="number" min="0.5" max="60" step="0.5" value="3"> 秒だけ表示
+            </label>
+          </div>
+          <datalist id="obsSceneList"></datalist>
+          <datalist id="obsSourceList"></datalist>
+          <p class="text-[10px] text-slate-500 mt-1">OBSとつないでいるときだけ動きます（設定の「OBS連携」）。シーン名を空にすると、そのとき映しているシーンのソースを動かします</p>
+        </div>
       </div>
 
       <div class="px-4 py-3 bg-[rgb(var(--n-14171f))] border-t border-[rgb(var(--n-262c3a))] flex items-center justify-between shrink-0">
@@ -2162,6 +2221,79 @@
           </div>
           <input id="sliderDuckAmount" type="range" min="30" max="95" step="5" value="80" class="pro-fader accent-cyan w-full" aria-label="DUCKの下げ幅">
           <p class="text-[10px] text-slate-500 leading-relaxed">MIXERのDUCKボタンを押している間、BGMを今の音量の何%にするか（例：BGM 70% で 80% の場合 → 56%）</p>
+        </div>
+
+        <!-- OBS連携（obs-websocket） -->
+        <div id="obsCard" class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 text-xs text-slate-300 space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5">
+              <span class="font-bold text-accent-300">OBS連携</span>
+              <button type="button" class="help-btn" data-help="obs" title="OBS連携の使い方" aria-label="OBS連携の使い方">?</button>
+            </div>
+            <span id="obsStatusBadge" class="obs-status">OFF</span>
+          </div>
+          <label class="obs-row">
+            <input id="obsEnabled" type="checkbox" class="obs-check">
+            <span>OBSにつなぐ（OBSを動かしているPCで使うとき）</span>
+          </label>
+          <div class="grid grid-cols-[1fr_auto] gap-2">
+            <input id="obsUrl" type="text" class="obs-input" placeholder="ws://127.0.0.1:4455" autocomplete="off" spellcheck="false" aria-label="OBSのアドレス">
+            <button id="btnObsConnect" type="button" class="obs-btn">接続</button>
+            <input id="obsPassword" type="password" class="obs-input col-span-2" placeholder="パスワード（OBSの「ツール」→「WebSocketサーバー設定」）" autocomplete="off" aria-label="OBSのパスワード">
+          </div>
+          <p id="obsMessage" class="text-[10px] leading-relaxed text-slate-500"></p>
+
+          <div class="obs-sub">
+            <label class="obs-row font-bold text-slate-200">
+              <input id="obsNpEnabled" type="checkbox" class="obs-check">
+              <span>BGMの曲名をOBSのテキストに出す</span>
+            </label>
+            <div class="grid grid-cols-[1fr_auto] gap-2">
+              <input id="obsNpInput" type="text" class="obs-input" placeholder="テキストソースの名前" autocomplete="off" aria-label="テキストソースの名前">
+              <button id="btnObsNpCreate" type="button" class="obs-btn" title="今映しているシーンに、この名前のテキストソースを作ります">OBSに作る</button>
+              <input id="obsNpFormat" type="text" class="obs-input col-span-2" placeholder="♪ {title}" autocomplete="off" aria-label="表示の形">
+            </div>
+            <p class="text-[10px] text-slate-500 leading-relaxed"><b>{title}</b>＝曲名、<b>{folder}</b>＝フォルダ名。BGMを止めると消えます</p>
+          </div>
+
+          <div class="obs-sub">
+            <label class="obs-row font-bold text-slate-200">
+              <input id="obsVdEnabled" type="checkbox" class="obs-check">
+              <span>しゃべるとBGMを下げる</span>
+            </label>
+            <select id="obsVdInput" class="obs-input w-full" aria-label="マイク（OBSの音声ソース）"></select>
+            <div>
+              <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 mb-1">
+                <span>反応する声の大きさ</span>
+                <span id="obsVdThresholdVal" class="font-mono-num text-accent-300">-35 dB</span>
+              </div>
+              <div class="obs-meter"><span id="obsVdLevel"></span><i id="obsVdMark"></i></div>
+              <input id="obsVdThreshold" type="range" min="-60" max="-5" step="1" value="-35" class="pro-fader accent-cyan w-full mt-1.5">
+            </div>
+            <div>
+              <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 mb-1">
+                <span>しゃべっている間のBGM</span>
+                <span id="obsVdAmountVal" class="font-mono-num text-accent-300">35%</span>
+              </div>
+              <input id="obsVdAmount" type="range" min="5" max="95" step="5" value="35" class="pro-fader accent-cyan w-full">
+            </div>
+            <p class="text-[10px] text-slate-500 leading-relaxed">マイクの音量のバーが線を超えている間、BGMを下げます。しゃべり終わって少しすると戻ります</p>
+          </div>
+
+          <div class="obs-sub">
+            <div class="font-bold text-slate-200">配信の開始・終了</div>
+            <label class="grid grid-cols-[auto_1fr] items-center gap-2">
+              <span class="text-slate-400">配信を始めたら</span>
+              <select id="obsOnStart" class="obs-input"></select>
+            </label>
+            <label class="grid grid-cols-[auto_1fr] items-center gap-2">
+              <span class="text-slate-400">配信を止めたら</span>
+              <select id="obsOnStop" class="obs-input">
+                <option value="none">何もしない</option>
+                <option value="fade">BGMをフェードアウトして止める</option>
+              </select>
+            </label>
+          </div>
         </div>
 
         <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 text-xs text-slate-300 space-y-1">
@@ -2520,6 +2652,47 @@
       return [];   // BGMは「+ BGM追加」で登録した音声ファイルのみ（内蔵シンセBGMは廃止）
     }
 
+    // OBS連携（obs-websocket 5）の設定。OBSはPCごとなので、この設定は同期しない（端末ごと）
+    function createDefaultObs() {
+      return {
+        enabled: false,
+        url: 'ws://127.0.0.1:4455',
+        password: '',
+        nowPlaying: { enabled: true, inputName: 'LIVEPAD Now Playing', format: '♪ {title}' },
+        voiceDuck: { enabled: false, inputName: '', thresholdDb: -35, amount: 0.35 },
+        stream: { onStart: 'none', onStop: 'none' }   // onStart：none / resume / folder:<id>、onStop：none / fade
+      };
+    }
+
+    function normalizeObs(o) {
+      const d = createDefaultObs();
+      const x = o && typeof o === 'object' ? o : {};
+      const np = x.nowPlaying || {};
+      const vd = x.voiceDuck || {};
+      const st = x.stream || {};
+      const num = (v, lo, hi, def) => (typeof v === 'number' && isFinite(v) ? Math.max(lo, Math.min(hi, v)) : def);
+      return {
+        enabled: !!x.enabled,
+        url: typeof x.url === 'string' && x.url.trim() ? x.url.trim() : d.url,
+        password: typeof x.password === 'string' ? x.password : '',
+        nowPlaying: {
+          enabled: np.enabled !== false,
+          inputName: typeof np.inputName === 'string' ? np.inputName : d.nowPlaying.inputName,
+          format: typeof np.format === 'string' && np.format ? np.format : d.nowPlaying.format
+        },
+        voiceDuck: {
+          enabled: !!vd.enabled,
+          inputName: typeof vd.inputName === 'string' ? vd.inputName : '',
+          thresholdDb: num(vd.thresholdDb, -60, -5, d.voiceDuck.thresholdDb),
+          amount: num(vd.amount, 0.05, 0.95, d.voiceDuck.amount)
+        },
+        stream: {
+          onStart: typeof st.onStart === 'string' ? st.onStart : 'none',
+          onStop: st.onStop === 'fade' ? 'fade' : 'none'
+        }
+      };
+    }
+
     // BGMのフォルダ。1曲は1つのフォルダに入る（folderId）。UNSORTED は消せない最初のフォルダ
     const BGM_UNSORTED = 'unsorted';
     function createDefaultBgmFolders() {
@@ -2543,6 +2716,7 @@
       themeColor: DEFAULT_THEME,
       keyMap: 'standard',    // SEパッドを鳴らすキーの並び：standard / numpad（端末ごと）
       recSource: 'mic',      // REC で録る音：mic / resample（端末ごと）
+      obs: createDefaultObs(),   // OBS連携（端末ごと）
       tone: 'dark',          // 背景の色調：dark / dim / navy / warm / light / auto
       toneTint: false,       // テーマカラーの色味を背景にも少し乗せる
       banks: createDefaultBanks(),
@@ -2618,6 +2792,7 @@
             toneTint: state.toneTint,
             keyMap: state.keyMap,
             recSource: state.recSource,
+            obs: state.obs,
             duckAmount: state.duckAmount,
             eq: state.eq,
             fx: state.fx,
@@ -4857,6 +5032,35 @@ registerProcessor('livepad-rec', LivepadRec);
     };
 
     const HELP_DOCS = {
+      obs: {
+        title: 'OBS連携',
+        intro: 'OBS Studio（28以降）とつないで、曲名を配信画面に出したり、パッドでOBSを動かしたりできます。LIVEPAD DECK は、OBSを動かしているPCの Chrome か Edge で開いてください（iPhone・iPadからはつなげません）。',
+        sections: [
+          { name: 'つなぎ方', text: [
+            'OBSのメニューの<b>「ツール」→「WebSocketサーバー設定」</b>を開き、<b>「WebSocketサーバーを有効にする」</b>にチェックを入れます',
+            '同じ画面の<b>「接続情報を表示」</b>でパスワードをコピーし、この設定の「パスワード」に貼り付けて<b>「接続」</b>を押します。アドレスはそのまま（ws://127.0.0.1:4455）で大丈夫です',
+            'Chromeが「ローカルネットワーク（このパソコンの中のアプリ）へのアクセス」の確認を出したら<b>「許可」</b>を押します',
+            '右上に <b>OBS</b> と出て、緑の点が付けばつながっています（配信中は OBS LIVE）。OBSを閉じると自動で切れ、OBSを開くと5秒ほどで自動でつなぎ直します',
+            'パスワードはこの端末の中にだけ保存し、Googleドライブには同期しません'
+          ] },
+          { name: '曲名を出す', text: [
+            '「OBSに作る」を押すと、OBSで今映しているシーンに「LIVEPAD Now Playing」というテキストソースができます。場所・大きさ・文字の色はOBSで自由に変えてください',
+            'BGMが変わるたびに「♪ 曲名」に書き換わり、BGMを止めると消えます。表示の形は <b>{title}</b>（曲名）と <b>{folder}</b>（フォルダ名）を使って変えられます'
+          ] },
+          { name: 'しゃべるとBGMを下げる', text: [
+            'マイクにOBSの音声ソース（マイク）を選びます。しゃべってバーが白い線を超えると、BGMを「しゃべっている間のBGM」の大きさまで下げ、黙って少しすると戻ります',
+            '息やキーボードの音で下がってしまうときは、線を右（大きい声だけに反応）へ。しゃべっても下がらないときは左へ動かします',
+            '下がっている間は MIXER の DUCK ボタンが緑に光ります'
+          ] },
+          { name: 'パッドでOBSを動かす', text: [
+            'パッドの ✎（編集画面）の一番下の <b>OBS ACTION</b> で、パッドを押したときにOBSを動かせます（パッドに OBS の札が付きます）',
+            '<b>シーンを切り替える</b>：例）「ED」パッドで、音を鳴らしながらエンディングのシーンへ',
+            '<b>ソースを数秒だけ表示する</b>：例）「拍手」パッドで、拍手の画像を3秒だけ出す（ソースはOBSで非表示にしておく）',
+            '<b>ソースの表示・非表示を切り替える</b>：押すたびに表示・非表示'
+          ] },
+          { name: '配信の開始・終了', text: 'OBSで配信を始めたときにBGMを再生する（今の曲から／フォルダの最初から）、配信を止めたときにBGMをフェードアウトする、を選べます。' }
+        ]
+      },
       bgm: {
         title: 'BGM DECK',
         intro: '配信のBGMを並べて再生するデッキです。',
@@ -5690,10 +5894,14 @@ registerProcessor('livepad-rec', LivepadRec);
           this.recDuckGain = this.ctx.createGain();
           this.recDuckGain.gain.value = 1.0;
           this.bgmManualGain.connect(this.recDuckGain);
+          // OBS連携：しゃべっている間だけBGMを下げるゲイン
+          this.voiceDuckGain = this.ctx.createGain();
+          this.voiceDuckGain.gain.value = 1.0;
+          this.recDuckGain.connect(this.voiceDuckGain);
           // BGM専用EQ（手動DUCKの後、BGMフェーダーの手前）。SEはここを通らない
           this.eqNodes = buildEqNodes(this.ctx);
           const eqChain = EQ_CHAIN.map(c => this.eqNodes[c.key]);
-          this.recDuckGain.connect(eqChain[0]);
+          this.voiceDuckGain.connect(eqChain[0]);
           for (let i = 0; i < eqChain.length - 1; i++) eqChain[i].connect(eqChain[i + 1]);
           // KEY（PITCH DECK）：速さはそのままで音程だけ変える段。0のときは素通り（Workletの読み込み後につなぐ）
           const kg = (v) => { const n = this.ctx.createGain(); n.gain.value = v; return n; };
@@ -6245,6 +6453,13 @@ registerProcessor('livepad-rec', LivepadRec);
       setRecDuck(on) {
         if (!this.recDuckGain) return;
         this.recDuckGain.gain.setTargetAtTime(on ? 0.15 : 1, this.ctx.currentTime, on ? 0.05 : 0.15);
+      }
+
+      /** OBS連携：しゃべっている間はBGMを下げる（下げるのは速く、戻すのはゆっくり） */
+      setVoiceDuck(on) {
+        if (!this.voiceDuckGain) return;
+        const amount = state.obs.voiceDuck.amount;
+        this.voiceDuckGain.gain.setTargetAtTime(on ? amount : 1, this.ctx.currentTime, on ? 0.06 : 0.35);
       }
 
       /** PANIC STOP：全部外し、エコー・リバーブの残響も止める */
@@ -7675,6 +7890,7 @@ registerProcessor('livepad-rec', LivepadRec);
     function updateBgmUI() {
       const track = state.bgmList[state.bgm.trackIndex];
       const playing = state.bgm.isPlaying;
+      obsSyncNowPlaying();   // 曲名が変わったときだけOBSのテキストを書き換える
 
       $('iconBgmPlay').classList.toggle('hidden', playing);
       $('iconBgmPause').classList.toggle('hidden', !playing);
@@ -7868,6 +8084,7 @@ registerProcessor('livepad-rec', LivepadRec);
             <div class="pad-badges flex items-center gap-1">
               ${!isEmpty ? `<span class="whitespace-nowrap px-1.5 py-0.5 rounded text-[9px] font-mono-num font-bold border ${modeBadgeColor}">${pad.mode}</span>` : ''}
               ${sourceBadgeHtml}
+              ${padHasObs(pad) ? `<span class="pad-obs-tag" title="OBS ACTION：${escapeHtml(pad.obs.type === 'scene' ? `シーン「${pad.obs.scene}」へ` : `ソース「${pad.obs.source}」`)}">OBS</span>` : ''}
             </div>
             ${
               !state.perfLock
@@ -7926,6 +8143,7 @@ registerProcessor('livepad-rec', LivepadRec);
           }
           el.classList.add('is-pressed');
           audioEngine.triggerPadDown(pad);
+          if (pad.sourceType !== 'empty') obsRunPadAction(pad);   // OBS ACTION（OBS連携中だけ）
         });
 
         const onRelease = () => {
@@ -7974,6 +8192,556 @@ registerProcessor('livepad-rec', LivepadRec);
         console.error(err);
         showToast('ファイルの保存に失敗しました');
       }
+    }
+
+    // =========================================================================
+    // OBS連携（OBS Studio 28 以降に入っている obs-websocket 5 につなぐ）
+    //   A：BGMの曲名をテキストソースに出す
+    //   B：マイクの音量（InputVolumeMeters）を見て、しゃべっている間BGMを下げる
+    //   C：パッドを押すとシーンを切り替える／ソースを表示する
+    //   D：配信の開始・終了に合わせてBGMを再生・停止
+    // =========================================================================
+    const OBS_EV = { Scenes: 1 << 2, Inputs: 1 << 3, Outputs: 1 << 6, SceneItems: 1 << 7, InputVolumeMeters: 1 << 16 };
+    const obs = {
+      ws: null,
+      status: 'off',        // off / connecting / connected / error / auth
+      message: '',
+      reqId: 0,
+      pending: new Map(),
+      retryTimer: null,
+      inputs: [],           // [{ inputName, inputKind }]
+      scenes: [],           // シーン名
+      lastNowPlaying: null,
+      npError: '',
+      streaming: false,
+      voice: { db: -100, on: false, releaseTimer: null, lastUi: 0 },
+      showTimers: new Map()
+    };
+
+    async function sha256Base64(text) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+      let bin = '';
+      new Uint8Array(buf).forEach(b => { bin += String.fromCharCode(b); });
+      return btoa(bin);
+    }
+
+    function obsEventMask() {
+      let m = OBS_EV.Scenes | OBS_EV.Inputs | OBS_EV.Outputs | OBS_EV.SceneItems;
+      if (state.obs.voiceDuck.enabled) m |= OBS_EV.InputVolumeMeters;   // 音量の知らせは多いので、使うときだけ受け取る
+      return m;
+    }
+
+    function setObsStatus(status, message = '') {
+      obs.status = status;
+      obs.message = message;
+      renderObsStatus();
+    }
+
+    function obsConnected() {
+      return obs.status === 'connected' && obs.ws && obs.ws.readyState === 1;
+    }
+
+    /** OBSにつなぐ（つながらなければ5秒ごとにやり直す。パスワード違いのときはやり直さない） */
+    function obsConnect() {
+      obsDisconnect();
+      const o = state.obs;
+      if (!o.enabled) {
+        setObsStatus('off');
+        return;
+      }
+      let ws;
+      try {
+        ws = new WebSocket(o.url, 'obswebsocket.json');
+      } catch (err) {
+        setObsStatus('error', 'アドレスの形が正しくありません（例：ws://127.0.0.1:4455）');
+        return;
+      }
+      obs.ws = ws;
+      setObsStatus('connecting', 'OBSにつないでいます…');
+      ws.onmessage = async (ev) => {
+        if (obs.ws !== ws) return;
+        let m;
+        try { m = JSON.parse(ev.data); } catch (err) { return; }
+        const d = m.d || {};
+        if (m.op === 0) {   // Hello：パスワードが要るなら、OBSから来た値と合わせて答える
+          let authentication;
+          if (d.authentication) {
+            if (!o.password) {
+              obs.noRetry = true;
+              setObsStatus('auth', 'パスワードを入れてください（OBSの「ツール」→「WebSocketサーバー設定」→「接続情報を表示」）');
+              ws.close();
+              return;
+            }
+            const secret = await sha256Base64(o.password + d.authentication.salt);
+            authentication = await sha256Base64(secret + d.authentication.challenge);
+          }
+          ws.send(JSON.stringify({ op: 1, d: { rpcVersion: 1, authentication, eventSubscriptions: obsEventMask() } }));
+        } else if (m.op === 2) {   // Identified：つながった
+          setObsStatus('connected', 'OBSにつながりました');
+          obsOnConnected();
+        } else if (m.op === 5) {
+          obsOnEvent(d.eventType, d.eventData || {});
+        } else if (m.op === 7) {
+          const p = obs.pending.get(d.requestId);
+          if (!p) return;
+          obs.pending.delete(d.requestId);
+          clearTimeout(p.timer);
+          const st = d.requestStatus || {};
+          if (st.result) p.resolve(d.responseData || {});
+          else p.reject(Object.assign(new Error(st.comment || `OBSのエラー（${st.code}）`), { code: st.code }));
+        }
+      };
+      ws.onclose = (ev) => {
+        if (obs.ws !== ws) return;
+        obs.ws = null;
+        obsFailPending();
+        obsVoiceRelease(true);
+        if (ev.code === 4009) {
+          obs.noRetry = true;
+          setObsStatus('auth', 'パスワードが違います');
+          return;
+        }
+        if (!state.obs.enabled) {
+          setObsStatus('off');
+          return;
+        }
+        if (obs.noRetry) return;
+        setObsStatus('error', 'OBSにつながりません。OBSが起動しているか、「ツール」→「WebSocketサーバー設定」で「WebSocketサーバーを有効にする」がオンか確認してください（5秒ごとにやり直します）');
+        clearTimeout(obs.retryTimer);
+        obs.retryTimer = setTimeout(obsConnect, 5000);
+      };
+      obs.noRetry = false;
+    }
+
+    function obsDisconnect() {
+      clearTimeout(obs.retryTimer);
+      obs.retryTimer = null;
+      const ws = obs.ws;
+      obs.ws = null;
+      if (ws) {
+        try { ws.close(); } catch (err) { /* 閉じ済み */ }
+      }
+      obsFailPending();
+      obsVoiceRelease(true);
+      obs.lastNowPlaying = null;
+    }
+
+    function obsFailPending() {
+      obs.pending.forEach(p => { clearTimeout(p.timer); p.reject(new Error('OBSとの接続が切れました')); });
+      obs.pending.clear();
+    }
+
+    /** OBSに頼みごとをして、答えを待つ */
+    function obsRequest(requestType, requestData) {
+      return new Promise((resolve, reject) => {
+        if (!obsConnected()) {
+          reject(new Error('OBSにつながっていません'));
+          return;
+        }
+        const requestId = `r${++obs.reqId}`;
+        const timer = setTimeout(() => {
+          obs.pending.delete(requestId);
+          reject(new Error('OBSから返事がありません'));
+        }, 5000);
+        obs.pending.set(requestId, { resolve, reject, timer });
+        obs.ws.send(JSON.stringify({ op: 6, d: { requestType, requestId, requestData } }));
+      });
+    }
+
+    /** 受け取る知らせの種類を変える（しゃべって下げるをオン・オフしたとき） */
+    function obsReidentify() {
+      if (!obsConnected()) return;
+      obs.ws.send(JSON.stringify({ op: 3, d: { eventSubscriptions: obsEventMask() } }));
+    }
+
+    async function obsOnConnected() {
+      obs.lastNowPlaying = null;
+      await obsRefreshLists();
+      try {
+        const st = await obsRequest('GetStreamStatus');
+        obs.streaming = !!st.outputActive;
+      } catch (err) { obs.streaming = false; }
+      renderObsStatus();
+      obsSyncNowPlaying(true);
+    }
+
+    /** シーンと音声ソースの一覧を取り直す（設定・パッド編集の候補に使う） */
+    async function obsRefreshLists() {
+      if (!obsConnected()) return;
+      try {
+        const [inp, sc] = await Promise.all([obsRequest('GetInputList'), obsRequest('GetSceneList')]);
+        obs.inputs = (inp.inputs || []).map(i => ({ inputName: i.inputName, inputKind: i.unversionedInputKind || i.inputKind || '' }));
+        obs.scenes = (sc.scenes || []).map(x => x.sceneName).reverse();   // OBSの画面と同じ並び（上から）
+      } catch (err) {
+        console.warn('OBSの一覧を取れません:', err);
+      }
+      renderObsLists();
+    }
+
+    function obsOnEvent(type, data) {
+      if (type === 'InputVolumeMeters') {
+        obsOnVolumeMeters(data.inputs || []);
+      } else if (type === 'StreamStateChanged') {
+        obsOnStreamState(data);
+      } else if (/^(Scene(Created|Removed|NameChanged|ListChanged)|Input(Created|Removed|NameChanged))$/.test(type)) {
+        clearTimeout(obs.listTimer);
+        obs.listTimer = setTimeout(obsRefreshLists, 300);
+      }
+    }
+
+    // ---- A：曲名 ----
+    function obsNowPlayingText() {
+      if (!state.bgm.isPlaying) return '';
+      const tr = state.bgmList[state.bgm.trackIndex];
+      if (!tr) return '';
+      const folder = bgmFolderById(bgmFolderOf(tr));
+      return (state.obs.nowPlaying.format || '{title}')
+        .replace(/\{title\}/g, tr.name || '')
+        .replace(/\{folder\}/g, folder ? folder.name : '');
+    }
+
+    /** 曲名が変わったときだけ、OBSのテキストを書き換える（BGMの表示を更新するたびに呼ばれる） */
+    function obsSyncNowPlaying(force = false) {
+      const np = state.obs.nowPlaying;
+      if (!obsConnected() || !np.enabled || !np.inputName) return;
+      const text = obsNowPlayingText();
+      if (!force && text === obs.lastNowPlaying) return;
+      obs.lastNowPlaying = text;
+      obsRequest('SetInputSettings', { inputName: np.inputName, inputSettings: { text }, overlay: true })
+        .then(() => {
+          if (obs.npError) { obs.npError = ''; renderObsStatus(); }
+        })
+        .catch((err) => {
+          obs.npError = err.code === 600 ? `OBSに「${np.inputName}」というソースがありません（「OBSに作る」で作れます）` : `曲名を出せませんでした：${err.message}`;
+          renderObsStatus();
+        });
+    }
+
+    /** 今映しているシーンに、曲名用のテキストソースを作る */
+    async function obsCreateNowPlayingSource() {
+      const name = state.obs.nowPlaying.inputName.trim();
+      if (!name) { showToast('テキストソースの名前を入れてください'); return; }
+      try {
+        const { inputKinds } = await obsRequest('GetInputKindList', { unversioned: false });
+        const kind = (inputKinds || []).find(k => k.startsWith('text_gdiplus')) || (inputKinds || []).find(k => k.startsWith('text_ft2_source'));
+        if (!kind) throw new Error('テキストソースの種類が見つかりません');
+        const scene = await obsRequest('GetCurrentProgramScene');
+        const sceneName = scene.currentProgramSceneName || scene.sceneName;
+        await obsRequest('CreateInput', {
+          sceneName, inputName: name, inputKind: kind, sceneItemEnabled: true,
+          inputSettings: { text: obsNowPlayingText() || '♪ LIVEPAD DECK', font: { face: 'Arial', size: 48, style: 'Bold', flags: 1 } }
+        });
+        obs.npError = '';
+        showToast(`OBSのシーン「${sceneName}」に「${name}」を作りました`);
+        obs.lastNowPlaying = null;
+        obsSyncNowPlaying(true);
+        obsRefreshLists();
+      } catch (err) {
+        showToast(err.code === 601 ? `「${name}」はもうOBSにあります` : `作れませんでした：${err.message}`);
+      }
+    }
+
+    // ---- B：しゃべるとBGMを下げる ----
+    function obsOnVolumeMeters(inputs) {
+      const v = state.obs.voiceDuck;
+      if (!v.enabled || !v.inputName) return;
+      const it = inputs.find(i => i.inputName === v.inputName);
+      if (!it) return;
+      let peak = 0;
+      (it.inputLevelsMul || []).forEach(ch => {
+        const x = Array.isArray(ch) ? (typeof ch[1] === 'number' ? ch[1] : ch[0]) : 0;
+        if (x > peak) peak = x;
+      });
+      const db = peak > 0 ? 20 * Math.log10(peak) : -100;
+      obs.voice.db = db;
+      if (db > v.thresholdDb) {
+        if (!obs.voice.on) {
+          obs.voice.on = true;
+          audioEngine.setVoiceDuck(true);
+          $('btnManualDuck').classList.add('is-voice');
+        }
+        clearTimeout(obs.voice.releaseTimer);
+        obs.voice.releaseTimer = setTimeout(() => obsVoiceRelease(), 700);   // 黙ってから0.7秒で戻す
+      }
+      const now = performance.now();
+      if (now - obs.voice.lastUi > 60) {
+        obs.voice.lastUi = now;
+        renderObsMeter();
+      }
+    }
+
+    function obsVoiceRelease(immediate = false) {
+      clearTimeout(obs.voice.releaseTimer);
+      obs.voice.releaseTimer = null;
+      if (!obs.voice.on) return;
+      obs.voice.on = false;
+      audioEngine.setVoiceDuck(false);
+      const btn = document.getElementById('btnManualDuck');
+      if (btn) btn.classList.remove('is-voice');
+      if (immediate) { obs.voice.db = -100; renderObsMeter(); }
+    }
+
+    function renderObsMeter() {
+      const lvl = document.getElementById('obsVdLevel');
+      if (!lvl) return;
+      const pos = (db) => Math.max(0, Math.min(100, ((db + 60) / 60) * 100));
+      lvl.style.width = `${pos(obs.voice.db)}%`;
+      document.getElementById('obsVdMark').style.left = `calc(${pos(state.obs.voiceDuck.thresholdDb)}% - 1px)`;
+    }
+
+    // ---- C：パッドでOBSを動かす ----
+    function padHasObs(pad) {
+      return !!(pad && pad.obs && pad.obs.type && pad.obs.type !== 'none');
+    }
+
+    async function obsRunPadAction(pad) {
+      if (!padHasObs(pad) || !obsConnected()) return;
+      const a = pad.obs;
+      try {
+        if (a.type === 'scene') {
+          if (!a.scene) return;
+          await obsRequest('SetCurrentProgramScene', { sceneName: a.scene });
+          return;
+        }
+        if (!a.source) return;
+        let sceneName = a.scene;
+        if (!sceneName) {
+          const cur = await obsRequest('GetCurrentProgramScene');
+          sceneName = cur.currentProgramSceneName || cur.sceneName;
+        }
+        const { sceneItemId } = await obsRequest('GetSceneItemId', { sceneName, sourceName: a.source });
+        if (a.type === 'toggle') {
+          const { sceneItemEnabled } = await obsRequest('GetSceneItemEnabled', { sceneName, sceneItemId });
+          await obsRequest('SetSceneItemEnabled', { sceneName, sceneItemId, sceneItemEnabled: !sceneItemEnabled });
+        } else {
+          const key = `${sceneName}\u0000${sceneItemId}`;
+          clearTimeout(obs.showTimers.get(key));
+          await obsRequest('SetSceneItemEnabled', { sceneName, sceneItemId, sceneItemEnabled: true });
+          obs.showTimers.set(key, setTimeout(() => {
+            obs.showTimers.delete(key);
+            obsRequest('SetSceneItemEnabled', { sceneName, sceneItemId, sceneItemEnabled: false }).catch(() => {});
+          }, Math.max(0.5, a.sec || 3) * 1000));
+        }
+      } catch (err) {
+        showToast(err.code === 600 ? `OBS：「${a.type === 'scene' ? a.scene : a.source}」が見つかりません` : `OBS：${err.message}`);
+      }
+    }
+
+    // ---- D：配信の開始・終了 ----
+    function obsOnStreamState(data) {
+      const st = data.outputState;
+      if (st === 'OBS_WEBSOCKET_OUTPUT_STARTED') {
+        obs.streaming = true;
+        renderObsStatus();
+        const act = state.obs.stream.onStart;
+        if (act === 'resume') {
+          if (!state.bgm.isPlaying && state.bgmList.length) audioEngine.togglePlayPause();
+        } else if (act.startsWith('folder:')) {
+          const fid = act.slice(7);
+          const first = state.bgmList.findIndex(t => bgmFolderOf(t) === fid);
+          if (first >= 0) {
+            state.bgm.trackIndex = first;
+            state.bgm.elapsedSec = 0;
+            renderBgmList();
+            audioEngine.startBgm(state.bgm.isPlaying && state.bgm.crossfade, 0);
+          }
+        }
+        if (act !== 'none') showToast('配信が始まりました：BGMを再生します');
+      } else if (st === 'OBS_WEBSOCKET_OUTPUT_STOPPED') {
+        obs.streaming = false;
+        renderObsStatus();
+        if (state.obs.stream.onStop === 'fade' && state.bgm.isPlaying) {
+          audioEngine.stopBgm(3);
+          showToast('配信が終わりました：BGMをフェードアウトしました');
+        }
+      }
+    }
+
+    // ---- 画面 ----
+    function renderObsStatus() {
+      const o = state.obs;
+      const pill = document.getElementById('btnObsPill');
+      if (!pill) return;
+      const cls = obs.status === 'connected' ? 'is-connected' : obs.status === 'connecting' ? 'is-connecting' : (obs.status === 'error' || obs.status === 'auth') ? 'is-error' : '';
+      pill.classList.toggle('hidden', !o.enabled);
+      pill.className = `obs-pill${o.enabled ? '' : ' hidden'}${cls ? ` ${cls}` : ''}${obs.streaming && obs.status === 'connected' ? ' is-live' : ''}`;
+      pill.lastChild.textContent = obs.streaming && obs.status === 'connected' ? 'OBS LIVE' : 'OBS';
+      const badge = document.getElementById('obsStatusBadge');
+      badge.className = `obs-status ${cls}`;
+      badge.textContent = { off: 'OFF', connecting: 'CONNECTING', connected: obs.streaming ? 'CONNECTED · LIVE' : 'CONNECTED', error: 'NOT CONNECTED', auth: 'PASSWORD' }[obs.status] || 'OFF';
+      const msg = [obs.status === 'off' ? (o.enabled ? '' : 'オフ') : obs.message, obs.npError].filter(Boolean).join('　');
+      document.getElementById('obsMessage').textContent = msg;
+      document.getElementById('obsMessage').classList.toggle('text-red-300', obs.status === 'error' || obs.status === 'auth' || !!obs.npError);
+      document.getElementById('obsCard').classList.toggle('is-off', !o.enabled);
+      document.getElementById('btnObsNpCreate').disabled = obs.status !== 'connected';
+      document.getElementById('btnObsConnect').textContent = obs.status === 'connected' ? '再接続' : '接続';
+      const es = document.getElementById('editObsState');
+      if (es) es.textContent = obs.status === 'connected' ? 'OBS：接続中' : 'OBS：未接続';
+    }
+
+    /** 設定の入力欄を今の値にする */
+    function renderObsSettings() {
+      const o = state.obs;
+      $('obsEnabled').checked = o.enabled;
+      $('obsUrl').value = o.url;
+      $('obsPassword').value = o.password;
+      $('obsNpEnabled').checked = o.nowPlaying.enabled;
+      $('obsNpInput').value = o.nowPlaying.inputName;
+      $('obsNpFormat').value = o.nowPlaying.format;
+      $('obsVdEnabled').checked = o.voiceDuck.enabled;
+      $('obsVdThreshold').value = o.voiceDuck.thresholdDb;
+      $('obsVdThresholdVal').textContent = `${o.voiceDuck.thresholdDb} dB`;
+      $('obsVdAmount').value = Math.round(o.voiceDuck.amount * 100);
+      $('obsVdAmountVal').textContent = `${Math.round(o.voiceDuck.amount * 100)}%`;
+      $('obsOnStop').value = o.stream.onStop;
+      renderObsLists();
+      renderObsStatus();
+      renderObsMeter();
+    }
+
+    /** マイクの候補・シーンの候補・配信開始の選択肢を作り直す */
+    function renderObsLists() {
+      const o = state.obs;
+      const isMic = (k) => /input_capture|input_client/.test(k);
+      const inputs = obs.inputs.slice().sort((a, b) => (isMic(b.inputKind) - isMic(a.inputKind)));
+      const sel = $('obsVdInput');
+      const opts = inputs.filter(i => /capture|audio|input/.test(i.inputKind)).map(i => i.inputName);
+      if (o.voiceDuck.inputName && !opts.includes(o.voiceDuck.inputName)) opts.unshift(o.voiceDuck.inputName);
+      sel.innerHTML = `<option value="">マイクを選ぶ（OBSの音声ソース）</option>` + opts.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+      sel.value = o.voiceDuck.inputName;
+      // 配信を始めたら
+      const start = $('obsOnStart');
+      start.innerHTML = `<option value="none">何もしない</option><option value="resume">BGMを再生する（今の曲から）</option>`
+        + state.bgmFolders.map(f => `<option value="folder:${escapeHtml(f.id)}">フォルダ「${escapeHtml(f.name)}」を最初から再生</option>`).join('');
+      start.value = o.stream.onStart;
+      if (start.value !== o.stream.onStart) start.value = 'none';
+      // パッド編集の候補
+      const sl = document.getElementById('obsSceneList');
+      if (sl) sl.innerHTML = obs.scenes.map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+    }
+
+    /** パッド編集：選んだシーンのソースを候補に出す */
+    async function obsFillSourceList(sceneName) {
+      const dl = document.getElementById('obsSourceList');
+      if (!dl) return;
+      if (!obsConnected()) { dl.innerHTML = ''; return; }
+      try {
+        let name = sceneName;
+        if (!name) {
+          const cur = await obsRequest('GetCurrentProgramScene');
+          name = cur.currentProgramSceneName || cur.sceneName;
+        }
+        const { sceneItems } = await obsRequest('GetSceneItemList', { sceneName: name });
+        dl.innerHTML = (sceneItems || []).map(it => `<option value="${escapeHtml(it.sourceName)}"></option>`).join('');
+      } catch (err) {
+        dl.innerHTML = '';
+      }
+    }
+
+    function renderEditObs() {
+      const d = state.editDraft;
+      if (!d) return;
+      const a = d.obs;
+      $('editObsType').value = a.type;
+      $('editObsFields').classList.toggle('hidden', a.type === 'none');
+      $('editObsScene').value = a.scene || '';
+      $('editObsSource').value = a.source || '';
+      $('editObsSec').value = a.sec || 3;
+      $('editObsScene').placeholder = a.type === 'scene' ? '切り替えるシーン名' : 'シーン名（空なら今のシーン）';
+      $('editObsSource').classList.toggle('hidden', a.type === 'scene');
+      $('editObsSecWrap').classList.toggle('hidden', a.type !== 'show');
+      renderObsStatus();
+    }
+
+    function initObs() {
+      const save = () => storage.saveState();
+      $('btnObsPill').addEventListener('click', () => {
+        $('btnOpenSettings').click();
+        setTimeout(() => { const c = $('obsCard'); if (c) c.scrollIntoView({ block: 'start' }); }, 50);
+      });
+      $('obsEnabled').addEventListener('change', (e) => {
+        state.obs.enabled = e.target.checked;
+        save();
+        if (state.obs.enabled) obsConnect();
+        else { obsDisconnect(); setObsStatus('off'); }
+      });
+      $('obsUrl').addEventListener('change', (e) => { state.obs.url = e.target.value.trim() || createDefaultObs().url; save(); });
+      $('obsPassword').addEventListener('change', (e) => { state.obs.password = e.target.value; save(); });
+      $('btnObsConnect').addEventListener('click', () => {
+        state.obs.url = $('obsUrl').value.trim() || createDefaultObs().url;
+        state.obs.password = $('obsPassword').value;
+        if (!state.obs.enabled) { state.obs.enabled = true; $('obsEnabled').checked = true; }
+        save();
+        obsConnect();
+      });
+      $('obsNpEnabled').addEventListener('change', (e) => {
+        state.obs.nowPlaying.enabled = e.target.checked;
+        save();
+        obs.lastNowPlaying = null;
+        if (e.target.checked) obsSyncNowPlaying(true);
+      });
+      $('obsNpInput').addEventListener('change', (e) => {
+        state.obs.nowPlaying.inputName = e.target.value.trim();
+        save();
+        obs.npError = '';
+        obsSyncNowPlaying(true);
+      });
+      $('obsNpFormat').addEventListener('change', (e) => {
+        state.obs.nowPlaying.format = e.target.value || '♪ {title}';
+        save();
+        obsSyncNowPlaying(true);
+      });
+      $('btnObsNpCreate').addEventListener('click', () => {
+        state.obs.nowPlaying.inputName = $('obsNpInput').value.trim();
+        save();
+        obsCreateNowPlayingSource();
+      });
+      $('obsVdEnabled').addEventListener('change', (e) => {
+        state.obs.voiceDuck.enabled = e.target.checked;
+        if (!e.target.checked) obsVoiceRelease(true);
+        save();
+        obsReidentify();
+      });
+      $('obsVdInput').addEventListener('change', (e) => {
+        state.obs.voiceDuck.inputName = e.target.value;
+        obsVoiceRelease(true);
+        save();
+      });
+      $('obsVdThreshold').addEventListener('input', (e) => {
+        state.obs.voiceDuck.thresholdDb = Number(e.target.value);
+        $('obsVdThresholdVal').textContent = `${e.target.value} dB`;
+        renderObsMeter();
+      });
+      $('obsVdThreshold').addEventListener('change', save);
+      $('obsVdAmount').addEventListener('input', (e) => {
+        state.obs.voiceDuck.amount = Number(e.target.value) / 100;
+        $('obsVdAmountVal').textContent = `${e.target.value}%`;
+        if (obs.voice.on) audioEngine.setVoiceDuck(true);
+      });
+      $('obsVdAmount').addEventListener('change', save);
+      $('obsOnStart').addEventListener('change', (e) => { state.obs.stream.onStart = e.target.value; save(); });
+      $('obsOnStop').addEventListener('change', (e) => { state.obs.stream.onStop = e.target.value; save(); });
+      // パッド編集の OBS ACTION
+      $('editObsType').addEventListener('change', (e) => {
+        const d = state.editDraft;
+        if (!d) return;
+        d.obs.type = e.target.value;
+        renderEditObs();
+        if (d.obs.type !== 'none') { obsRefreshLists(); obsFillSourceList(d.obs.scene); }
+      });
+      $('editObsScene').addEventListener('input', (e) => {
+        if (!state.editDraft) return;
+        state.editDraft.obs.scene = e.target.value.trim();
+      });
+      $('editObsScene').addEventListener('change', () => { if (state.editDraft) obsFillSourceList(state.editDraft.obs.scene); });
+      $('editObsSource').addEventListener('input', (e) => { if (state.editDraft) state.editDraft.obs.source = e.target.value.trim(); });
+      $('editObsSec').addEventListener('input', (e) => {
+        if (!state.editDraft) return;
+        const v = Number(e.target.value);
+        state.editDraft.obs.sec = isFinite(v) && v > 0 ? Math.min(60, v) : 3;
+      });
+      renderObsSettings();
+      if (state.obs.enabled) obsConnect();
     }
 
     // =========================================================================
@@ -8395,7 +9163,8 @@ registerProcessor('livepad-rec', LivepadRec);
         synthType: pad.synthType || pad.defaultSynth || 'pon',
         fileId: pad.fileId,
         fileName: pad.fileName,
-        pendingFile: null
+        pendingFile: null,
+        obs: Object.assign({ type: 'none', scene: '', source: '', sec: 3 }, pad.obs || {})
       };
 
       document.getElementById('editPadName').value = state.editDraft.name;
@@ -8407,6 +9176,8 @@ registerProcessor('livepad-rec', LivepadRec);
       $('editRecPanel').classList.add('hidden');
       trimUi.buffer = null;
       trimUi.key = '';
+      renderEditObs();
+      if (state.editDraft.obs.type !== 'none') obsFillSourceList(state.editDraft.obs.scene);
 
       updateEditModalUI();
       const backdrop = document.getElementById('editModalBackdrop');
@@ -10391,6 +11162,9 @@ registerProcessor('livepad-rec', LivepadRec);
         pad.color = d.color;
         pad.volume = d.volume;
         pad.pitch = d.pitch || 0;
+        // OBS ACTION（なしなら持たない）
+        if (d.obs && d.obs.type !== 'none') pad.obs = { type: d.obs.type, scene: d.obs.scene || '', source: d.obs.source || '', sec: d.obs.sec || 3 };
+        else delete pad.obs;
         const rawName = document.getElementById('editPadName').value.trim();
         pad.name = rawName || (pad.sourceType === 'empty' ? '空きパッド' : 'サウンド');
 
@@ -10430,6 +11204,7 @@ registerProcessor('livepad-rec', LivepadRec);
       document.getElementById('btnOpenSettings').addEventListener('click', () => {
         renderThemeGroup();
         renderKeyMapGroup();
+        renderObsSettings();
         settingsBackdrop.classList.remove('hidden');
         settingsBackdrop.classList.add('flex');
       });
@@ -10600,6 +11375,7 @@ registerProcessor('livepad-rec', LivepadRec);
         const el = document.getElementById(`pad-${pad.id}`);
         if (el) el.classList.add('is-pressed');
         audioEngine.triggerPadDown(pad);
+        obsRunPadAction(pad);
       });
 
       document.addEventListener('keyup', (e) => {
@@ -10643,6 +11419,7 @@ registerProcessor('livepad-rec', LivepadRec);
         if (typeof saved.toneTint === 'boolean') state.toneTint = saved.toneTint;
         if (KEY_MAPS[saved.keyMap]) state.keyMap = saved.keyMap;
         if (REC_SOURCES[saved.recSource]) state.recSource = saved.recSource;
+        if (saved.obs) state.obs = normalizeObs(saved.obs);
         if (typeof saved.duckAmount === 'number') state.duckAmount = saved.duckAmount;
         if (saved.eq) state.eq = normalizeEq(saved.eq);
         if (saved.fx) state.fx = normalizeFx(saved.fx);
@@ -10680,6 +11457,7 @@ registerProcessor('livepad-rec', LivepadRec);
       initEqDeck();
       initFxPad();
       initEditTrim();
+      initObs();
       initPitchDeck();
       initHelp();
       if (window.ResizeObserver) new ResizeObserver(() => fitPadGrid()).observe(document.getElementById('padGrid'));
