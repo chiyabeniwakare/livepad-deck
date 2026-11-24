@@ -300,6 +300,7 @@
     }
     .bgm-row.is-dragging {
       z-index: 5;
+      opacity: .78;   /* 下にある落とし先（フォルダの見出しなど）が透けて見えるように */
       transition: none;
       background: rgb(var(--n-1b2130));
       border-radius: 6px;
@@ -339,6 +340,58 @@
       cursor: grab;
     }
     .bgm-handle:hover { color: rgb(var(--n-cbd5e1)); background: rgb(var(--n-1a2030)); }
+
+    /* BGMのフォルダ（開け閉めできる見出し） */
+    .bgm-folder {
+      position: relative;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 4px 0 6px;
+      background: rgb(var(--n-141925));
+      border-bottom: 1px solid rgb(var(--n-171c27));
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      transition: background-color .12s ease, transform .14s ease;
+    }
+    .bgm-folder:hover { background: rgb(var(--n-1a2030)); }
+    .bgm-folder-caret { width: 14px; flex: none; display: flex; align-items: center; justify-content: center; color: rgb(var(--n-64748b)); transition: transform .15s ease; }
+    .bgm-folder.is-open .bgm-folder-caret { transform: rotate(90deg); }
+    .bgm-folder-name { min-width: 0; flex: 1; font-size: 10.5px; font-weight: 800; letter-spacing: .06em; color: rgb(var(--n-cbd5e1)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bgm-folder.is-current .bgm-folder-name { color: rgb(var(--ac-300)); }
+    .bgm-folder.is-current .bgm-folder-caret { color: rgb(var(--ac-400)); }
+    .bgm-folder-now { flex: none; display: flex; align-items: center; }
+    .bgm-folder-count { flex: none; min-width: 18px; padding: 0 5px; border-radius: 999px; font-size: 9px; line-height: 15px; text-align: center; color: rgb(var(--n-94a3b8)); background: rgb(var(--n-0e1118)); }
+    .bgm-folder-add {
+      flex: none; width: 22px; height: 22px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800; line-height: 1;
+      color: rgb(var(--ac-300)); border: 1px solid rgb(var(--ac-500) / .4); background: rgb(var(--ac-500) / .10);
+    }
+    .bgm-folder-add:hover { background: rgb(var(--ac-500) / .22); }
+    .bgm-folder .bgm-handle { height: 24px; }
+    .bgm-folder.is-dragging {
+      z-index: 6; opacity: .85; transition: none; border-radius: 6px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.55), 0 0 0 1px rgb(var(--ac-500) / .5);
+    }
+    .bgm-folder.is-drop { background: rgb(var(--ac-500) / .16); box-shadow: inset 0 0 0 1.5px rgb(var(--ac-400) / .8); }
+    .bgm-folder + .bgm-row, .bgm-folder + .bgm-folder-empty { border-top: 0; }
+    .bgm-folder ~ .bgm-row { padding-left: 16px; }
+    .bgm-folder-empty { height: 28px; display: flex; align-items: center; padding-left: 32px; font-size: 10px; color: rgb(var(--n-475569)); border-bottom: 1px solid rgb(var(--n-171c27)); }
+    .bgm-new-folder {
+      width: calc(100% - 12px); margin: 6px; height: 26px; border-radius: 7px;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      font-size: 10px; font-weight: 800; letter-spacing: .06em; color: rgb(var(--n-64748b));
+      border: 1px dashed rgb(var(--n-2f3849));
+      transition: color .12s ease, border-color .12s ease;
+    }
+    .bgm-new-folder:hover { color: rgb(var(--ac-300)); border-color: rgb(var(--ac-500) / .6); }
+    .bgm-new-folder span { font-size: 13px; }
+    /* ドラッグ中：落とす場所の線 */
+    .bgm-drop-line { position: absolute; left: 6px; right: 6px; height: 2px; border-radius: 2px; background: rgb(var(--ac-400)); box-shadow: 0 0 8px rgb(var(--ac-400) / .8); pointer-events: none; z-index: 7; }
 
     /* 再生中のイコライザー表示 */
     .eq { display: flex; align-items: flex-end; gap: 2px; height: 10px; }
@@ -2037,6 +2090,23 @@
     </form>
   </div>
 
+  <!-- BGMフォルダの名前（新しく作る／名前を変える） -->
+  <div id="folderNameBackdrop" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <form id="folderNameForm" class="bg-[rgb(var(--n-181c26))] border border-[rgb(var(--n-30384b))] rounded-2xl w-full max-w-xs shadow-2xl overflow-hidden">
+      <div class="px-4 py-3 bg-[rgb(var(--n-14171f))] border-b border-[rgb(var(--n-262c3a))]">
+        <h3 id="folderNameTitle" class="text-sm font-bold text-slate-100">NEW FOLDER</h3>
+      </div>
+      <div class="p-4">
+        <label class="block text-xs font-bold text-slate-400 mb-1" for="folderNameInput">フォルダの名前（24文字まで）</label>
+        <input id="folderNameInput" type="text" maxlength="24" placeholder="例：雑談、ゲーム、ED" class="w-full px-3 py-2 rounded-lg bg-[rgb(var(--n-0d1016))] border border-[rgb(var(--n-2a3242))] text-sm font-bold text-slate-50 focus:outline-none focus:border-accent-400" />
+      </div>
+      <div class="px-4 py-3 bg-[rgb(var(--n-14171f))] border-t border-[rgb(var(--n-262c3a))] flex items-center justify-end gap-2">
+        <button id="btnFolderNameCancel" type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:bg-slate-800">キャンセル</button>
+        <button type="submit" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-accent-500 hover:bg-accent-400 text-slate-950">保存する</button>
+      </div>
+    </form>
+  </div>
+
   <!-- FXの並び替え（FX PADの ≡ で開く） -->
   <div id="fxOrderBackdrop" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
     <div class="fxo-sheet bg-[rgb(var(--n-181c26))] border border-[rgb(var(--n-30384b))] rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col" role="dialog" aria-modal="true" aria-labelledby="fxOrderTitle">
@@ -2116,13 +2186,34 @@
       <svg class="w-3.5 h-3.5 text-accent-300" fill="currentColor" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
       <span id="bgmMenuPlayLabel">PLAY</span>
     </button>
-    <button id="bgmMenuDelete" type="button" class="ctx-item is-danger" role="menuitem">
+    <div id="bgmMenuMoveWrap" class="border-t border-[rgb(var(--n-262c3a))] mt-1 pt-1">
+      <div class="px-2.5 pt-0.5 pb-1 text-[9px] font-bold tracking-wider text-slate-500">MOVE TO</div>
+      <div id="bgmMenuMove" class="max-h-[150px] overflow-y-auto"></div>
+    </div>
+    <button id="bgmMenuDelete" type="button" class="ctx-item is-danger mt-1" role="menuitem">
       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <polyline points="3 6 5 6 21 6"></polyline>
         <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
       </svg>
       <span id="bgmMenuDeleteLabel">DELETE</span>
     </button>
+  </div>
+  <!-- BGMフォルダの長押しメニュー -->
+  <div id="bgmFolderMenu" class="fixed z-50 hidden w-[210px] bg-[rgb(var(--n-1b202b))] border border-[rgb(var(--n-30384b))] rounded-xl shadow-2xl shadow-black/60 p-1" role="menu">
+    <div id="bgmFolderMenuTitle" class="px-2.5 pt-1.5 pb-1.5 text-[10px] font-bold text-slate-500 truncate border-b border-[rgb(var(--n-262c3a))] mb-1"></div>
+    <button id="bgmFolderMenuPlay" type="button" class="ctx-item" role="menuitem">
+      <svg class="w-3.5 h-3.5 text-accent-300" fill="currentColor" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+      PLAY FOLDER
+    </button>
+    <button id="bgmFolderMenuRename" type="button" class="ctx-item" role="menuitem">
+      <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+      RENAME
+    </button>
+    <button id="bgmFolderMenuDelete" type="button" class="ctx-item is-danger" role="menuitem">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+      <span id="bgmFolderMenuDeleteLabel">DELETE FOLDER</span>
+    </button>
+    <p id="bgmFolderMenuNote" class="px-2.5 pt-1 pb-1.5 text-[9.5px] leading-snug text-slate-500">フォルダを消しても曲は消えず、UNSORTED に戻ります</p>
   </div>
   <!-- Googleドライブ同期：アカウントメニュー -->
   <div id="accountMenuShield" class="fixed inset-0 z-40 hidden"></div>
@@ -2287,6 +2378,12 @@
       return [];   // BGMは「+ BGM追加」で登録した音声ファイルのみ（内蔵シンセBGMは廃止）
     }
 
+    // BGMのフォルダ。1曲は1つのフォルダに入る（folderId）。UNSORTED は消せない最初のフォルダ
+    const BGM_UNSORTED = 'unsorted';
+    function createDefaultBgmFolders() {
+      return [{ id: 'unsorted', name: 'UNSORTED', open: true }];   // open：開いているか（端末ごと）
+    }
+
     // アプリ状態
     const state = {
       layoutMode: window.innerWidth < 900 ? 'iphone' : 'ipad',
@@ -2306,11 +2403,12 @@
       tone: 'dark',          // 背景の色調：dark / dim / navy / warm / light / auto
       toneTint: false,       // テーマカラーの色味を背景にも少し乗せる
       banks: createDefaultBanks(),
-      bgmList: createDefaultBgmList(),
+      bgmList: createDefaultBgmList(),   // フォルダの並び順にまとめて並べる（normalizeBgm）
+      bgmFolders: createDefaultBgmFolders(),
       bgm: {
         trackIndex: 0,
         isPlaying: false,
-        repeat: 'all',        // リピート：'off'（なし）/ 'all'（リスト全体）/ 'one'（1曲）
+        repeat: 'folder',     // リピート：'off'（フォルダの最後で止まる）/ 'folder'（フォルダ）/ 'all'（全体）/ 'one'（1曲）
         manualDuck: false,    // 手動DUCK中か
         crossfade: true,
         volume: 0.70,
@@ -2364,6 +2462,7 @@
             key: 'appState',
             banks: state.banks,
             bgmList: state.bgmList,
+            bgmFolders: state.bgmFolders,
             masterVolume: state.masterVolume,
             seVolume: state.seVolume,
             bgmVolume: state.bgm.volume,
@@ -4155,16 +4254,59 @@ registerProcessor('livepad-lofi', LivepadLofi);
         b += HF.t(186, 73, '≡ を引く：並べ替え', 'hf-tj');
         return HF.svg(300, 92, b);
       },
-      repeat() {
-        const box = (x, y, n, cls = 'hf-box') => HF.r(x, y - 9, 26, 18, cls, 4) + HF.t(x + 13, y, n, 'hf-t', 'middle');
-        const row = (y) => box(52, y, '1') + HF.a(78, y, 94, y) + box(96, y, '2') + HF.a(122, y, 138, y) + box(140, y, '3');
+      bgmFolders() {
         let b = '';
-        b += HF.t(8, 20, 'OFF', 'hf-t hf-ta') + row(20) + HF.a(166, 20, 180, 20) + HF.t(186, 20, '最後の曲で止まる', 'hf-tj');
-        b += HF.t(8, 58, 'ALL', 'hf-t hf-ta') + row(58) + HF.p('M153,49 C153,34 65,34 65,46', 'hf-arw') + HF.head(65, 49, Math.PI / 2);
-        b += HF.t(186, 58, '最後 → 最初に戻る', 'hf-tj');
-        b += HF.t(8, 92, 'ONE', 'hf-t hf-ta') + box(52, 92, '2', 'hf-boxa') + HF.p('M78,87 C98,78 98,106 80,97', 'hf-arw') + HF.head(78, 96, 2.8);
-        b += HF.t(110, 92, '同じ曲をくり返す', 'hf-tj');
-        return HF.svg(300, 106, b);
+        // 見出し（開いている：▼、閉じている：▶）と、その中の曲
+        const head = (y, open, name, n, cur) => {
+          let h = HF.r(8, y, 176, 20, cur ? 'hf-boxa' : 'hf-box', 4);
+          h += HF.t(17, y + 10, open ? '▼' : '▶', 'hf-ts', 'middle');
+          h += HF.t(27, y + 10, name, cur ? 'hf-t hf-ta' : 'hf-t');
+          h += HF.t(132, y + 10, String(n), 'hf-ts', 'middle');
+          h += HF.r(144, y + 3, 14, 14, 'hf-box', 3) + HF.t(151, y + 10, '+', 'hf-t hf-ta', 'middle');
+          h += HF.t(176, y + 10, '≡', 'hf-t', 'end');
+          return h;
+        };
+        const row = (y, name, cur) => HF.t(30, y + 9, name, cur ? 'hf-t hf-ta' : 'hf-t') + HF.t(176, y + 9, '≡', 'hf-ts', 'end');
+        b += head(4, true, '雑談', 2, true);
+        b += row(26, '▶ Track A', true) + row(44, 'Track B', false);
+        b += head(64, false, 'ゲーム', 3, false);
+        b += head(88, true, 'UNSORTED', 1, false);
+        b += row(110, 'Track F', false);
+        b += HF.r(8, 132, 176, 16, 'hf-box', 4, ' style="stroke-dasharray:3 3"') + HF.t(96, 140, '+ NEW FOLDER', 'hf-ts', 'middle');
+        b += HF.t(192, 14, '見出しをタップ：', 'hf-tj') + HF.t(192, 27, '開く／閉じる', 'hf-tj');
+        b += HF.t(192, 49, '＋：このフォルダに', 'hf-tj') + HF.t(192, 62, '曲を追加', 'hf-tj');
+        b += HF.t(192, 84, '≡ を引く：並べ替え、', 'hf-tj') + HF.t(192, 97, 'ほかのフォルダへ移す', 'hf-tj');
+        b += HF.t(192, 119, '長押し：メニュー', 'hf-tj');
+        return HF.svg(300, 152, b);
+      },
+      repeat() {
+        const box = (x, y, n, cls = 'hf-box') => HF.r(x, y - 9, 22, 18, cls, 4) + HF.t(x + 11, y, n, 'hf-ts', 'middle');
+        const arw = (x, y) => HF.a(x, y, x + 8, y, 'hf-arw', 'hf-arwh', 3.5);
+        const pos = [56, 86, 122, 152];   // A1 A2 | B1 B2（A・B はフォルダ）
+        const names = ['A1', 'A2', 'B1', 'B2'];
+        const folderBg = (y) => HF.r(52, y - 13, 60, 26, '', 5, ' style="fill:rgba(148,163,184,.06);stroke:rgba(148,163,184,.25);stroke-dasharray:2 3"')
+          + HF.r(118, y - 13, 60, 26, '', 5, ' style="fill:rgba(148,163,184,.06);stroke:rgba(148,163,184,.25);stroke-dasharray:2 3"');
+        let b = '';
+        const lane = (y, label, lit, arrows) => {
+          let r = HF.t(6, y, label, 'hf-t hf-ta') + folderBg(y);
+          names.forEach((n, i) => { r += box(pos[i], y, n, lit.includes(i) ? 'hf-boxa' : 'hf-box'); });
+          // フォルダの間（A2 → B1）は少し長い矢印
+          arrows.forEach(i => { r += i === 1 ? HF.a(pos[i] + 22, y, pos[i + 1] - 1, y, 'hf-arw', 'hf-arwh', 3.5) : arw(pos[i] + 22, y); });
+          return r;
+        };
+        // OFF：フォルダAの最後で止まる
+        b += lane(18, 'OFF', [0, 1], [0]) + HF.t(112, 18, '■', 'hf-ts', 'middle');
+        b += HF.t(186, 18, 'フォルダの最後で止まる', 'hf-tj');
+        // FOLDER：フォルダAの中をくり返す
+        b += lane(54, 'FOLDER', [0, 1], [0]) + HF.p('M97,44 C97,34 67,34 67,42', 'hf-arw') + HF.head(67, 45, Math.PI / 2, 'hf-arwh', 3.5);
+        b += HF.t(186, 54, 'フォルダの中をくり返す', 'hf-tj');
+        // ALL：全部のフォルダを順番に
+        b += lane(90, 'ALL', [0, 1, 2, 3], [0, 1, 2]) + HF.p('M163,80 C163,68 67,68 67,78', 'hf-arw') + HF.head(67, 81, Math.PI / 2, 'hf-arwh', 3.5);
+        b += HF.t(186, 90, '全部のフォルダを順番に', 'hf-tj');
+        // ONE：同じ曲をくり返す
+        b += HF.t(6, 124, 'ONE', 'hf-t hf-ta') + box(86, 124, 'A2', 'hf-boxa') + HF.p('M110,119 C128,110 128,138 112,129', 'hf-arw') + HF.head(110, 128, 2.8, 'hf-arwh', 3.5);
+        b += HF.t(186, 124, '同じ曲をくり返す', 'hf-tj');
+        return HF.svg(300, 138, b);
       },
       xfade() {
         let b = '';
@@ -4486,8 +4628,22 @@ registerProcessor('livepad-lofi', LivepadLofi);
         title: 'BGM DECK',
         intro: '配信のBGMを並べて再生するデッキです。',
         sections: [
-          { name: 'TRACK LIST', fig: 'bgmList', text: '<b>+ ADD BGM</b> でMP3・WAVなどの曲を追加します。曲をタップすると再生、再生中の曲をもう一度タップすると一時停止。長押しでメニュー（PLAY・DELETE）、右端の ≡ を引くと並べ替えができます。' },
-          { name: 'REPEAT', fig: 'repeat', text: 'シークバーの右のボタンを押すたびに <b>OFF → ALL → ONE</b> と切り替わります。' },
+          { name: 'TRACK LIST', fig: 'bgmList', text: '<b>+ ADD BGM</b> でMP3・WAVなどの曲を追加します（UNSORTED に入ります）。曲をタップすると再生、再生中の曲をもう一度タップすると一時停止。長押しでメニュー（PLAY・MOVE TO・DELETE）、右端の ≡ を引くと並べ替えができます。' },
+          { name: 'FOLDERS', fig: 'bgmFolders', text: [
+            '曲をフォルダに分けて入れられます（1曲は1つのフォルダに入ります）。最初からある <b>UNSORTED</b> は消せないフォルダです',
+            'リストの一番下の <b>+ NEW FOLDER</b> でフォルダを作ります。見出しをタップすると開く／閉じる（閉じていても、鳴っているフォルダは名前が光ります）',
+            '見出しの <b>＋</b> で、そのフォルダに直接曲を追加できます',
+            '曲の ≡ を引くと、ほかのフォルダへも移せます（閉じたフォルダの見出しの上に落とすと、そのフォルダの最後に入ります）。曲の長押しメニューの <b>MOVE TO</b> でも移せます',
+            '見出しの ≡ を引くとフォルダの並び替え。見出しの長押しで PLAY FOLDER（そのフォルダの最初から再生）・RENAME・DELETE FOLDER。フォルダを消しても曲は消えず、UNSORTED に戻ります'
+          ] },
+          { name: 'REPEAT', fig: 'repeat', text: [
+            'シークバーの右のボタンを押すたびに <b>OFF → FOLDER → ALL → ONE</b> と切り替わります。ボタンの札は <b>F</b>＝FOLDER、<b>1</b>＝ONE（ALL は札なし、OFF は暗い表示）',
+            '<b>OFF</b>：今のフォルダの最後の曲が終わったら止まる（エンディング曲で終わらせたいときなど）',
+            '<b>FOLDER</b>：今のフォルダの最後まで行ったら、そのフォルダの最初に戻る',
+            '<b>ALL</b>：フォルダの最後まで行ったら次のフォルダへ。全部終わったら最初のフォルダに戻る',
+            '<b>ONE</b>：同じ曲をくり返す',
+            '<b>⏮ ⏭</b> も同じで、ALL のときはフォルダをまたいで、それ以外は今のフォルダの中で動きます'
+          ] },
           { name: 'X-FADE', fig: 'xfade', text: 'ONにすると、曲が切り替わるときに前の曲を小さくしながら次の曲を大きくして、途切れずにつなぎます。' },
           { name: 'TRANSPORT', text: [
             '<b>⏮ ⏭</b>：前の曲・次の曲。<b>▶</b>：再生／一時停止（PCはスペースキーでも）',
@@ -5172,6 +5328,7 @@ registerProcessor('livepad-lofi', LivepadLofi);
       return {
         banks: state.banks,
         bgmList: state.bgmList,
+        bgmFolders: state.bgmFolders.map(f => ({ id: f.id, name: f.name })),   // 開いている／閉じているは端末ごと
         masterVolume: state.masterVolume,
         seVolume: state.seVolume,
         bgmVolume: state.bgm.volume,
@@ -5192,6 +5349,10 @@ registerProcessor('livepad-lofi', LivepadLofi);
     function applySyncData(d) {
       if (Array.isArray(d.banks) && d.banks.length) state.banks = d.banks;
       if (Array.isArray(d.bgmList)) state.bgmList = d.bgmList.filter(t => t.type === 'file');
+      if (Array.isArray(d.bgmFolders)) {
+        const openOf = new Map(state.bgmFolders.map(f => [f.id, f.open]));
+        state.bgmFolders = d.bgmFolders.map(f => Object.assign({}, f, { open: openOf.has(f.id) ? openOf.get(f.id) : true }));
+      }
       if (typeof d.masterVolume === 'number') state.masterVolume = d.masterVolume;
       if (typeof d.seVolume === 'number') state.seVolume = d.seVolume;
       if (typeof d.bgmVolume === 'number') state.bgm.volume = d.bgmVolume;
@@ -6299,9 +6460,20 @@ registerProcessor('livepad-lofi', LivepadLofi);
         else updateBgmUI();
       }
 
+      /** 次（dir=1）／前（dir=-1）の曲の番号。ALL のときはフォルダをまたいで全体を回り、それ以外は今のフォルダの中で回る */
+      bgmStep(dir) {
+        const n = state.bgmList.length;
+        const i = state.bgm.trackIndex;
+        if (state.bgm.repeat === 'all') return (i + dir + n) % n;
+        const [s, e] = bgmFolderRange(i);
+        const len = e - s + 1;
+        return s + ((i - s + dir + len) % len);
+      }
+
       /** 1曲が最後まで終わったとき：リピート設定に従って次へ進むか止める */
       onTrackFinished() {
-        const isLast = state.bgm.trackIndex >= state.bgmList.length - 1;
+        // OFF：今のフォルダの最後の曲が終わったら止まる
+        const isLast = state.bgm.trackIndex >= bgmFolderRange(state.bgm.trackIndex)[1];
         if (state.bgm.repeat === 'off' && isLast) {
           this.stopBgm(0.1);
           state.bgm.elapsedSec = 0;
@@ -6313,7 +6485,7 @@ registerProcessor('livepad-lofi', LivepadLofi);
 
       nextBgm() {
         if (state.bgmList.length === 0) return;
-        state.bgm.trackIndex = (state.bgm.trackIndex + 1) % state.bgmList.length;
+        state.bgm.trackIndex = this.bgmStep(1);
         state.bgm.elapsedSec = 0;
         renderBgmList();
         if (state.bgm.isPlaying) this.startBgm(state.bgm.crossfade, 0);
@@ -6322,7 +6494,7 @@ registerProcessor('livepad-lofi', LivepadLofi);
 
       prevBgm() {
         if (state.bgmList.length === 0) return;
-        state.bgm.trackIndex = (state.bgm.trackIndex - 1 + state.bgmList.length) % state.bgmList.length;
+        state.bgm.trackIndex = this.bgmStep(-1);
         state.bgm.elapsedSec = 0;
         renderBgmList();
         if (state.bgm.isPlaying) this.startBgm(state.bgm.crossfade, 0);
@@ -6650,29 +6822,119 @@ registerProcessor('livepad-lofi', LivepadLofi);
     // BGMプレイリスト
     // =========================================================================
     let bgmRowStateKey = '';
+    let bgmAddTarget = 'unsorted';   // 「+」で追加する先のフォルダ
     let seekDragging = false;
     let suppressRowClick = false;
 
+    // ---- フォルダ ------------------------------------------------------------
+    function bgmFolderOf(t) {
+      return (t && t.folderId) || BGM_UNSORTED;
+    }
+
+    function bgmFolderById(id) {
+      return state.bgmFolders.find(f => f.id === id) || null;
+    }
+
+    /** その曲と同じフォルダの曲が、リストのどこからどこまでか [最初, 最後] */
+    function bgmFolderRange(index) {
+      const list = state.bgmList;
+      if (!list[index]) return [0, Math.max(0, list.length - 1)];
+      const f = bgmFolderOf(list[index]);
+      let s = index;
+      let e = index;
+      while (s > 0 && bgmFolderOf(list[s - 1]) === f) s--;
+      while (e < list.length - 1 && bgmFolderOf(list[e + 1]) === f) e++;
+      return [s, e];
+    }
+
+    /** フォルダとBGMリストを整える：UNSORTED を必ず用意し、曲をフォルダの並び順にまとめる（フォルダの中の順番はそのまま） */
+    function normalizeBgm() {
+      const cur = state.bgmList[state.bgm.trackIndex];
+      const seen = new Set();
+      const folders = (Array.isArray(state.bgmFolders) ? state.bgmFolders : [])
+        .filter(f => f && typeof f.id === 'string' && f.id && !seen.has(f.id) && seen.add(f.id))
+        .map(f => ({
+          id: f.id,
+          name: f.id === BGM_UNSORTED ? 'UNSORTED' : (String(f.name || '').trim().slice(0, 24) || 'FOLDER'),
+          open: f.open !== false
+        }));
+      if (!seen.has(BGM_UNSORTED)) folders.unshift({ id: BGM_UNSORTED, name: 'UNSORTED', open: true });
+      state.bgmFolders = folders;
+      const rank = new Map(folders.map((f, i) => [f.id, i]));
+      state.bgmList.forEach(t => { if (!rank.has(t.folderId)) t.folderId = BGM_UNSORTED; });
+      state.bgmList = state.bgmList
+        .map((t, i) => [t, i])
+        .sort((a, b) => (rank.get(a[0].folderId) - rank.get(b[0].folderId)) || (a[1] - b[1]))
+        .map(x => x[0]);
+      const idx = cur ? state.bgmList.indexOf(cur) : -1;
+      state.bgm.trackIndex = idx >= 0 ? idx : Math.max(0, Math.min(state.bgm.trackIndex, state.bgmList.length - 1));
+    }
+
+    const FOLDER_CARET_SVG = `<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M9 6l7 6-7 6z"/></svg>`;
+
     function renderBgmList() {
+      normalizeBgm();
       const list = $('bgmList');
       const prevScroll = list.scrollTop;
-      list.innerHTML = state.bgmList.length === 0
-        ? '<div class="bgm-empty"><span class="font-bold">NO TRACKS</span><span>Tap “+ ADD BGM” to add music</span></div>'
-        : '';
-      state.bgmList.forEach((tr, idx) => {
-        const row = document.createElement('div');
-        row.className = 'bgm-row';
-        row.dataset.index = String(idx);
-        row.setAttribute('role', 'option');
-        const durKnown = tr.durationSec > 0;
-        row.innerHTML = `
-          <span class="bgm-row-icon"></span>
-          <span class="bgm-row-name">${escapeHtml(tr.name)}</span>
-          <span class="bgm-row-dur font-mono-num">${durKnown ? fmtTime(tr.durationSec) : '--:--'}</span>
-          ${!state.perfLock ? `<span class="bgm-handle" title="ドラッグで並び替え">${GRIP_SVG}</span>` : ''}`;
-        bindBgmRow(row, idx);
-        list.appendChild(row);
-      });
+      const locked = state.perfLock;
+      list.innerHTML = '';
+      const onlyUnsorted = state.bgmFolders.length === 1;
+      if (state.bgmList.length === 0 && onlyUnsorted) {
+        list.innerHTML = '<div class="bgm-empty"><span class="font-bold">NO TRACKS</span><span>Tap “+ ADD BGM” to add music</span></div>';
+      } else {
+        state.bgmFolders.forEach(f => {
+          const idxs = [];
+          state.bgmList.forEach((t, i) => { if (bgmFolderOf(t) === f.id) idxs.push(i); });
+          const head = document.createElement('div');
+          head.className = `bgm-folder${f.open ? ' is-open' : ''}`;
+          head.dataset.folder = f.id;
+          head.setAttribute('role', 'button');
+          head.setAttribute('aria-expanded', String(f.open));
+          head.title = f.open ? 'タップで閉じる（長押しでメニュー）' : 'タップで開く（長押しでメニュー）';
+          head.innerHTML = `
+            <span class="bgm-folder-caret">${FOLDER_CARET_SVG}</span>
+            <span class="bgm-folder-name">${escapeHtml(f.name)}</span>
+            <span class="bgm-folder-now"></span>
+            <span class="bgm-folder-count font-mono-num">${idxs.length}</span>
+            ${!locked ? `<button type="button" class="bgm-folder-add" title="${escapeHtml(f.name)} に曲を追加" aria-label="${escapeHtml(f.name)} に曲を追加">+</button>
+            <span class="bgm-handle" title="ドラッグでフォルダを並び替え">${GRIP_SVG}</span>` : ''}`;
+          bindBgmFolder(head, f.id);
+          list.appendChild(head);
+          if (!f.open) return;
+          if (idxs.length === 0) {
+            const emp = document.createElement('div');
+            emp.className = 'bgm-folder-empty';
+            emp.dataset.folder = f.id;
+            emp.textContent = locked ? 'No tracks' : 'No tracks — tap + to add, or drag tracks here';
+            list.appendChild(emp);
+          }
+          idxs.forEach((idx, k) => {
+            const tr = state.bgmList[idx];
+            const row = document.createElement('div');
+            row.className = 'bgm-row';
+            row.dataset.index = String(idx);
+            row.dataset.folder = f.id;
+            row.dataset.num = String(k + 1);
+            row.setAttribute('role', 'option');
+            const durKnown = tr.durationSec > 0;
+            row.innerHTML = `
+              <span class="bgm-row-icon"></span>
+              <span class="bgm-row-name">${escapeHtml(tr.name)}</span>
+              <span class="bgm-row-dur font-mono-num">${durKnown ? fmtTime(tr.durationSec) : '--:--'}</span>
+              ${!locked ? `<span class="bgm-handle" title="ドラッグで並び替え（ほかのフォルダへも移せます）">${GRIP_SVG}</span>` : ''}`;
+            bindBgmRow(row, idx);
+            list.appendChild(row);
+          });
+        });
+      }
+      if (!locked) {
+        const add = document.createElement('button');
+        add.type = 'button';
+        add.className = 'bgm-new-folder';
+        add.innerHTML = '<span>+</span> NEW FOLDER';
+        add.addEventListener('click', () => openFolderName(null));
+        list.appendChild(add);
+      }
       list.scrollTop = prevScroll;
       $('bgmCount').textContent = `${state.bgmList.length} ${state.bgmList.length === 1 ? 'TRACK' : 'TRACKS'}`;
       bgmRowStateKey = '';
@@ -6695,7 +6957,14 @@ registerProcessor('livepad-lofi', LivepadLofi);
         const icon = row.querySelector('.bgm-row-icon');
         if (isCur && state.bgm.isPlaying) icon.innerHTML = '<span class="eq"><i></i><i></i><i></i></span>';
         else if (isCur) icon.innerHTML = PAUSE_MINI_SVG;
-        else icon.innerHTML = `<span class="font-mono-num">${idx + 1}</span>`;
+        else icon.innerHTML = `<span class="font-mono-num">${row.dataset.num}</span>`;
+      });
+      // 今の曲が入っているフォルダの見出しに印（閉じていても分かるように）
+      const curFolder = state.bgmList.length ? bgmFolderOf(state.bgmList[state.bgm.trackIndex]) : null;
+      list.querySelectorAll('.bgm-folder').forEach(h => {
+        const on = h.dataset.folder === curFolder;
+        h.classList.toggle('is-current', on);
+        h.querySelector('.bgm-folder-now').innerHTML = on && state.bgm.isPlaying ? '<span class="eq"><i></i><i></i><i></i></span>' : '';
       });
 
       // 曲が変わったら、その行がリストの見える位置に来るようにスクロール
@@ -6759,56 +7028,237 @@ registerProcessor('livepad-lofi', LivepadLofi);
       if (handle) handle.addEventListener('pointerdown', (e) => startBgmDrag(e, idx, row, handle));
     }
 
-    /** ≡ をドラッグして並び替え */
+    /** フォルダの見出し：タップで開く／閉じる、長押し（右クリック）でメニュー、＋で曲を追加、≡で並び替え */
+    function bindBgmFolder(head, fid) {
+      let timer = null;
+      let sx = 0;
+      let sy = 0;
+      let fired = false;
+      const clearTimer = () => { if (timer) { clearTimeout(timer); timer = null; } };
+      head.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('.bgm-handle, .bgm-folder-add')) return;
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        fired = false;
+        sx = e.clientX;
+        sy = e.clientY;
+        clearTimer();
+        if (!state.perfLock) {
+          timer = setTimeout(() => {
+            timer = null;
+            fired = true;
+            openFolderMenu(fid, sx, sy);
+          }, 500);
+        }
+      });
+      head.addEventListener('pointermove', (e) => {
+        if (timer && Math.hypot(e.clientX - sx, e.clientY - sy) > 8) clearTimer();
+      });
+      ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => head.addEventListener(t, clearTimer));
+      head.addEventListener('click', (e) => {
+        if (e.target.closest('.bgm-handle')) return;
+        if (e.target.closest('.bgm-folder-add')) {
+          bgmAddTarget = fid;
+          $('inputBgmFiles').click();
+          return;
+        }
+        if (fired) { fired = false; return; }
+        const f = bgmFolderById(fid);
+        if (!f) return;
+        f.open = !f.open;
+        renderBgmList();
+        storage.saveState();
+      });
+      head.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        clearTimer();
+        if (state.perfLock) return;
+        openFolderMenu(fid, e.clientX, e.clientY);
+      });
+      const handle = head.querySelector('.bgm-handle');
+      if (handle) handle.addEventListener('pointerdown', (e) => startBgmFolderDrag(e, fid, head, handle));
+    }
+
+    /** ドラッグ共通：つかんだものを指に付いて動かし、落とす場所に線を出す。端ではリストを自動でスクロール */
+    function bgmDragSession(e, el, handle, findTarget, drop) {
+      const list = $('bgmList');
+      const line = document.createElement('div');
+      line.className = 'bgm-drop-line hidden';
+      list.appendChild(line);
+      const startY = e.clientY;
+      const startScroll = list.scrollTop;
+      let lastY = e.clientY;
+      let target = null;
+      let raf = 0;
+      let dropHead = null;
+      try { handle.setPointerCapture(e.pointerId); } catch (err) { /* 古いブラウザ */ }
+      el.classList.add('is-dragging');
+
+      const place = () => {
+        el.style.transform = `translateY(${lastY - startY + (list.scrollTop - startScroll)}px)`;
+        target = findTarget(lastY);
+        if (dropHead) dropHead.classList.remove('is-drop');
+        dropHead = null;
+        if (!target) { line.classList.add('hidden'); return; }
+        if (target.head) {
+          // 閉じているフォルダの見出しの上：そのフォルダの最後に入る
+          dropHead = target.head;
+          dropHead.classList.add('is-drop');
+          line.classList.add('hidden');
+          return;
+        }
+        const lr = list.getBoundingClientRect();
+        line.style.top = `${target.y - lr.top + list.scrollTop - 1}px`;
+        line.classList.remove('hidden');
+      };
+      const autoScroll = () => {
+        raf = 0;
+        const lr = list.getBoundingClientRect();
+        let v = 0;
+        if (lastY < lr.top + 24) v = -8;
+        else if (lastY > lr.bottom - 24) v = 8;
+        if (v) {
+          const before = list.scrollTop;
+          list.scrollTop += v;
+          if (list.scrollTop !== before) {
+            place();
+            raf = requestAnimationFrame(autoScroll);
+          }
+        }
+      };
+      const move = (ev) => {
+        lastY = ev.clientY;
+        place();
+        if (!raf) raf = requestAnimationFrame(autoScroll);
+      };
+      const up = () => {
+        handle.removeEventListener('pointermove', move);
+        handle.removeEventListener('pointerup', up);
+        handle.removeEventListener('pointercancel', up);
+        cancelAnimationFrame(raf);
+        el.classList.remove('is-dragging');
+        el.style.transform = '';
+        if (dropHead) dropHead.classList.remove('is-drop');
+        line.remove();
+        if (target) drop(target);
+      };
+      handle.addEventListener('pointermove', move);
+      handle.addEventListener('pointerup', up);
+      handle.addEventListener('pointercancel', up);
+      place();
+    }
+
+    /** 曲の ≡ をドラッグ：同じフォルダの中の並び替えも、ほかのフォルダへの移動もできる */
     function startBgmDrag(e, from, row, handle) {
       if (state.perfLock) return;
       e.preventDefault();
       e.stopPropagation();
       const list = $('bgmList');
-      const rows = Array.from(list.querySelectorAll('.bgm-row'));
-      const rowH = row.offsetHeight;
-      const startY = e.clientY;
-      const startScroll = list.scrollTop;
-      let to = from;
-
-      handle.setPointerCapture(e.pointerId);
-      row.classList.add('is-dragging');
-
-      const move = (ev) => {
-        const lr = list.getBoundingClientRect();
-        if (ev.clientY < lr.top + 18) list.scrollTop -= 6;
-        else if (ev.clientY > lr.bottom - 18) list.scrollTop += 6;
-        const dy = ev.clientY - startY + (list.scrollTop - startScroll);
-        row.style.transform = `translateY(${dy}px)`;
-        to = Math.max(0, Math.min(rows.length - 1, from + Math.round(dy / rowH)));
-        rows.forEach((r, i) => {
-          if (i === from) return;
-          let shift = 0;
-          if (from < to && i > from && i <= to) shift = -rowH;
-          else if (from > to && i < from && i >= to) shift = rowH;
-          r.style.transform = shift ? `translateY(${shift}px)` : '';
+      const findTarget = (y) => {
+        // 落とせる場所（各フォルダの先頭・各曲の下・閉じたフォルダの見出し）のうち、指に一番近いところ
+        const slots = [];
+        list.querySelectorAll('.bgm-folder').forEach(h => {
+          const fid = h.dataset.folder;
+          const hr = h.getBoundingClientRect();
+          const f = bgmFolderById(fid);
+          if (!f || !f.open) {
+            slots.push({ y: hr.top + hr.height / 2, folder: fid, pos: Infinity, head: h });
+            return;
+          }
+          slots.push({ y: hr.bottom, folder: fid, pos: 0 });
+          let k = 0;
+          list.querySelectorAll(`.bgm-row[data-folder="${CSS.escape(fid)}"]`).forEach(r => {
+            if (r === row) return;
+            k++;
+            slots.push({ y: r.getBoundingClientRect().bottom, folder: fid, pos: k });
+          });
         });
+        let best = null;
+        slots.forEach(sl => { if (!best || Math.abs(sl.y - y) < Math.abs(best.y - y)) best = sl; });
+        return best;
       };
-
-      const up = async () => {
-        handle.removeEventListener('pointermove', move);
-        handle.removeEventListener('pointerup', up);
-        handle.removeEventListener('pointercancel', up);
-        row.classList.remove('is-dragging');
-        rows.forEach(r => { r.style.transform = ''; });
-        if (to !== from) {
-          const current = state.bgmList[state.bgm.trackIndex];
-          const [item] = state.bgmList.splice(from, 1);
-          state.bgmList.splice(to, 0, item);
-          state.bgm.trackIndex = state.bgmList.indexOf(current);
-          renderBgmList();
-          await storage.saveState();
+      bgmDragSession(e, row, handle, findTarget, (target) => {
+        const before = state.bgmList.map(t => `${t.id}:${bgmFolderOf(t)}`).join('|');
+        const cur = state.bgmList[state.bgm.trackIndex];
+        const [tr] = state.bgmList.splice(from, 1);
+        tr.folderId = target.folder;
+        const inF = [];
+        state.bgmList.forEach((t, i) => { if (bgmFolderOf(t) === target.folder) inF.push(i); });
+        if (!inF.length || target.pos >= inF.length) {
+          if (inF.length) state.bgmList.splice(inF[inF.length - 1] + 1, 0, tr);
+          else state.bgmList.push(tr);
+        } else {
+          state.bgmList.splice(inF[target.pos], 0, tr);
         }
-      };
+        state.bgm.trackIndex = Math.max(0, state.bgmList.indexOf(cur));
+        normalizeBgm();
+        renderBgmList();
+        if (state.bgmList.map(t => `${t.id}:${bgmFolderOf(t)}`).join('|') !== before) storage.saveState();
+      });
+    }
 
-      handle.addEventListener('pointermove', move);
-      handle.addEventListener('pointerup', up);
-      handle.addEventListener('pointercancel', up);
+    /** フォルダの見出しの ≡ をドラッグ：フォルダの並び替え */
+    function startBgmFolderDrag(e, fid, head, handle) {
+      if (state.perfLock) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const list = $('bgmList');
+      const findTarget = (y) => {
+        const heads = Array.from(list.querySelectorAll('.bgm-folder')).filter(h => h !== head);
+        const slots = heads.map((h, i) => ({ y: h.getBoundingClientRect().top, pos: i }));
+        // 最後のフォルダの下（NEW FOLDER の上）
+        const last = list.querySelector('.bgm-new-folder');
+        const endY = last ? last.getBoundingClientRect().top : list.getBoundingClientRect().bottom;
+        slots.push({ y: endY, pos: heads.length });
+        let best = null;
+        slots.forEach(sl => { if (!best || Math.abs(sl.y - y) < Math.abs(best.y - y)) best = sl; });
+        return best;
+      };
+      bgmDragSession(e, head, handle, findTarget, (target) => {
+        const from = state.bgmFolders.findIndex(f => f.id === fid);
+        if (from < 0) return;
+        const before = state.bgmFolders.map(f => f.id).join('|');
+        const [f] = state.bgmFolders.splice(from, 1);
+        state.bgmFolders.splice(Math.min(target.pos, state.bgmFolders.length), 0, f);
+        normalizeBgm();
+        renderBgmList();
+        if (state.bgmFolders.map(x => x.id).join('|') !== before) storage.saveState();
+      });
+    }
+
+    // ---- フォルダの名前（新しく作る／名前を変える） ---------------------------
+    let folderNameTarget = null;   // null＝新しく作る、それ以外＝名前を変えるフォルダのID
+
+    function openFolderName(fid) {
+      if (state.perfLock) return;
+      folderNameTarget = fid;
+      const f = fid ? bgmFolderById(fid) : null;
+      $('folderNameTitle').textContent = f ? 'RENAME FOLDER' : 'NEW FOLDER';
+      $('folderNameInput').value = f ? f.name : '';
+      $('folderNameBackdrop').classList.remove('hidden');
+      $('folderNameBackdrop').classList.add('flex');
+      setTimeout(() => { $('folderNameInput').focus(); $('folderNameInput').select(); }, 30);
+    }
+
+    function closeFolderName() {
+      $('folderNameBackdrop').classList.add('hidden');
+      $('folderNameBackdrop').classList.remove('flex');
+      folderNameTarget = null;
+    }
+
+    function submitFolderName() {
+      const name = $('folderNameInput').value.trim().slice(0, 24);
+      if (!name) { $('folderNameInput').focus(); return; }
+      if (folderNameTarget) {
+        const f = bgmFolderById(folderNameTarget);
+        if (f && f.id !== BGM_UNSORTED) f.name = name;
+      } else {
+        const id = `f${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+        state.bgmFolders.push({ id, name, open: true });
+        showToast(`フォルダ「${name}」を作りました`);
+      }
+      closeFolderName();
+      renderBgmList();
+      storage.saveState();
     }
 
     // ---- 長押しメニュー ----------------------------------------------------
@@ -6831,6 +7281,13 @@ registerProcessor('livepad-lofi', LivepadLofi);
       del.disabled = false;
       $('bgmMenuDeleteLabel').textContent = 'DELETE';
 
+      // MOVE TO：今のフォルダ以外。フォルダが1つ（UNSORTED）だけなら出さない
+      const others = state.bgmFolders.filter(f => f.id !== bgmFolderOf(tr));
+      $('bgmMenuMoveWrap').classList.toggle('hidden', others.length === 0);
+      $('bgmMenuMove').innerHTML = others.map(f =>
+        `<button type="button" class="ctx-item" role="menuitem" data-move="${escapeHtml(f.id)}"><svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span class="truncate">${escapeHtml(f.name)}</span></button>`
+      ).join('');
+
       const menu = $('bgmMenu');
       menu.classList.remove('hidden');
       const mw = menu.offsetWidth;
@@ -6842,9 +7299,73 @@ registerProcessor('livepad-lofi', LivepadLofi);
 
     function closeBgmMenu() {
       $('bgmMenu').classList.add('hidden');
+      $('bgmFolderMenu').classList.add('hidden');
       $('bgmMenuShield').classList.add('hidden');
       bgmMenuIndex = -1;
       bgmDeleteArmed = false;
+      folderMenuId = null;
+      folderDeleteArmed = false;
+    }
+
+    /** 曲をほかのフォルダへ移す（移した先のフォルダの最後に入る） */
+    function moveBgmToFolder(index, fid) {
+      const tr = state.bgmList[index];
+      const f = bgmFolderById(fid);
+      if (!tr || !f) return;
+      const cur = state.bgmList[state.bgm.trackIndex];
+      state.bgmList.splice(index, 1);
+      tr.folderId = fid;
+      state.bgmList.push(tr);   // normalizeBgm で、そのフォルダの最後にまとまる
+      state.bgm.trackIndex = Math.max(0, state.bgmList.indexOf(cur));
+      normalizeBgm();
+      renderBgmList();
+      storage.saveState();
+      showToast(`「${tr.name}」を ${f.name} に移しました`);
+    }
+
+    // ---- フォルダの長押しメニュー ----
+    let folderMenuId = null;
+    let folderDeleteArmed = false;
+
+    function openFolderMenu(fid, x, y) {
+      if (state.perfLock) return;
+      const f = bgmFolderById(fid);
+      if (!f) return;
+      closeBgmMenu();
+      folderMenuId = fid;
+      folderDeleteArmed = false;
+      const count = state.bgmList.filter(t => bgmFolderOf(t) === fid).length;
+      $('bgmFolderMenuTitle').textContent = `${f.name}（${count}曲）`;
+      $('bgmFolderMenuPlay').disabled = count === 0;
+      const fixed = fid === BGM_UNSORTED;
+      $('bgmFolderMenuRename').classList.toggle('hidden', fixed);
+      $('bgmFolderMenuDelete').classList.toggle('hidden', fixed);
+      $('bgmFolderMenuNote').classList.toggle('hidden', fixed);
+      $('bgmFolderMenuDelete').classList.remove('is-confirm');
+      $('bgmFolderMenuDeleteLabel').textContent = 'DELETE FOLDER';
+      const menu = $('bgmFolderMenu');
+      menu.classList.remove('hidden');
+      const mw = menu.offsetWidth;
+      const mh = menu.offsetHeight;
+      menu.style.left = `${Math.min(Math.max(8, x), window.innerWidth - mw - 8)}px`;
+      menu.style.top = `${Math.min(Math.max(8, y), window.innerHeight - mh - 8)}px`;
+      $('bgmMenuShield').classList.remove('hidden');
+    }
+
+    /** フォルダを消す：中の曲は UNSORTED の最後へ */
+    function deleteBgmFolder(fid) {
+      const i = state.bgmFolders.findIndex(f => f.id === fid);
+      if (i < 0 || fid === BGM_UNSORTED) return;
+      const [f] = state.bgmFolders.splice(i, 1);
+      const cur = state.bgmList[state.bgm.trackIndex];
+      const moved = state.bgmList.filter(t => bgmFolderOf(t) === fid);
+      state.bgmList = state.bgmList.filter(t => bgmFolderOf(t) !== fid);
+      moved.forEach(t => { t.folderId = BGM_UNSORTED; state.bgmList.push(t); });
+      state.bgm.trackIndex = Math.max(0, state.bgmList.indexOf(cur));
+      normalizeBgm();
+      renderBgmList();
+      storage.saveState();
+      showToast(moved.length ? `フォルダ「${f.name}」を消しました（${moved.length}曲は UNSORTED へ）` : `フォルダ「${f.name}」を消しました`);
     }
 
     async function deleteBgmAt(index) {
@@ -6900,8 +7421,8 @@ registerProcessor('livepad-lofi', LivepadLofi);
       updateBgmRowStates();
     }
 
-    const REPEAT_ORDER = ['off', 'all', 'one'];
-    const REPEAT_LABEL = { off: 'リピート：なし', all: 'リピート：リスト全体', one: 'リピート：1曲' };
+    const REPEAT_ORDER = ['off', 'folder', 'all', 'one'];
+    const REPEAT_LABEL = { off: 'リピート：なし（フォルダの最後で止まる）', folder: 'リピート：FOLDER（今のフォルダをくり返す）', all: 'リピート：ALL（全部のフォルダを順番に）', one: 'リピート：ONE（1曲）' };
 
     function updateRepeatUI() {
       const btn = $('btnBgmRepeat');
@@ -6911,7 +7432,10 @@ registerProcessor('livepad-lofi', LivepadLofi);
           ? 'bg-[rgb(var(--n-10131b))] border-[rgb(var(--n-2a3242))] text-slate-500 hover:text-slate-300'
           : 'bg-accent-500/20 border-accent-500/50 text-accent-300'
       }`;
-      $('repeatOneBadge').classList.toggle('hidden', r !== 'one');
+      // 札：ONE＝「1」、FOLDER＝「F」（ALL は札なし、OFF は暗い表示）
+      const badge = $('repeatOneBadge');
+      badge.textContent = r === 'folder' ? 'F' : '1';
+      badge.classList.toggle('hidden', r !== 'one' && r !== 'folder');
       btn.title = REPEAT_LABEL[r];
       btn.setAttribute('aria-label', REPEAT_LABEL[r]);
     }
@@ -8610,6 +9134,7 @@ registerProcessor('livepad-lofi', LivepadLofi);
         $('btnLayoutEdit').disabled = state.perfLock;
         if (state.perfLock) {
           closeFxOrder();
+          closeFolderName();
           closeEditModal();
           closeTabRename();
           closeBgmMenu();
@@ -8648,10 +9173,18 @@ registerProcessor('livepad-lofi', LivepadLofi);
       $('btnBgmNext').addEventListener('click', () => audioEngine.nextBgm());
       $('btnBgmPrev').addEventListener('click', () => audioEngine.prevBgm());
 
-      $('btnAddBgm').addEventListener('click', () => $('inputBgmFiles').click());
+      // 上の「+ ADD BGM」は UNSORTED へ、フォルダの見出しの「+」はそのフォルダへ追加
+      $('btnAddBgm').addEventListener('click', () => {
+        bgmAddTarget = BGM_UNSORTED;
+        $('inputBgmFiles').click();
+      });
       $('inputBgmFiles').addEventListener('change', async (e) => {
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return;
+        const target = bgmFolderById(bgmAddTarget) ? bgmAddTarget : BGM_UNSORTED;
+        const folder = bgmFolderById(target);
+        if (folder) folder.open = true;
+        let lastEntry = null;
         for (const f of files) {
           const saved = await storage.saveAudioFile(f);
           const entry = {
@@ -8659,8 +9192,10 @@ registerProcessor('livepad-lofi', LivepadLofi);
             name: saved.name.replace(/\.[^/.]+$/, ''),
             type: 'file',
             durationSec: 0,
-            fileId: saved.id
+            fileId: saved.id,
+            folderId: target
           };
+          lastEntry = entry;
           // 追加した時点で長さを読み取ってリストに表示
           try {
             const buf = await audioEngine.getDecodedBuffer(saved.id);
@@ -8670,11 +9205,13 @@ registerProcessor('livepad-lofi', LivepadLofi);
           }
           state.bgmList.push(entry);
         }
-        await storage.saveState();
         renderBgmList();
-        $('bgmList').scrollTop = $('bgmList').scrollHeight;
+        await storage.saveState();
+        // 追加した曲（フォルダの最後）が見えるようにスクロール
+        const lastRow = lastEntry ? $('bgmList').querySelector(`.bgm-row[data-index="${state.bgmList.indexOf(lastEntry)}"]`) : null;
+        if (lastRow) lastRow.scrollIntoView({ block: 'nearest' });
         e.target.value = '';
-        showToast(`${files.length}件のBGMを追加しました`);
+        showToast(`${files.length}件のBGMを ${folder ? folder.name : 'UNSORTED'} に追加しました`);
       });
 
       // シークバー：動かしている間は表示だけ変え、指を離したら移動
@@ -8729,6 +9266,47 @@ registerProcessor('livepad-lofi', LivepadLofi);
         closeBgmMenu();
         if (idx >= 0) audioEngine.playTrackAt(idx);
       });
+      $('bgmMenuMove').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-move]');
+        if (!b) return;
+        const idx = bgmMenuIndex;
+        closeBgmMenu();
+        if (idx >= 0) moveBgmToFolder(idx, b.dataset.move);
+      });
+      $('bgmFolderMenuPlay').addEventListener('click', () => {
+        const fid = folderMenuId;
+        closeBgmMenu();
+        const first = state.bgmList.findIndex(t => bgmFolderOf(t) === fid);
+        if (first < 0) return;
+        state.bgm.trackIndex = first;
+        state.bgm.elapsedSec = 0;
+        renderBgmList();
+        audioEngine.startBgm(state.bgm.isPlaying && state.bgm.crossfade, 0);
+      });
+      $('bgmFolderMenuRename').addEventListener('click', () => {
+        const fid = folderMenuId;
+        closeBgmMenu();
+        if (fid) openFolderName(fid);
+      });
+      $('bgmFolderMenuDelete').addEventListener('click', () => {
+        const fid = folderMenuId;
+        if (!fid) return;
+        if (!folderDeleteArmed) {
+          folderDeleteArmed = true;
+          $('bgmFolderMenuDelete').classList.add('is-confirm');
+          $('bgmFolderMenuDeleteLabel').textContent = 'TAP AGAIN TO DELETE';
+          return;
+        }
+        closeBgmMenu();
+        deleteBgmFolder(fid);
+      });
+      $('btnFolderNameCancel').addEventListener('click', closeFolderName);
+      $('folderNameBackdrop').addEventListener('click', (e) => { if (e.target.id === 'folderNameBackdrop') closeFolderName(); });
+      $('folderNameForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        submitFolderName();
+      });
+
       $('bgmMenuDelete').addEventListener('click', async () => {
         const idx = bgmMenuIndex;
         if (idx < 0) return;
@@ -8912,6 +9490,7 @@ registerProcessor('livepad-lofi', LivepadLofi);
         audioEngine.bufferCache.clear();
         state.banks = createDefaultBanks();
         state.bgmList = createDefaultBgmList();
+        state.bgmFolders = createDefaultBgmFolders();
         state.bgm.trackIndex = 0;
         state.bgm.elapsedSec = 0;
         state.activeBankIndex = 0;
@@ -9000,7 +9579,7 @@ registerProcessor('livepad-lofi', LivepadLofi);
       const heldKeys = new Map();
       const isOpen = (id) => !$(id).classList.contains('hidden');
       const overlayOpen = () =>
-        isOpen('editModalBackdrop') || isOpen('settingsModalBackdrop') || isOpen('tabModalBackdrop') || isOpen('bgmMenu') || isOpen('helpModalBackdrop') || isOpen('layoutNameBackdrop') || isOpen('fxOrderBackdrop');
+        isOpen('editModalBackdrop') || isOpen('settingsModalBackdrop') || isOpen('tabModalBackdrop') || isOpen('bgmMenu') || isOpen('bgmFolderMenu') || isOpen('folderNameBackdrop') || isOpen('helpModalBackdrop') || isOpen('layoutNameBackdrop') || isOpen('fxOrderBackdrop');
       const isTyping = (t) => !!t && (
         (t.tagName === 'INPUT' && !['range', 'button', 'checkbox', 'file'].includes(t.type)) ||
         t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable
@@ -9024,6 +9603,7 @@ registerProcessor('livepad-lofi', LivepadLofi);
             closeHelp();
             closeLayoutName();
             closeFxOrder();
+            closeFolderName();
             return;
           }
           if (isOpen('startupOverlay')) return;
@@ -9071,6 +9651,7 @@ registerProcessor('livepad-lofi', LivepadLofi);
       if (saved) {
         if (saved.banks) state.banks = saved.banks;
         if (saved.bgmList) state.bgmList = saved.bgmList.filter(t => t.type === 'file');   // 旧版の内蔵シンセBGMは除外
+        if (Array.isArray(saved.bgmFolders)) state.bgmFolders = saved.bgmFolders;          // フォルダがない旧版は全曲 UNSORTED へ
         if (typeof saved.masterVolume === 'number') state.masterVolume = saved.masterVolume;
         if (typeof saved.seVolume === 'number') state.seVolume = saved.seVolume;
         if (typeof saved.bgmVolume === 'number') state.bgm.volume = saved.bgmVolume;
