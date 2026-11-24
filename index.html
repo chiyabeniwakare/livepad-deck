@@ -1643,11 +1643,11 @@
                 <button type="button" class="fx-btn" data-fx="gate" style="--fx-color:#fbbf24" title="GATE：音を細かく刻みます。右ほど細かく、上ほど深く刻みます。長押しで外す">
                   <span class="fx-btn-top"><span class="fx-btn-led"></span><span class="fx-btn-num">FX 3</span><span class="fx-btn-hold">HOLD</span><span class="fx-btn-tgt hidden">ALL</span></span><span class="fx-btn-name">GATE</span>
                 </button>
-                <button type="button" class="fx-btn" data-fx="tape" style="--fx-color:#fb7185" title="TAPE STOP：レコードを手で止めたように音程が下がります。右ほどすぐ止まり、上ほど遅くなります。長押しで外す">
-                  <span class="fx-btn-top"><span class="fx-btn-led"></span><span class="fx-btn-num">FX 4</span><span class="fx-btn-hold">HOLD</span><span class="fx-btn-tgt hidden">ALL</span></span><span class="fx-btn-name">TAPE STOP</span>
-                </button>
                 <button type="button" class="fx-btn" data-fx="pitch" style="--fx-color:#34d399" title="PITCH：速さはそのままで音程だけを変えます。真ん中が元の音程で、上で高く・下で低く（±12半音）。右半分は半音ずつ動きます。長押しで外す">
-                  <span class="fx-btn-top"><span class="fx-btn-led"></span><span class="fx-btn-num">FX 5</span><span class="fx-btn-hold">HOLD</span><span class="fx-btn-tgt hidden">ALL</span></span><span class="fx-btn-name">PITCH</span>
+                  <span class="fx-btn-top"><span class="fx-btn-led"></span><span class="fx-btn-num">FX 4</span><span class="fx-btn-hold">HOLD</span><span class="fx-btn-tgt hidden">ALL</span></span><span class="fx-btn-name">PITCH</span>
+                </button>
+                <button type="button" class="fx-btn" data-fx="tape" style="--fx-color:#fb7185" title="TAPE STOP：レコードを手で止めたように音程が下がります。右ほどすぐ止まり、上ほど遅くなります。長押しで外す">
+                  <span class="fx-btn-top"><span class="fx-btn-led"></span><span class="fx-btn-num">FX 5</span><span class="fx-btn-hold">HOLD</span><span class="fx-btn-tgt hidden">ALL</span></span><span class="fx-btn-name">TAPE STOP</span>
                 </button>
               </div>
             </div>
@@ -3663,8 +3663,8 @@ registerProcessor('livepad-pitch', LivepadPitch);
           { k: 'filter', name: 'FILTER', y: 'RESONANCE', x0: 'DARK', x1: 'BRIGHT', mid: 'FLAT' },
           { k: 'echo', name: 'ECHO', y: 'FEEDBACK', x0: 'SHORT', x1: 'LONG', zones: ECHO_STEPS.map(z => z.label) },
           { k: 'gate', name: 'GATE', y: 'DEPTH', x0: 'SLOW', x1: 'FAST', zones: GATE_STEPS.map(z => z.label) },
-          { k: 'tape', name: 'TAPE STOP', y: 'SLOWER', x0: 'SLOW STOP', x1: 'QUICK STOP', top: 'STOP' },
-          { k: 'pitch', name: 'PITCH', y: 'HIGHER', x0: 'SMOOTH', x1: 'STEP', band: true }
+          { k: 'pitch', name: 'PITCH', y: 'HIGHER', x0: 'SMOOTH', x1: 'STEP', band: true },
+          { k: 'tape', name: 'TAPE STOP', y: 'SLOWER', x0: 'SLOW STOP', x1: 'QUICK STOP', top: 'STOP' }
         ];
         let b = '';
         cells.forEach((c, i) => {
@@ -3701,7 +3701,7 @@ registerProcessor('livepad-pitch', LivepadPitch);
         return HF.svg(300, 236, b);
       },
       fxHold() {
-        const btns = [['filter', 'FILTER', true], ['echo', 'ECHO', true], ['gate', 'GATE', false], ['tape', 'TAPE', false], ['pitch', 'PITCH', false]];
+        const btns = [['filter', 'FILTER', true], ['echo', 'ECHO', true], ['gate', 'GATE', false], ['pitch', 'PITCH', false], ['tape', 'TAPE', false]];
         let b = '';
         btns.forEach(([k, label, held], i) => {
           const x = 4 + i * 59;
@@ -3865,8 +3865,8 @@ registerProcessor('livepad-pitch', LivepadPitch);
             '<b>FILTER</b>：左でこもった音（DARK）、右でシャリシャリした音（BRIGHT）、真ん中は元の音。上ほどクセ（RESONANCE）が強い',
             '<b>ECHO</b>：横で繰り返しの間隔（曲のテンポに合わせる。D は付点で1.5倍の長さ）。上ほど長く響く。指を離しても残響は自然に消える',
             '<b>GATE</b>：音を細かく刻む。右ほど細かく、上ほど深く',
-            '<b>TAPE STOP</b>：レコードを手で止めたように音程が下がる。右ほどすぐ止まり、上ほど遅く（一番上で停止）',
-            '<b>PITCH</b>：速さはそのままで音程だけを変える。真ん中が元の音程で、上で高く・下で低く（±12半音＝1オクターブ）。左半分はなめらかに、右半分は半音ずつ動く。大きく変えると少し揺れたような音になります'
+            '<b>PITCH</b>：速さはそのままで音程だけを変える。真ん中が元の音程で、上で高く・下で低く（±12半音＝1オクターブ）。左半分はなめらかに、右半分は半音ずつ動く。大きく変えると少し揺れたような音になります',
+            '<b>TAPE STOP</b>：レコードを手で止めたように音程が下がる。右ほどすぐ止まり、上ほど遅く（一番上で停止）'
           ] },
           { name: 'HOLD・重ねがけ', fig: 'fxHold', text: [
             '<b>HOLD</b> はFXごとにON／OFFします。ONのFXは指を離してもかかったまま（ボタンに HOLD の札が付きます）',
