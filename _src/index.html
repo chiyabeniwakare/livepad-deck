@@ -772,8 +772,8 @@
       background: rgb(var(--n-0d1016)); border: 1px solid rgb(var(--n-2a3242));
     }
     .obs-input:focus, .edit-obs-input:focus { outline: none; border-color: rgb(var(--ac-400)); }
-    .obs-btn { padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; color: rgb(var(--ac-200)); background: rgb(var(--ac-500) / .14); border: 1px solid rgb(var(--ac-500) / .45); white-space: nowrap; }
-    .obs-btn:hover { background: rgb(var(--ac-500) / .25); }
+    .obs-btn, .soft-btn { padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; color: rgb(var(--ac-200)); background: rgb(var(--ac-500) / .14); border: 1px solid rgb(var(--ac-500) / .45); white-space: nowrap; }
+    .obs-btn:hover, .soft-btn:hover { background: rgb(var(--ac-500) / .25); }
     .obs-btn:disabled { opacity: .45; }
     .obs-sub { display: flex; flex-direction: column; gap: 8px; }
     #obsCard.is-off .obs-sub { opacity: .55; }
@@ -791,6 +791,38 @@
     .duck-pad.is-voice { box-shadow: 0 0 0 2px rgba(34,197,94,.65), 0 0 14px rgba(34,197,94,.35); }
     /* OBS ACTION があるパッドの札 */
     .pad-obs-tag { padding: 0 3px; border-radius: 3px; font-size: 7.5px; font-weight: 900; letter-spacing: .04em; color: #0b0d11; background: #a78bfa; }
+
+    /* はじめの案内：1か所ずつ照らして、そばに吹き出し */
+    #tourRoot { position: fixed; inset: 0; z-index: 38; }   /* 画面の上・モーダル（z-40）の下 */
+    .tour-hole {
+      position: fixed; border-radius: 14px; pointer-events: none;
+      box-shadow: 0 0 0 200vmax rgb(3 5 9 / .74), 0 0 0 2px rgb(var(--ac-400)), 0 0 24px rgb(var(--ac-400) / .35);
+      transition: left .28s ease, top .28s ease, width .28s ease, height .28s ease;
+    }
+    .tour-hole.is-none { box-shadow: 0 0 0 200vmax rgb(3 5 9 / .74); }
+    .tour-tip {
+      position: fixed; width: min(300px, calc(100vw - 24px)); padding: 14px 14px 12px; border-radius: 14px;
+      background: rgb(var(--n-181c26)); border: 1px solid rgb(var(--ac-500) / .5); box-shadow: 0 18px 44px rgb(0 0 0 / .55);
+      color: rgb(var(--n-cbd5e1)); font-size: 12px; line-height: 1.65;
+      transition: left .28s ease, top .28s ease;
+    }
+    @media (max-height: 500px) { .tour-tip { width: min(260px, calc(100vw - 24px)); } }   /* iPhone横：DECKの横に入るように */
+    .tour-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+    .tour-title { font-size: 14px; font-weight: 800; color: rgb(var(--n-f1f5f9)); }
+    .tour-count { font-size: 10px; font-weight: 800; color: rgb(var(--n-64748b)); font-variant-numeric: tabular-nums; }
+    .tour-text b { color: rgb(var(--ac-200)); font-weight: 800; }
+    .tour-list { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; row-gap: 3px; margin-top: 2px; }
+    .tour-list dt { font-size: 10.5px; font-weight: 800; color: rgb(var(--ac-200)); white-space: nowrap; }
+    .tour-actions { display: flex; align-items: center; gap: 6px; margin-top: 12px; }
+    .tour-skip { margin-right: auto; padding: 4px 2px; font-size: 11px; font-weight: 700; color: rgb(var(--n-94a3b8)); }
+    .tour-skip:hover { color: rgb(var(--n-e2e8f0)); }
+    .tour-btn { padding: 6px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 800; }
+    .tour-btn.is-back { color: rgb(var(--n-cbd5e1)); background: rgb(var(--n-1f2636)); }
+    .tour-btn.is-back:hover { background: rgb(var(--n-2a3347)); }
+    .tour-btn.is-next { color: #0b0d11; background: rgb(var(--ac-400)); }
+    .tour-btn.is-next:hover { background: rgb(var(--ac-300)); }
+    .tour-btn:focus-visible, .tour-skip:focus-visible { outline: 2px solid rgb(var(--ac-300)); outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) { .tour-hole, .tour-tip { transition: none; } }
 
     /* テスト版の目印 */
     .dev-badge { flex: none; padding: 1px 6px; border-radius: 5px; font-size: 10px; font-weight: 900; letter-spacing: .1em; color: #1a1205; background: #fbbf24; box-shadow: 0 0 10px rgba(251,191,36,.45); }
@@ -1585,7 +1617,7 @@
       </div>
 
       <!-- 右：Wake Lock / Performance Lock / Settings -->
-      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+      <div id="headerTools" class="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <!-- 狭い画面用：MIXERがタブの中に入るので、PANIC STOPをここにも置く -->
         <button id="btnPanicMini" type="button" class="compact-only panic-mini" title="全SE・BGMを即フェード停止 [Esc]">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><rect x="9" y="9" width="6" height="6" fill="currentColor"></rect></svg>
@@ -2262,6 +2294,7 @@
           <p class="text-slate-400 leading-relaxed">
             内蔵の効果音はこのアプリがその場で作っている音なので、配信で自由に使えます。自分で追加したBGM・効果音は、配信で流してよいものかご自身で確認してください。
           </p>
+          <button id="btnReplayTour" type="button" class="soft-btn">はじめの案内をもう一度見る</button>
           <div class="flex items-center justify-between gap-2 pt-1">
             <a href="https://github.com/chiyabeniwakare/livepad-deck/issues" target="_blank" rel="noopener" class="text-accent-300 hover:text-accent-200 underline underline-offset-2">不具合の報告・要望（GitHub）</a>
             <span id="appBuildLabel" class="text-[10px] font-mono-num text-slate-500"></span>
@@ -2383,6 +2416,23 @@
             <p class="text-[10px] text-slate-500 leading-relaxed">マイクの音量のバーが線を超えている間、BGMを下げます。しゃべり終わって少しすると戻ります</p>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- はじめの案内（初回だけ。設定の ABOUT からもう一度見られる） -->
+  <div id="tourRoot" class="hidden" role="dialog" aria-modal="true" aria-labelledby="tourTitle">
+    <div id="tourHole" class="tour-hole"></div>
+    <div id="tourTip" class="tour-tip">
+      <div class="tour-head">
+        <div id="tourTitle" class="tour-title"></div>
+        <div id="tourCount" class="tour-count"></div>
+      </div>
+      <div id="tourText" class="tour-text"></div>
+      <div class="tour-actions">
+        <button id="tourSkip" type="button" class="tour-skip">スキップ</button>
+        <button id="tourBack" type="button" class="tour-btn is-back">戻る</button>
+        <button id="tourNext" type="button" class="tour-btn is-next">次へ</button>
       </div>
     </div>
   </div>
@@ -2784,6 +2834,7 @@
       layout: createDefaultLayout(),   // 広い画面のDECKの並び（タイル型）と保存したレイアウト
       themeColor: DEFAULT_THEME,
       keyMap: 'standard',    // SEパッドを鳴らすキーの並び：standard / numpad（端末ごと）
+      tourSeen: false,       // はじめの案内を見終わったか（端末ごと）
       recSource: 'mic',      // REC で録る音：mic / resample（端末ごと）
       obs: createDefaultObs(),   // OBS連携（端末ごと）
       tone: 'dark',          // 背景の色調：dark / dim / navy / warm / light / auto
@@ -2861,6 +2912,7 @@
             toneTint: state.toneTint,
             keyMap: state.keyMap,
             recSource: state.recSource,
+            tourSeen: state.tourSeen,
             obs: state.obs,
             duckAmount: state.duckAmount,
             eq: state.eq,
@@ -5333,6 +5385,169 @@ registerProcessor('livepad-rec', LivepadRec);
       document.getElementById('btnHelpClose').addEventListener('click', closeHelp);
       const backdrop = document.getElementById('helpModalBackdrop');
       backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeHelp(); });
+    }
+
+    // =========================================================================
+    // はじめの案内（初回起動のときだけ。設定の ABOUT からもう一度見られる）
+    //   DECKを1つずつ照らして、そばに短い説明を出す。LAYOUTで隠したDECKは飛ばす
+    //   iPhone（狭い画面）は1度に1つのDECKしか出ないので、タブを切り替えて見せ、終わったら戻す
+    // =========================================================================
+    const TOUR_STEPS = [
+      { panel: 'bgm', title: 'BGM DECK', text: '配信のBGMを流す場所。<b>＋ ADD BGM</b> で曲を追加し、フォルダに分けて順番に流せます' },
+      { panel: 'eq', title: 'EQ DECK', text: 'BGMだけの音質の調整（低音・高音など）' },
+      { panel: 'pitch', title: 'PITCH DECK', text: 'BGMの速さ（<b>TEMPO</b>）と音程（<b>KEY</b>）を変えます' },
+      { panel: 'se', title: 'SE DECK', text: '効果音のパッド。タップで鳴らします。<b>✎</b> で音を入れ替えたり、<b>REC</b> でその場で録音したりもできます' },
+      { panel: 'fx', title: 'FX PAD', text: 'パッドを指でなぞると、BGMやSEにエフェクトがかかります' },
+      { panel: 'mixer', title: 'MIXER', text: 'BGM・SE・全体の音量。<b>DUCK</b> を押している間はBGMが下がり、<b>PANIC STOP</b> で全部止まります' },
+      { target: 'headerTools', title: '右上のボタン', list: [
+        ['btnPanicMini', 'PANIC', '全部止める'],
+        ['btnLayoutEdit', 'LAYOUT', 'DECKの並びを変える'],
+        ['btnWakeLock', 'WAKE', '画面が消えないようにする'],
+        ['btnPerfLock', 'LOCK', '配信中の誤操作を防ぐ'],
+        ['btnAccount', 'LOGIN', 'Googleドライブに保存する'],
+        ['btnObsPill', 'OBS', 'OBS連携'],
+        ['btnOpenSettings', '⚙', '設定']
+      ] },
+      { panel: 'first', sel: '.help-btn', title: 'くわしい使い方', text: '各DECKの <b>?</b> で、くわしい使い方が見られます。この案内は ⚙ の設定からもう一度見られます' }
+    ];
+    const tour = { steps: [], index: 0, saved: null, timer: null };
+
+    const tourVisible = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+
+    function startTour() {
+      if (!$('tourRoot').classList.contains('hidden')) return;
+      const hidden = new Set(state.layout.hidden);
+      const panels = TOUR_STEPS.filter(st => st.panel && st.panel !== 'first').map(st => st.panel).filter(id => !hidden.has(id));
+      tour.steps = TOUR_STEPS.filter(st => !st.panel || (st.panel === 'first' ? panels.length > 0 : panels.includes(st.panel)))
+        .map(st => (st.panel === 'first' ? { ...st, panel: panels[0] } : st));
+      tour.index = 0;
+      tour.saved = { left: layoutUi.leftTab, right: layoutUi.rightTab };
+      $('tourRoot').classList.remove('hidden');
+      showTourStep();
+      $('tourNext').focus({ preventScroll: true });
+    }
+
+    /** 案内を閉じる（最後まで見ても、スキップしても、もう出さない） */
+    function endTour() {
+      if ($('tourRoot').classList.contains('hidden')) return;
+      $('tourRoot').classList.add('hidden');
+      if (tour.saved && layoutUi.compact) {
+        layoutUi.leftTab = tour.saved.left;
+        layoutUi.rightTab = tour.saved.right;
+        applyColTabs();
+      }
+      if (!state.tourSeen) { state.tourSeen = true; storage.saveState(); }
+    }
+
+    /** 狭い画面では、案内するDECKのタブを開く */
+    function tourShowPanel(id) {
+      if (!layoutUi.compact || !id) return;
+      if (COMPACT_RIGHT.includes(id)) layoutUi.rightTab = id;
+      else if (COMPACT_LEFT.includes(id)) layoutUi.leftTab = id;
+      applyColTabs();
+    }
+
+    function tourTarget(st) {
+      if (st.panel) {
+        const panel = $(`panel-${st.panel}`);
+        return st.sel ? panel && panel.querySelector(st.sel) : panel;
+      }
+      return $(st.target);
+    }
+
+    function showTourStep() {
+      const st = tour.steps[tour.index];
+      if (!st) { endTour(); return; }
+      tourShowPanel(st.panel);
+      $('tourTitle').textContent = st.title;
+      $('tourCount').textContent = `${tour.index + 1} / ${tour.steps.length}`;
+      if (st.list) {
+        $('tourText').innerHTML = `<dl class="tour-list">${st.list.filter(([id]) => tourVisible($(id)))
+          .map(([, k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`;
+      } else {
+        $('tourText').innerHTML = st.text;
+      }
+      const last = tour.index === tour.steps.length - 1;
+      $('tourBack').classList.toggle('hidden', tour.index === 0);
+      $('tourNext').textContent = last ? 'はじめる' : '次へ';
+      $('tourSkip').classList.toggle('invisible', last);
+      requestAnimationFrame(placeTour);
+    }
+
+    /** 照らす枠と吹き出しの位置（DECKの横→下→上、入らなければDECKの中の下側） */
+    function placeTour() {
+      if ($('tourRoot').classList.contains('hidden')) return;
+      const st = tour.steps[tour.index];
+      const el = st && tourTarget(st);
+      const hole = $('tourHole');
+      const tip = $('tourTip');
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const M = 12;
+      if (!tourVisible(el)) {
+        hole.classList.add('is-none');
+        Object.assign(hole.style, { left: `${vw / 2}px`, top: `${vh / 2}px`, width: '0px', height: '0px' });
+        tip.style.left = `${(vw - tip.offsetWidth) / 2}px`;
+        tip.style.top = `${(vh - tip.offsetHeight) / 2}px`;
+        return;
+      }
+      if (el.scrollIntoView) el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      hole.classList.remove('is-none');
+      const pad = st.sel ? 5 : 4;
+      const r0 = el.getBoundingClientRect();
+      const r = {
+        left: Math.max(2, r0.left - pad), top: Math.max(2, r0.top - pad),
+        right: Math.min(vw - 2, r0.right + pad), bottom: Math.min(vh - 2, r0.bottom + pad)
+      };
+      Object.assign(hole.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.right - r.left}px`, height: `${r.bottom - r.top}px` });
+      const tw = tip.offsetWidth;
+      const th = tip.offsetHeight;
+      const clampX = (x) => Math.max(M, Math.min(vw - tw - M, x));
+      const clampY = (y) => Math.max(M, Math.min(vh - th - M, y));
+      const midY = (r.top + r.bottom) / 2 - th / 2;
+      const midX = (r.left + r.right) / 2 - tw / 2;
+      const fits = {
+        right: () => vw - r.right >= tw + M + 4 && { x: r.right + M, y: clampY(midY) },
+        left: () => r.left >= tw + M + 4 && { x: r.left - tw - M, y: clampY(midY) },
+        below: () => vh - r.bottom >= th + M + 4 && { x: clampX(midX), y: r.bottom + M },
+        above: () => r.top >= th + M + 4 && { x: clampX(midX), y: r.top - th - M }
+      };
+      // 横長で低いもの（ヘッダーのボタン）は下・上を先に、DECKは横を先に
+      const order = r.bottom - r.top < 90 ? ['below', 'above', 'right', 'left'] : ['right', 'left', 'below', 'above'];
+      const pos = order.map(k => fits[k]()).find(Boolean) || { x: clampX(midX), y: clampY(r.bottom - th - M * 2) };   // 入らなければDECKの中の下側
+      tip.style.left = `${pos.x}px`;
+      tip.style.top = `${pos.y}px`;
+    }
+
+    function initTour() {
+      $('tourNext').addEventListener('click', () => {
+        if (tour.index >= tour.steps.length - 1) { endTour(); return; }
+        tour.index += 1;
+        showTourStep();
+      });
+      $('tourBack').addEventListener('click', () => {
+        if (tour.index === 0) return;
+        tour.index -= 1;
+        showTourStep();
+        $('tourNext').focus({ preventScroll: true });
+      });
+      $('tourSkip').addEventListener('click', endTour);
+      // 案内中は、後ろの画面を触れないようにする（ボタン以外は何もしない）
+      $('tourRoot').addEventListener('pointerdown', (e) => { if (!e.target.closest('button')) e.preventDefault(); });
+      document.addEventListener('keydown', (e) => {
+        if ($('tourRoot').classList.contains('hidden')) return;
+        if (e.key === 'ArrowRight') { e.preventDefault(); $('tourNext').click(); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); $('tourBack').click(); }
+      });
+      window.addEventListener('resize', () => {
+        if ($('tourRoot').classList.contains('hidden')) return;
+        clearTimeout(tour.timer);
+        tour.timer = setTimeout(() => { const st = tour.steps[tour.index]; if (st) tourShowPanel(st.panel); placeTour(); }, 140);
+      });
+      $('btnReplayTour').addEventListener('click', () => {
+        $('btnSettingsClose').click();
+        setTimeout(startTour, 120);
+      });
     }
 
     const storage = new DeckStorage();
@@ -10943,6 +11158,8 @@ registerProcessor('livepad-rec', LivepadRec);
         document.getElementById('startupOverlay').classList.add('hidden');
         if (withLogin) driveSync.signIn();   // ボタンを押した流れのまま呼ぶ（ポップアップがブロックされないように）
         showToast('LIVEPAD DECK 起動完了');
+        // はじめの案内（初回だけ）。window.__LIVEPAD_NO_TOUR はテスト用
+        if (!state.tourSeen && !window.__LIVEPAD_NO_TOUR) setTimeout(startTour, 450);
       };
       document.getElementById('btnStartGoogle').addEventListener('click', () => startDeck(true));
       document.getElementById('btnStartDeck').addEventListener('click', () => startDeck(driveSync.meta.linked));
@@ -11474,7 +11691,7 @@ registerProcessor('livepad-rec', LivepadRec);
       const heldKeys = new Map();
       const isOpen = (id) => !$(id).classList.contains('hidden');
       const overlayOpen = () =>
-        isOpen('editModalBackdrop') || isOpen('settingsModalBackdrop') || isOpen('tabModalBackdrop') || isOpen('bgmMenu') || isOpen('bgmFolderMenu') || isOpen('folderNameBackdrop') || isOpen('helpModalBackdrop') || isOpen('layoutNameBackdrop') || isOpen('fxOrderBackdrop') || isOpen('obsModalBackdrop');
+        isOpen('editModalBackdrop') || isOpen('settingsModalBackdrop') || isOpen('tabModalBackdrop') || isOpen('bgmMenu') || isOpen('bgmFolderMenu') || isOpen('folderNameBackdrop') || isOpen('helpModalBackdrop') || isOpen('layoutNameBackdrop') || isOpen('fxOrderBackdrop') || isOpen('obsModalBackdrop') || isOpen('tourRoot');
       const isTyping = (t) => !!t && (
         (t.tagName === 'INPUT' && !['range', 'button', 'checkbox', 'file'].includes(t.type)) ||
         t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable
@@ -11498,6 +11715,7 @@ registerProcessor('livepad-rec', LivepadRec);
             closeObsPanel();
             closeHelp();
             closeLayoutName();
+            endTour();
             closeFxOrder();
             closeFolderName();
             return;
@@ -11580,6 +11798,7 @@ registerProcessor('livepad-rec', LivepadRec);
         if (typeof saved.toneTint === 'boolean') state.toneTint = saved.toneTint;
         if (KEY_MAPS[saved.keyMap]) state.keyMap = saved.keyMap;
         if (REC_SOURCES[saved.recSource]) state.recSource = saved.recSource;
+        if (saved.tourSeen) state.tourSeen = true;
         if (saved.obs) state.obs = normalizeObs(saved.obs);
         if (typeof saved.duckAmount === 'number') state.duckAmount = saved.duckAmount;
         if (saved.eq) state.eq = normalizeEq(saved.eq);
@@ -11619,6 +11838,7 @@ registerProcessor('livepad-rec', LivepadRec);
       initFxPad();
       initEditTrim();
       initObs();
+      initTour();
       initPitchDeck();
       initHelp();
       if (window.ResizeObserver) new ResizeObserver(() => fitPadGrid()).observe(document.getElementById('padGrid'));
