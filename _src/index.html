@@ -5037,7 +5037,7 @@ registerProcessor('livepad-rec', LivepadRec);
         intro: 'OBS Studio（28以降）とつないで、曲名を配信画面に出したり、パッドでOBSを動かしたりできます。LIVEPAD DECK は、OBSを動かしているPCの Chrome か Edge で開いてください（iPhone・iPadからはつなげません）。',
         sections: [
           { name: 'つなぎ方', text: [
-            'OBSのメニューの<b>「ツール」→「WebSocketサーバー設定」</b>を開き、<b>「WebSocketサーバーを有効にする」</b>にチェックを入れます',
+            'OBSのメニューの<b>「ツール」→「WebSocketサーバー設定」</b>を開き、<b>「WebSocketサーバーを有効にする」</b>にチェックを入れて、右下の<b>「適用」か「OK」を押します</b>（押さないとOBS側の受け付けが始まりません）',
             '同じ画面の<b>「接続情報を表示」</b>でパスワードをコピーし、この設定の「パスワード」に貼り付けて<b>「接続」</b>を押します。アドレスはそのまま（ws://127.0.0.1:4455）で大丈夫です',
             'Chromeが「ローカルネットワーク（このパソコンの中のアプリ）へのアクセス」の確認を出したら<b>「許可」</b>を押します',
             '右上に <b>OBS</b> と出て、緑の点が付けばつながっています（配信中は OBS LIVE）。OBSを閉じると自動で切れ、OBSを開くと5秒ほどで自動でつなぎ直します',
@@ -8306,7 +8306,7 @@ registerProcessor('livepad-rec', LivepadRec);
           return;
         }
         if (obs.noRetry) return;
-        setObsStatus('error', 'OBSにつながりません。OBSが起動しているか、「ツール」→「WebSocketサーバー設定」で「WebSocketサーバーを有効にする」がオンか確認してください（5秒ごとにやり直します）');
+        setObsStatus('error', 'OBSにつながりません。OBSが起動しているか、「ツール」→「WebSocketサーバー設定」で「WebSocketサーバーを有効にする」にチェックを入れて「適用」か「OK」を押したか確認してください（5秒ごとにやり直します）');
         clearTimeout(obs.retryTimer);
         obs.retryTimer = setTimeout(obsConnect, 5000);
       };
