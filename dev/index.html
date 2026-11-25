@@ -2225,6 +2225,10 @@
             <input id="obsPassword" type="password" class="obs-input col-span-2" placeholder="パスワード（OBSの「ツール」→「WebSocketサーバー設定」）" autocomplete="off" aria-label="OBSのパスワード">
           </div>
           <p id="obsMessage" class="text-[10px] leading-relaxed text-slate-500"></p>
+          <div class="flex items-center gap-2">
+            <button id="btnObsAudioSource" type="button" class="obs-btn" title="このブラウザの音（LIVEPAD DECKの音）だけを取り込む音声ソースを、OBSの全部のシーンに追加します">ブラウザの音をOBSに追加</button>
+            <span class="text-[10px] text-slate-500 leading-snug">LIVEPAD DECKの音を、OBSの音声ソース「LIVEPAD DECK Audio」として取り込みます（Windows）</span>
+          </div>
 
           <div class="obs-sub">
             <label class="obs-row font-bold text-slate-200">
@@ -2525,7 +2529,7 @@
     // =========================================================================
     const APP_CHANNEL = (/\/dev(\/|\/index\.html)?$/.test(location.pathname) || new URLSearchParams(location.search).has('dev')) ? 'dev' : 'prod';
     const IS_DEV = APP_CHANNEL === 'dev';
-    const APP_BUILD = '2026.11.25-1020';   // ビルドしたとき日時とコミットに置き換わる（_tools/build.py）
+    const APP_BUILD = '2026.11.25-1022';   // ビルドしたとき日時とコミットに置き換わる（_tools/build.py）
 
     /**
      * =========================================================================
@@ -5025,6 +5029,12 @@ registerProcessor('livepad-rec', LivepadRec);
             'Chromeが「ローカルネットワーク（このパソコンの中のアプリ）へのアクセス」の確認を出したら<b>「許可」</b>を押します',
             '右上に <b>OBS</b> と出て、緑の点が付けばつながっています（配信中は OBS LIVE）。OBSを閉じると自動で切れ、OBSを開くと5秒ほどで自動でつなぎ直します',
             'パスワードはこの端末の中にだけ保存し、Googleドライブには同期しません'
+          ] },
+          { name: 'ブラウザの音をOBSに入れる', text: [
+            'LIVEPAD DECK の音は、そのままだとPCのスピーカーから鳴っているだけです。OBSの<b>「デスクトップ音声」</b>がオンなら配信にも入りますが、PCのほかの音（通知音やほかのアプリ）も一緒に入ります',
+            '<b>「ブラウザの音をOBSに追加」</b>を押すと、このブラウザの音だけを取り込む音声ソース「LIVEPAD DECK Audio」（OBSのアプリケーション音声キャプチャ）を、OBSの全部のシーンに追加します。Windows の OBS 28 以降で使えます',
+            'このときOBSの「デスクトップ音声」もオンだと、同じ音が二重に入ります。OBSの音声ミキサーで「デスクトップ音声」をミュートしてください',
+            'このブラウザで YouTube など別のタブの音を鳴らすと、それも入ります。LIVEPAD DECK 専用のブラウザ（例：Edge）にしておくと安心です'
           ] },
           { name: '曲名を出す', text: [
             '「<b>OBSにソースを追加</b>」を押すと、OBSで今映しているシーンに「LIVEPAD Now Playing」というテキストソースが追加されます。場所・大きさ・文字の色はOBSで自由に変えてください',
@@ -8196,6 +8206,7 @@ registerProcessor('livepad-rec', LivepadRec);
       scenes: [],           // シーン名
       lastNowPlaying: null,
       npError: '',
+      audioNote: '',
       streaming: false,
       voice: { db: -100, on: false, releaseTimer: null, lastUi: 0 },
       showTimers: new Map()
@@ -8424,6 +8435,69 @@ registerProcessor('livepad-rec', LivepadRec);
       }
     }
 
+    /** このブラウザの音を取り込む音声ソース（アプリケーション音声キャプチャ）を、全部のシーンに追加する */
+    const OBS_AUDIO_SOURCE = 'LIVEPAD DECK Audio';
+    async function obsAddBrowserAudioSource() {
+      const btn = $('btnObsAudioSource');
+      btn.disabled = true;
+      try {
+        const { inputKinds } = await obsRequest('GetInputKindList', { unversioned: false });
+        const kind = (inputKinds || []).find(k => k.startsWith('wasapi_process_output_capture'));
+        if (!kind) {
+          showToast('この機能は Windows の OBS 28 以降で使えます。OBSの「アプリケーション音声キャプチャ」を手で追加してください');
+          return;
+        }
+        await obsRefreshLists();
+        const cur = await obsRequest('GetCurrentProgramScene');
+        const current = cur.currentProgramSceneName || cur.sceneName;
+        const exists = obs.inputs.some(i => i.inputName === OBS_AUDIO_SOURCE);
+        if (!exists) {
+          // 窓の選び方：題名が合えばその窓、変わっても同じアプリ（chrome.exe など）なら取り込み続ける
+          await obsRequest('CreateInput', { sceneName: current, inputName: OBS_AUDIO_SOURCE, inputKind: kind, inputSettings: { priority: 2 }, sceneItemEnabled: true });
+        }
+        // OBSが見つけている窓の中から、このページ（LIVEPAD DECK）の窓を選ぶ
+        const { propertyItems } = await obsRequest('GetInputPropertiesListPropertyItems', { inputName: OBS_AUDIO_SOURCE, propertyName: 'window' });
+        const items = (propertyItems || []).filter(it => it.itemValue);
+        const item = items.find(it => it.itemName.includes(document.title))
+          || items.find(it => /LIVEPAD DECK/.test(it.itemName))
+          || items.find(it => /\b(chrome|msedge)\.exe/i.test(it.itemName));
+        if (item) {
+          await obsRequest('SetInputSettings', { inputName: OBS_AUDIO_SOURCE, inputSettings: { window: item.itemValue, priority: 2 }, overlay: true });
+        }
+        // ほかのシーンにも同じソースを入れる（シーンを切り替えても音が途切れないように。同じソースなので音は二重にならない）
+        let added = 0;
+        for (const sceneName of obs.scenes) {
+          try {
+            const { sceneItems } = await obsRequest('GetSceneItemList', { sceneName });
+            if ((sceneItems || []).some(it => it.sourceName === OBS_AUDIO_SOURCE)) continue;
+            await obsRequest('CreateSceneItem', { sceneName, sourceName: OBS_AUDIO_SOURCE, sceneItemEnabled: true });
+            added++;
+          } catch (err) { /* 入れられないシーンは飛ばす */ }
+        }
+        obsRefreshLists();
+        // デスクトップ音声もオンだと、同じ音が二重に入る
+        let desktopOn = false;
+        try {
+          const sp = await obsRequest('GetSpecialInputs');
+          for (const n of [sp.desktop1, sp.desktop2].filter(Boolean)) {
+            const { inputMuted } = await obsRequest('GetInputMute', { inputName: n });
+            if (!inputMuted) desktopOn = true;
+          }
+        } catch (err) { /* 分からなければ何も言わない */ }
+        obs.audioNote = !item
+          ? `「${OBS_AUDIO_SOURCE}」を追加しましたが、ブラウザの窓が見つかりませんでした。OBSでこのソースをダブルクリックし、「ウィンドウ」でこのブラウザを選んでください`
+          : desktopOn
+            ? `「${OBS_AUDIO_SOURCE}」を追加しました。OBSの「デスクトップ音声」もオンなので、LIVEPAD DECKの音が二重に入ります。OBSの音声ミキサーで「デスクトップ音声」をミュートしてください（ほかのアプリの音も入らなくなります）`
+            : `「${OBS_AUDIO_SOURCE}」を追加しました（${item.itemName}）。OBSの音声ミキサーで、BGMを流すとメーターが動くか確認してください`;
+        renderObsStatus();
+        showToast(exists ? `「${OBS_AUDIO_SOURCE}」の設定を直しました` : `「${OBS_AUDIO_SOURCE}」を追加しました${added ? `（${added + 1}個のシーン）` : ''}`);
+      } catch (err) {
+        showToast(`追加できませんでした：${err.message}`);
+      } finally {
+        btn.disabled = obs.status !== 'connected';
+      }
+    }
+
     // ---- B：しゃべるとBGMを下げる ----
     function obsOnVolumeMeters(inputs) {
       const v = state.obs.voiceDuck;
@@ -8552,11 +8626,12 @@ registerProcessor('livepad-rec', LivepadRec);
       const badge = document.getElementById('obsStatusBadge');
       badge.className = `obs-status ${cls}`;
       badge.textContent = { off: 'OFF', connecting: 'CONNECTING', connected: obs.streaming ? 'CONNECTED · LIVE' : 'CONNECTED', error: 'NOT CONNECTED', auth: 'PASSWORD' }[obs.status] || 'OFF';
-      const msg = [obs.status === 'off' ? (o.enabled ? '' : 'オフ') : obs.message, obs.npError].filter(Boolean).join('　');
+      const msg = [obs.status === 'off' ? (o.enabled ? '' : 'オフ') : obs.message, obs.status === 'connected' ? obs.audioNote : '', obs.npError].filter(Boolean).join('　');
       document.getElementById('obsMessage').textContent = msg;
       document.getElementById('obsMessage').classList.toggle('text-red-300', obs.status === 'error' || obs.status === 'auth' || !!obs.npError);
       document.getElementById('obsCard').classList.toggle('is-off', !o.enabled);
       document.getElementById('btnObsNpCreate').disabled = obs.status !== 'connected';
+      document.getElementById('btnObsAudioSource').disabled = obs.status !== 'connected';
       document.getElementById('btnObsConnect').textContent = obs.status === 'connected' ? '再接続' : '接続';
       const es = document.getElementById('editObsState');
       if (es) es.textContent = obs.status === 'connected' ? 'OBS：接続中' : 'OBS：未接続';
@@ -8674,6 +8749,7 @@ registerProcessor('livepad-rec', LivepadRec);
         save();
         obsSyncNowPlaying(true);
       });
+      $('btnObsAudioSource').addEventListener('click', obsAddBrowserAudioSource);
       $('btnObsNpCreate').addEventListener('click', () => {
         state.obs.nowPlaying.inputName = $('obsNpInput').value.trim();
         save();
