@@ -2250,7 +2250,7 @@
             </label>
             <div class="grid grid-cols-[1fr_auto] gap-2">
               <input id="obsNpInput" type="text" class="obs-input" placeholder="テキストソースの名前" autocomplete="off" aria-label="テキストソースの名前">
-              <button id="btnObsNpCreate" type="button" class="obs-btn" title="今映しているシーンに、この名前のテキストソースを作ります">OBSに作る</button>
+              <button id="btnObsNpCreate" type="button" class="obs-btn" title="今映しているシーンに、この名前のテキストソースを追加します">OBSにソースを追加</button>
               <input id="obsNpFormat" type="text" class="obs-input col-span-2" placeholder="♪ {title}" autocomplete="off" aria-label="表示の形">
             </div>
             <p class="text-[10px] text-slate-500 leading-relaxed"><b>{title}</b>＝曲名、<b>{folder}</b>＝フォルダ名。BGMを止めると消えます</p>
@@ -5044,7 +5044,7 @@ registerProcessor('livepad-rec', LivepadRec);
             'パスワードはこの端末の中にだけ保存し、Googleドライブには同期しません'
           ] },
           { name: '曲名を出す', text: [
-            '「OBSに作る」を押すと、OBSで今映しているシーンに「LIVEPAD Now Playing」というテキストソースができます。場所・大きさ・文字の色はOBSで自由に変えてください',
+            '「<b>OBSにソースを追加</b>」を押すと、OBSで今映しているシーンに「LIVEPAD Now Playing」というテキストソースが追加されます。場所・大きさ・文字の色はOBSで自由に変えてください',
             'BGMが変わるたびに「♪ 曲名」に書き換わり、BGMを止めると消えます。表示の形は <b>{title}</b>（曲名）と <b>{folder}</b>（フォルダ名）を使って変えられます'
           ] },
           { name: 'しゃべるとBGMを下げる', text: [
@@ -8412,7 +8412,7 @@ registerProcessor('livepad-rec', LivepadRec);
           if (obs.npError) { obs.npError = ''; renderObsStatus(); }
         })
         .catch((err) => {
-          obs.npError = err.code === 600 ? `OBSに「${np.inputName}」というソースがありません（「OBSに作る」で作れます）` : `曲名を出せませんでした：${err.message}`;
+          obs.npError = err.code === 600 ? `OBSに「${np.inputName}」というソースがありません（「OBSにソースを追加」で追加できます）` : `曲名を出せませんでした：${err.message}`;
           renderObsStatus();
         });
     }
@@ -8432,12 +8432,12 @@ registerProcessor('livepad-rec', LivepadRec);
           inputSettings: { text: obsNowPlayingText() || '♪ LIVEPAD DECK', font: { face: 'Arial', size: 48, style: 'Bold', flags: 1 } }
         });
         obs.npError = '';
-        showToast(`OBSのシーン「${sceneName}」に「${name}」を作りました`);
+        showToast(`OBSのシーン「${sceneName}」に「${name}」を追加しました`);
         obs.lastNowPlaying = null;
         obsSyncNowPlaying(true);
         obsRefreshLists();
       } catch (err) {
-        showToast(err.code === 601 ? `「${name}」はもうOBSにあります` : `作れませんでした：${err.message}`);
+        showToast(err.code === 601 ? `「${name}」はもうOBSにあります` : `追加できませんでした：${err.message}`);
       }
     }
 
@@ -9592,7 +9592,9 @@ registerProcessor('livepad-rec', LivepadRec);
       if (!faderApi.bgm) return;
       const autoF = (state.ducking.enabled && state.ducking.isActive) ? AUTO_DUCK_LEVEL : 1;
       const manualF = state.bgm.manualDuck ? state.duckAmount : 1;
-      const target = state.bgm.volume * autoF * manualF;
+      const voiceF = obs.voice.on ? state.obs.voiceDuck.amount : 1;   // OBS連携：しゃべっている間
+      const recF = sampler.stream ? 0.15 : 1;                          // マイクで録音している間
+      const target = state.bgm.volume * autoF * manualF * voiceF * recF;
       if (bgmFaderDisplay === null) bgmFaderDisplay = target;
       // 下がる時は速く、戻る時はゆっくり（実際の音の変化に合わせる）
       const tau = target < bgmFaderDisplay ? 0.06 : 0.16;
