@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <!-- ホーム画面に追加したときのアイコンと名前（テスト版は dev/ のDEV付きアイコン、名前は起動時に「LIVEPAD DEV」へ） -->
+  <meta name="apple-mobile-web-app-title" content="LIVEPAD" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <title>LIVEPAD DECK - Streamer Sampler & BGM</title>
   <meta name="theme-color" content="#14171f">
   <!-- Googleログイン（Google Identity Services） -->
@@ -791,6 +794,59 @@
     .duck-pad.is-voice { box-shadow: 0 0 0 2px rgba(34,197,94,.65), 0 0 14px rgba(34,197,94,.35); }
     /* OBS ACTION があるパッドの札 */
     .pad-obs-tag { padding: 0 3px; border-radius: 3px; font-size: 7.5px; font-weight: 900; letter-spacing: .04em; color: #0b0d11; background: #a78bfa; }
+
+    /* ホーム画面に追加のすすめ（iPhone・iPad） */
+    html:not(.can-a2hs) .a2hs-only { display: none !important; }
+    #a2hsRoot { position: fixed; inset: 0; z-index: 38; align-items: center; justify-content: center; padding: 12px; background: rgb(3 5 9 / .8); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+    .a2hs-sheet {
+      width: 100%; max-width: 720px; max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain;
+      padding: 18px; border-radius: 18px; background: rgb(var(--n-181c26)); border: 1px solid rgb(var(--n-30384b));
+      box-shadow: 0 24px 60px rgb(0 0 0 / .55); color: rgb(var(--n-cbd5e1)); font-size: 12.5px; line-height: 1.65;
+    }
+    .a2hs-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .a2hs-head img { width: 44px; height: 44px; border-radius: 11px; flex: none; box-shadow: 0 4px 14px rgb(var(--ac-500) / .35); }
+    .a2hs-title { font-size: 16px; font-weight: 900; color: rgb(var(--n-f1f5f9)); line-height: 1.35; }
+    .a2hs-sub { font-size: 11px; color: rgb(var(--n-94a3b8)); }
+    .a2hs-cols { display: grid; gap: 14px; }
+    @media (min-width: 600px) { .a2hs-cols { grid-template-columns: 1fr 1.25fr; } }
+    .a2hs-box { padding: 12px 14px; border-radius: 12px; background: rgb(var(--n-10131b)); border: 1px solid rgb(var(--n-262c3a)); }
+    .a2hs-box h3 { font-size: 12px; font-weight: 800; color: rgb(var(--ac-300)); margin-bottom: 6px; }
+    .a2hs-good { display: grid; gap: 8px; }
+    .a2hs-good b { display: block; color: rgb(var(--n-f1f5f9)); font-weight: 800; }
+    .a2hs-good span { color: rgb(var(--n-94a3b8)); font-size: 11.5px; }
+    .a2hs-steps { counter-reset: a2hs; display: grid; gap: 9px; }
+    .a2hs-steps li { counter-increment: a2hs; display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: start; }
+    .a2hs-steps li::before {
+      content: counter(a2hs); width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+      font-size: 11px; font-weight: 900; color: #0b0d11; background: rgb(var(--ac-400));
+    }
+    .a2hs-steps small { display: block; font-size: 11px; color: rgb(var(--n-94a3b8)); }
+    .a2hs-steps b { color: rgb(var(--n-f1f5f9)); }
+    /* 画面に出ているボタンの形 */
+    .a2hs-key {
+      display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 22px; margin: 0 2px; vertical-align: -6px;
+      border-radius: 7px; color: rgb(var(--n-e2e8f0)); background: rgb(var(--n-2a3242)); border: 1px solid rgb(var(--n-3b4559));
+    }
+    .a2hs-key svg { width: 15px; height: 15px; }
+    .a2hs-note { margin-top: 12px; padding: 9px 12px; border-radius: 10px; font-size: 11.5px; color: #fde68a; background: rgb(251 191 36 / .08); border: 1px solid rgb(251 191 36 / .3); }
+    /* ボタンは、スクロールしても下に見えたまま */
+    .a2hs-actions {
+      position: sticky; bottom: -18px; display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+      margin: 6px -18px -18px; padding: 12px 18px 14px;
+      background: linear-gradient(to bottom, rgb(var(--n-181c26) / 0), rgb(var(--n-181c26)) 34%);
+    }
+    /* iPhone横：低い画面では詰める */
+    @media (max-height: 500px) {
+      .a2hs-sheet { padding: 12px 14px; font-size: 12px; line-height: 1.55; }
+      .a2hs-head { margin-bottom: 8px; }
+      .a2hs-head img { width: 34px; height: 34px; border-radius: 9px; }
+      .a2hs-title { font-size: 14.5px; }
+      .a2hs-cols { gap: 10px; }
+      .a2hs-box { padding: 9px 12px; }
+      .a2hs-good, .a2hs-steps { gap: 6px; }
+      .a2hs-note { margin-top: 8px; padding: 7px 10px; font-size: 11px; }
+      .a2hs-actions { bottom: -12px; margin: 4px -14px -12px; padding: 10px 14px 10px; }
+    }
 
     /* はじめの案内：1か所ずつ照らして、そばに吹き出し */
     #tourRoot { position: fixed; inset: 0; z-index: 38; }   /* 画面の上・モーダル（z-40）の下 */
@@ -2286,7 +2342,8 @@
           <p class="text-slate-400 leading-relaxed">
             ※ iPhone・iPadのSafariは、しばらく開かないサイトのデータを消すことがあります。<b class="text-slate-200">ホーム画面に追加</b>して使うか、Googleでログインしてバックアップしておくのがおすすめです。
           </p>
-          <a href="privacy.html" target="_blank" rel="noopener" class="inline-block text-accent-300 hover:text-accent-200 underline underline-offset-2">プライバシーポリシー</a>
+          <button id="btnA2hsHelp" type="button" class="soft-btn a2hs-only">ホーム画面に追加する方法</button>
+          <div><a href="privacy.html" target="_blank" rel="noopener" class="inline-block text-accent-300 hover:text-accent-200 underline underline-offset-2">プライバシーポリシー</a></div>
         </div>
         <div class="space-y-3">
         <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 text-[11px] text-slate-300 space-y-1.5">
@@ -2416,6 +2473,55 @@
             <p class="text-[10px] text-slate-500 leading-relaxed">マイクの音量のバーが線を超えている間、BGMを下げます。しゃべり終わって少しすると戻ります</p>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ホーム画面に追加のすすめ（iPhone・iPad のブラウザで開いたとき、案内の前に1回だけ。設定の「保存と同期」からも見られる） -->
+  <div id="a2hsRoot" class="hidden" role="dialog" aria-modal="true" aria-labelledby="a2hsTitle">
+    <div class="a2hs-sheet">
+      <div class="a2hs-head">
+        <img src="apple-touch-icon.png" alt="" onerror="this.remove()">
+        <div>
+          <div id="a2hsTitle" class="a2hs-title">ホーム画面に追加して使うのがおすすめです</div>
+          <div class="a2hs-sub">アプリのように、アイコンから開けるようになります</div>
+        </div>
+      </div>
+      <div class="a2hs-cols">
+        <div class="a2hs-box">
+          <h3>良いこと</h3>
+          <div class="a2hs-good">
+            <div><b>画面が広くなる</b><span>アドレスバーなどが消えて、パッドを大きく使えます</span></div>
+            <div><b>データが消えにくい</b><span>Safariは、しばらく開かないサイトのデータを消すことがあります。ホーム画面から開けば消えません</span></div>
+            <div><b>すぐ開ける</b><span>ホーム画面のアイコンをタップするだけ</span></div>
+          </div>
+        </div>
+        <div class="a2hs-box">
+          <h3 id="a2hsStepsTitle">追加のしかた</h3>
+          <!-- iPhone（Safari） -->
+          <ol class="a2hs-steps" data-a2hs="iphone">
+            <li><div>画面右下の <span class="a2hs-key"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="18.5" cy="12" r="1.9"/></svg></span> を押す<small>下に <span class="a2hs-key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9H6.5A1.5 1.5 0 0 0 5 10.5v9A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 17.5 9H16"/><path d="M12 15V3"/><path d="M8.5 6.5 12 3l3.5 3.5"/></svg></span> があるときは、それを押して 3 へ</small></div></li>
+            <li><div><b>「共有」</b>を押す</div></li>
+            <li><div><b>「その他」</b>→<b>「ホーム画面に追加」</b><small>見当たらないときは、上にスクロール</small></div></li>
+            <li><div><b>「追加」</b>を押す<small>「Webアプリとして開く」はオンのまま</small></div></li>
+          </ol>
+          <!-- iPad（Safari） -->
+          <ol class="a2hs-steps" data-a2hs="ipad">
+            <li><div>画面の上にある <span class="a2hs-key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9H6.5A1.5 1.5 0 0 0 5 10.5v9A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 17.5 9H16"/><path d="M12 15V3"/><path d="M8.5 6.5 12 3l3.5 3.5"/></svg></span>（共有）を押す</div></li>
+            <li><div><b>「その他」</b>→<b>「ホーム画面に追加」</b><small>見当たらないときは、上にスクロール</small></div></li>
+            <li><div><b>「追加」</b>を押す<small>「Webアプリとして開く」はオンのまま</small></div></li>
+          </ol>
+          <!-- Safari 以外のブラウザ -->
+          <ol class="a2hs-steps" data-a2hs="other">
+            <li><div>このブラウザのメニューの<b>「共有」</b>から<b>「ホーム画面に追加」</b>を選ぶ</div></li>
+            <li><div>見つからないときは、このページを <b>Safari</b> で開いてから追加します<small><button id="btnA2hsCopy" type="button" class="soft-btn mt-1.5">このページのアドレスをコピー</button></small></div></li>
+          </ol>
+          <p class="mt-2.5 text-[11.5px] text-slate-400">追加したら、ホーム画面の <b class="text-slate-200" id="a2hsAppName">LIVEPAD</b> のアイコンから開いてください</p>
+        </div>
+      </div>
+      <p class="a2hs-note">ホーム画面のアイコンから開くと、Safari とはデータの保存場所が別になります（Safari で入れた音は引き継がれません）。音を入れる前に追加しておくのがおすすめです。Googleでログインしていれば、ログインするだけで元に戻せます。</p>
+      <div class="a2hs-actions">
+        <button id="btnA2hsClose" type="button" class="tour-btn is-next">このまま使う</button>
       </div>
     </div>
   </div>
@@ -2662,6 +2768,12 @@
     const IS_WINDOWS = DEVICE_OS === 'windows';
     document.documentElement.classList.toggle('no-obs', !OBS_CAPABLE);
     document.documentElement.classList.toggle('not-win', !IS_WINDOWS);
+    // ホーム画面に追加のすすめ：iPhone・iPad のブラウザで開いていて、ホーム画面のアイコンから開いていないとき
+    const IS_STANDALONE = navigator.standalone === true || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    const IOS_KIND = DEVICE_OS !== 'ios' ? '' : (/iPhone|iPod/.test(navigator.userAgent) ? 'iphone' : 'ipad');
+    const IOS_SAFARI = DEVICE_OS === 'ios' && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA\/|Line\/|Instagram|FBAN|FBAV|YJApp/i.test(navigator.userAgent);
+    const A2HS_SUGGEST = DEVICE_OS === 'ios' && !IS_STANDALONE;
+    document.documentElement.classList.toggle('can-a2hs', A2HS_SUGGEST);
 
     /**
      * =========================================================================
@@ -2835,6 +2947,7 @@
       themeColor: DEFAULT_THEME,
       keyMap: 'standard',    // SEパッドを鳴らすキーの並び：standard / numpad（端末ごと）
       tourSeen: false,       // はじめの案内を見終わったか（端末ごと）
+      a2hsSeen: false,       // ホーム画面に追加のすすめを見たか（iPhone・iPad、端末ごと）
       recSource: 'mic',      // REC で録る音：mic / resample（端末ごと）
       obs: createDefaultObs(),   // OBS連携（端末ごと）
       tone: 'dark',          // 背景の色調：dark / dim / navy / warm / light / auto
@@ -2913,6 +3026,7 @@
             keyMap: state.keyMap,
             recSource: state.recSource,
             tourSeen: state.tourSeen,
+            a2hsSeen: state.a2hsSeen,
             obs: state.obs,
             duckAmount: state.duckAmount,
             eq: state.eq,
@@ -5547,6 +5661,58 @@ registerProcessor('livepad-rec', LivepadRec);
       $('btnReplayTour').addEventListener('click', () => {
         $('btnSettingsClose').click();
         setTimeout(startTour, 120);
+      });
+    }
+
+    // =========================================================================
+    // ホーム画面に追加のすすめ（iPhone・iPad のブラウザで、ホーム画面から開いていないとき）
+    //   初回は「はじめる」のあと、案内の前に1回だけ。設定の「保存と同期」からいつでも見られる
+    // =========================================================================
+    const a2hs = { first: false };
+
+    function openA2hs(first) {
+      a2hs.first = !!first;
+      const kind = IOS_SAFARI ? IOS_KIND : 'other';
+      document.querySelectorAll('[data-a2hs]').forEach(el => el.classList.toggle('hidden', el.dataset.a2hs !== kind));
+      $('a2hsStepsTitle').textContent = { iphone: '追加のしかた（iPhone の Safari）', ipad: '追加のしかた（iPad の Safari）', other: '追加のしかた' }[kind];
+      $('a2hsAppName').textContent = IS_DEV ? 'LIVEPAD DEV' : 'LIVEPAD';
+      $('btnA2hsClose').textContent = first ? 'このまま使う' : '閉じる';
+      $('a2hsRoot').classList.remove('hidden');
+      $('a2hsRoot').classList.add('flex');
+      $('a2hsRoot').querySelector('.a2hs-sheet').scrollTop = 0;
+      $('btnA2hsClose').focus({ preventScroll: true });
+    }
+
+    /** 閉じる（初回のときは、続けて「はじめの案内」へ） */
+    function closeA2hs() {
+      if ($('a2hsRoot').classList.contains('hidden')) return;
+      $('a2hsRoot').classList.add('hidden');
+      $('a2hsRoot').classList.remove('flex');
+      if (!state.a2hsSeen) { state.a2hsSeen = true; storage.saveState(); }
+      if (a2hs.first && !state.tourSeen) setTimeout(startTour, 200);
+      a2hs.first = false;
+    }
+
+    /** 起動したとき：初回だけ、ホーム画面に追加のすすめ → はじめの案内（window.__LIVEPAD_NO_TOUR はテスト用） */
+    function startFirstRunGuides() {
+      if (window.__LIVEPAD_NO_TOUR) return;
+      if (A2HS_SUGGEST && !state.a2hsSeen) { openA2hs(true); return; }
+      if (!state.tourSeen) startTour();
+    }
+
+    function initA2hs() {
+      $('btnA2hsClose').addEventListener('click', closeA2hs);
+      $('btnA2hsHelp').addEventListener('click', () => {
+        $('btnSettingsClose').click();
+        setTimeout(() => openA2hs(false), 120);
+      });
+      $('btnA2hsCopy').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(location.href.split('#')[0]);
+          showToast('アドレスをコピーしました。Safari に貼り付けて開いてください');
+        } catch (err) {
+          showToast(`コピーできませんでした：${location.href.split('#')[0]}`);
+        }
       });
     }
 
@@ -11158,8 +11324,8 @@ registerProcessor('livepad-rec', LivepadRec);
         document.getElementById('startupOverlay').classList.add('hidden');
         if (withLogin) driveSync.signIn();   // ボタンを押した流れのまま呼ぶ（ポップアップがブロックされないように）
         showToast('LIVEPAD DECK 起動完了');
-        // はじめの案内（初回だけ）。window.__LIVEPAD_NO_TOUR はテスト用
-        if (!state.tourSeen && !window.__LIVEPAD_NO_TOUR) setTimeout(startTour, 450);
+        // 初回だけ：ホーム画面に追加のすすめ（iPhone・iPad）→ はじめの案内
+        setTimeout(startFirstRunGuides, 450);
       };
       document.getElementById('btnStartGoogle').addEventListener('click', () => startDeck(true));
       document.getElementById('btnStartDeck').addEventListener('click', () => startDeck(driveSync.meta.linked));
@@ -11691,7 +11857,7 @@ registerProcessor('livepad-rec', LivepadRec);
       const heldKeys = new Map();
       const isOpen = (id) => !$(id).classList.contains('hidden');
       const overlayOpen = () =>
-        isOpen('editModalBackdrop') || isOpen('settingsModalBackdrop') || isOpen('tabModalBackdrop') || isOpen('bgmMenu') || isOpen('bgmFolderMenu') || isOpen('folderNameBackdrop') || isOpen('helpModalBackdrop') || isOpen('layoutNameBackdrop') || isOpen('fxOrderBackdrop') || isOpen('obsModalBackdrop') || isOpen('tourRoot');
+        isOpen('editModalBackdrop') || isOpen('settingsModalBackdrop') || isOpen('tabModalBackdrop') || isOpen('bgmMenu') || isOpen('bgmFolderMenu') || isOpen('folderNameBackdrop') || isOpen('helpModalBackdrop') || isOpen('layoutNameBackdrop') || isOpen('fxOrderBackdrop') || isOpen('obsModalBackdrop') || isOpen('tourRoot') || isOpen('a2hsRoot');
       const isTyping = (t) => !!t && (
         (t.tagName === 'INPUT' && !['range', 'button', 'checkbox', 'file'].includes(t.type)) ||
         t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable
@@ -11716,6 +11882,7 @@ registerProcessor('livepad-rec', LivepadRec);
             closeHelp();
             closeLayoutName();
             endTour();
+            closeA2hs();
             closeFxOrder();
             closeFolderName();
             return;
@@ -11775,6 +11942,7 @@ registerProcessor('livepad-rec', LivepadRec);
         document.getElementById('devBadge').classList.remove('hidden');
         document.getElementById('devBadgeStart').classList.remove('hidden');
         document.title = `[DEV] ${document.title}`;
+        document.querySelector('meta[name="apple-mobile-web-app-title"]').content = 'LIVEPAD DEV';
       }
       document.getElementById('driveFolderLabel').textContent = DRIVE_FOLDER_NAME;
       document.getElementById('appBuildLabel').textContent = `${IS_DEV ? 'DEV ' : ''}${APP_BUILD.startsWith('__') ? 'local' : APP_BUILD}`;
@@ -11799,6 +11967,7 @@ registerProcessor('livepad-rec', LivepadRec);
         if (KEY_MAPS[saved.keyMap]) state.keyMap = saved.keyMap;
         if (REC_SOURCES[saved.recSource]) state.recSource = saved.recSource;
         if (saved.tourSeen) state.tourSeen = true;
+        if (saved.a2hsSeen) state.a2hsSeen = true;
         if (saved.obs) state.obs = normalizeObs(saved.obs);
         if (typeof saved.duckAmount === 'number') state.duckAmount = saved.duckAmount;
         if (saved.eq) state.eq = normalizeEq(saved.eq);
@@ -11839,6 +12008,7 @@ registerProcessor('livepad-rec', LivepadRec);
       initEditTrim();
       initObs();
       initTour();
+      initA2hs();
       initPitchDeck();
       initHelp();
       if (window.ResizeObserver) new ResizeObserver(() => fitPadGrid()).observe(document.getElementById('padGrid'));

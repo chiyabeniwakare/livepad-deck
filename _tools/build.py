@@ -45,6 +45,8 @@ def build_dev():
     DEV_DIR.mkdir(exist_ok=True)
     (DEV_DIR / 'index.html').write_text(out, encoding='utf-8')
     shutil.copyfile(ROOT / 'privacy.html', DEV_DIR / 'privacy.html')
+    # ホーム画面のアイコン：テスト版は DEV の印付き
+    shutil.copyfile(ROOT / '_src' / 'apple-touch-icon-dev.png', DEV_DIR / 'apple-touch-icon.png')
     print(f'テスト版を作りました: dev/index.html（{stamp}、CSS {len(css) // 1024}KB）')
 
 
@@ -53,6 +55,7 @@ def release():
     if not dev.exists():
         sys.exit('先に python3 _tools/build.py でテスト版を作ってください')
     shutil.copyfile(dev, ROOT / 'index.html')
+    shutil.copyfile(ROOT / '_src' / 'apple-touch-icon.png', ROOT / 'apple-touch-icon.png')
     stamp = re.search(r"const APP_BUILD = '([^']+)'", dev.read_text(encoding='utf-8'))
     print(f'公開版にしました: index.html（{stamp.group(1) if stamp else "?"}）')
 
