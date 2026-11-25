@@ -830,6 +830,18 @@
       .a2hs-actions { bottom: -12px; margin: 4px -14px -12px; padding: 10px 14px 10px; }
     }
 
+    /* BGM DECK へのドラッグ＆ドロップ */
+    #panel-bgm.is-file-drop { box-shadow: inset 0 0 0 2px rgb(var(--ac-400)), 0 0 0 4px rgb(var(--ac-400) / .22); }
+    #panel-bgm.is-file-drop .bgm-list { background: rgb(var(--ac-500) / .06); }
+    .bgm-folder.is-drop-folder { background: rgb(var(--ac-500) / .22) !important; box-shadow: inset 3px 0 0 rgb(var(--ac-400)); }
+    .bgm-drop-hint {
+      position: fixed; z-index: 50; pointer-events: none; transform: translateX(-50%); max-width: min(320px, calc(100vw - 24px));
+      padding: 8px 14px; border-radius: 12px; text-align: center; white-space: nowrap;
+      background: rgb(var(--n-1b202b)); border: 1px solid rgb(var(--ac-400) / .6); box-shadow: 0 10px 28px rgb(0 0 0 / .45);
+    }
+    .bgm-drop-hint b { display: block; font-size: 12px; font-weight: 800; color: rgb(var(--ac-200)); overflow: hidden; text-overflow: ellipsis; }
+    .bgm-drop-hint span { display: block; margin-top: 2px; font-size: 10px; color: rgb(var(--n-94a3b8)); white-space: normal; }
+
     /* お知らせの「元に戻す」「やり直す」 */
     .toast-action {
       pointer-events: auto; margin-left: 6px; padding: 7px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; line-height: 1;
@@ -2724,6 +2736,12 @@
     </div>
   </div>
 
+  <!-- BGM DECK にファイルを持ってきたときの案内 -->
+  <div id="bgmDropHint" class="bgm-drop-hint hidden" aria-hidden="true">
+    <b>ドロップで「UNSORTED」に追加</b>
+    <span>PCのフォルダごと落とすと、同じ名前のフォルダに入ります</span>
+  </div>
+
   <!-- トースト通知 -->
   <div id="toastBox" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-200 translate-y-2">
     <div class="px-4 py-2 rounded-xl bg-[rgb(var(--n-1b202b))] border border-accent-500/40 text-xs font-bold text-slate-100 shadow-2xl flex items-center gap-2">
@@ -2741,7 +2759,7 @@
     // =========================================================================
     const APP_CHANNEL = (/\/dev(\/|\/index\.html)?$/.test(location.pathname) || new URLSearchParams(location.search).has('dev')) ? 'dev' : 'prod';
     const IS_DEV = APP_CHANNEL === 'dev';
-    const APP_BUILD = '2026.11.25-2013';   // ビルドしたとき日時とコミットに置き換わる（_tools/build.py）
+    const APP_BUILD = '2026.11.25-2027';   // ビルドしたとき日時とコミットに置き換わる（_tools/build.py）
 
     // 端末の種類。OBS連携は、OBSが動くPC（Windows・Mac・Linux）で開いたときだけ出す
     //   iPhone・iPad・Android・Chromebook からは、https のページから別の機械のOBS（ws://）へはつなげない
@@ -8433,6 +8451,186 @@ registerProcessor('livepad-rec', LivepadRec);
     }
 
     /** 曲をほかのフォルダへ移す（移した先のフォルダの最後に入る） */
+    // ---- BGMの追加（「＋ ADD BGM」・フォルダの「＋」・ドラッグ＆ドロップ） ----
+    const AUDIO_EXT = /\.(mp3|wav|wave|m4a|aac|mp4|ogg|oga|opus|flac|webm|aif|aiff|caf)$/i;
+    const isAudioFile = (f) => !!f && ((f.type || '').startsWith('audio/') || AUDIO_EXT.test(f.name || ''));
+    const hasDragFiles = (e) => !!e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+    const byFileName = (a, b) => a.name.localeCompare(b.name, 'ja', { numeric: true });
+
+    /** 曲をフォルダの最後に追加する（長さも読む）。保存・表示・お知らせは呼んだ側で。最後に足した曲を返す */
+    async function addBgmFiles(files, folderId) {
+      let last = null;
+      for (const f of files) {
+        const saved = await storage.saveAudioFile(f);
+        const entry = {
+          id: saved.id,
+          name: saved.name.replace(/\.[^/.]+$/, ''),
+          type: 'file',
+          durationSec: 0,
+          fileId: saved.id,
+          folderId
+        };
+        // 追加した時点で長さを読み取ってリストに表示
+        try {
+          const buf = await audioEngine.getDecodedBuffer(saved.id);
+          if (buf) entry.durationSec = buf.duration;
+        } catch (err) {
+          console.error(err);
+        }
+        state.bgmList.push(entry);
+        last = entry;
+      }
+      return last;
+    }
+
+    /** 追加した曲（フォルダの最後）が見えるようにスクロール */
+    function scrollToBgmEntry(entry) {
+      const row = entry ? $('bgmList').querySelector(`.bgm-row[data-index="${state.bgmList.indexOf(entry)}"]`) : null;
+      if (row) row.scrollIntoView({ block: 'nearest' });
+    }
+
+    /** 落とされた物を取り出す（イベントの間に読まないと消えるので、ここだけは同期で） */
+    function takeDroppedItems(dt) {
+      const entries = Array.from(dt.items || [])
+        .map(it => (it.kind === 'file' && it.webkitGetAsEntry ? it.webkitGetAsEntry() : null))
+        .filter(Boolean);
+      return entries.length ? { entries, files: [] } : { entries: [], files: Array.from(dt.files || []) };
+    }
+
+    function readDirEntries(dir) {
+      return new Promise((resolve) => {
+        const reader = dir.createReader();
+        const out = [];
+        const next = () => reader.readEntries((list) => {
+          if (!list.length) { resolve(out); return; }
+          out.push(...list);
+          next();
+        }, () => resolve(out));
+        next();
+      });
+    }
+
+    const entryFile = (en) => new Promise(res => en.file(res, () => res(null)));
+
+    /** PCのフォルダの中のファイル（下のフォルダの中も全部） */
+    async function filesInDir(dir) {
+      const out = [];
+      for (const en of await readDirEntries(dir)) {
+        if (en.isFile) out.push(await entryFile(en));
+        else if (en.isDirectory) out.push(...await filesInDir(en));
+      }
+      return out.filter(Boolean);
+    }
+
+    /** 落とされたファイルを追加：ファイルは folderId へ、PCのフォルダは同じ名前のBGMフォルダへ（あればそこに足す） */
+    async function addDroppedBgm(items, folderId) {
+      const u = undoBegin(['bgm'], '曲の追加');
+      let skipped = 0;
+      const groups = [];
+      // ファイル
+      const loose = items.entries.length
+        ? (await Promise.all(items.entries.filter(en => en.isFile).map(entryFile))).filter(Boolean)
+        : items.files;
+      const looseAudio = loose.filter(isAudioFile).sort(byFileName);
+      skipped += loose.length - looseAudio.length;
+      if (looseAudio.length) groups.push({ folderId, files: looseAudio });
+      // フォルダ
+      for (const dir of items.entries.filter(en => en.isDirectory)) {
+        const all = await filesInDir(dir);
+        const audio = all.filter(isAudioFile).sort(byFileName);
+        skipped += all.length - audio.length;
+        if (!audio.length) continue;
+        const name = String(dir.name || 'FOLDER').trim().slice(0, 24) || 'FOLDER';
+        let f = state.bgmFolders.find(x => x.id !== BGM_UNSORTED && x.name === name);
+        if (!f) {
+          f = { id: `f${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, name, open: true };
+          state.bgmFolders.push(f);
+        }
+        groups.push({ folderId: f.id, files: audio, dirName: name });
+      }
+      const count = groups.reduce((n, g) => n + g.files.length, 0);
+      if (!count) {
+        showToast(skipped ? '音声ファイル（MP3・WAV・M4A など）が見つかりませんでした' : '追加できるファイルがありませんでした');
+        return 0;
+      }
+      if (count > 3) showToast(`${count}曲を読み込んでいます…`);
+      let last = null;
+      for (const g of groups) {
+        const f = bgmFolderById(g.folderId);
+        if (f) f.open = true;
+        last = await addBgmFiles(g.files, g.folderId) || last;
+      }
+      renderBgmList();
+      await storage.saveState();
+      scrollToBgmEntry(last);
+      const dirs = groups.filter(g => g.dirName);
+      let msg;
+      if (dirs.length === 1 && groups.length === 1) msg = `フォルダ「${dirs[0].dirName}」に ${count}曲を追加しました`;
+      else if (dirs.length) msg = `${count}曲を追加しました（フォルダ ${dirs.length}つ）`;
+      else msg = `${count}曲を ${(bgmFolderById(folderId) || {}).name || 'UNSORTED'} に追加しました`;
+      if (skipped) msg += `（音声ではない${skipped}件は追加していません）`;
+      undoCommit(u, msg);
+      return count;
+    }
+
+    /** ドラッグ中の表示：BGM DECKに枠、入れる先のフォルダを光らせ、どこに入るかを出す */
+    function showBgmDrop(folderId) {
+      const panel = $('panel-bgm');
+      panel.classList.add('is-file-drop');
+      panel.querySelectorAll('.bgm-folder.is-drop-folder').forEach(el => { if (el.dataset.folder !== folderId) el.classList.remove('is-drop-folder'); });
+      const head = panel.querySelector(`.bgm-folder[data-folder="${folderId}"]`);
+      if (head) head.classList.add('is-drop-folder');
+      const hint = $('bgmDropHint');
+      const f = bgmFolderById(folderId);
+      hint.querySelector('b').textContent = `ドロップで「${f ? f.name : 'UNSORTED'}」に追加`;
+      hint.classList.remove('hidden');
+      const r = $('bgmList').getBoundingClientRect();
+      hint.style.left = `${r.left + r.width / 2}px`;
+      hint.style.top = `${Math.max(8, r.bottom - hint.offsetHeight - 10)}px`;
+    }
+
+    function hideBgmDrop() {
+      $('panel-bgm').classList.remove('is-file-drop');
+      document.querySelectorAll('.bgm-folder.is-drop-folder').forEach(el => el.classList.remove('is-drop-folder'));
+      $('bgmDropHint').classList.add('hidden');
+    }
+
+    function initBgmDrop() {
+      const panel = $('panel-bgm');
+      // フォルダの見出しや、そのフォルダの曲の上ならそのフォルダ、それ以外は UNSORTED
+      const folderAt = (t) => {
+        const el = t && t.closest ? t.closest('[data-folder]') : null;
+        return el && bgmFolderById(el.dataset.folder) ? el.dataset.folder : BGM_UNSORTED;
+      };
+      panel.addEventListener('dragover', (e) => {
+        if (!hasDragFiles(e)) return;
+        e.preventDefault();
+        if (state.perfLock) { e.dataTransfer.dropEffect = 'none'; return; }
+        e.dataTransfer.dropEffect = 'copy';
+        showBgmDrop(folderAt(e.target));
+      });
+      panel.addEventListener('dragleave', (e) => { if (!panel.contains(e.relatedTarget)) hideBgmDrop(); });
+      panel.addEventListener('drop', (e) => {
+        if (!hasDragFiles(e)) return;
+        e.preventDefault();
+        hideBgmDrop();
+        if (state.perfLock) { showToast('LOCK中は追加できません'); return; }
+        addDroppedBgm(takeDroppedItems(e.dataTransfer), folderAt(e.target));
+      });
+      // パッドと BGM DECK 以外に落としても、ブラウザがファイルを開いて LIVEPAD DECK から離れないようにする
+      window.addEventListener('dragover', (e) => {
+        if (!hasDragFiles(e) || e.defaultPrevented) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'none';
+      });
+      window.addEventListener('drop', (e) => {
+        hideBgmDrop();
+        if (!hasDragFiles(e) || e.defaultPrevented) return;
+        e.preventDefault();
+        showToast('音のファイルは、SEパッドか BGM DECK の上に落としてください');
+      });
+    }
+
     function moveBgmToFolder(index, fid) {
       const tr = state.bgmList[index];
       const f = bgmFolderById(fid);
@@ -11638,32 +11836,10 @@ registerProcessor('livepad-rec', LivepadRec);
         const folder = bgmFolderById(target);
         if (folder) folder.open = true;
         const u = undoBegin(['bgm'], '曲の追加');
-        let lastEntry = null;
-        for (const f of files) {
-          const saved = await storage.saveAudioFile(f);
-          const entry = {
-            id: saved.id,
-            name: saved.name.replace(/\.[^/.]+$/, ''),
-            type: 'file',
-            durationSec: 0,
-            fileId: saved.id,
-            folderId: target
-          };
-          lastEntry = entry;
-          // 追加した時点で長さを読み取ってリストに表示
-          try {
-            const buf = await audioEngine.getDecodedBuffer(saved.id);
-            if (buf) entry.durationSec = buf.duration;
-          } catch (err) {
-            console.error(err);
-          }
-          state.bgmList.push(entry);
-        }
+        const lastEntry = await addBgmFiles(files, target);
         renderBgmList();
         await storage.saveState();
-        // 追加した曲（フォルダの最後）が見えるようにスクロール
-        const lastRow = lastEntry ? $('bgmList').querySelector(`.bgm-row[data-index="${state.bgmList.indexOf(lastEntry)}"]`) : null;
-        if (lastRow) lastRow.scrollIntoView({ block: 'nearest' });
+        scrollToBgmEntry(lastEntry);
         e.target.value = '';
         undoCommit(u, `${files.length}件のBGMを ${folder ? folder.name : 'UNSORTED'} に追加しました`);
       });
@@ -12214,6 +12390,7 @@ registerProcessor('livepad-rec', LivepadRec);
       initObs();
       initTour();
       initA2hs();
+      initBgmDrop();
       $('toastAction').addEventListener('click', () => {
         const action = $('toastAction').dataset.action;
         hideToast();
