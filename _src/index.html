@@ -175,6 +175,24 @@
       border-color: var(--pad-color) !important;
     }
 
+    /* 上の色の帯：つかんで並べ替える場所 */
+    .sampler-pad.has-grip { padding-top: 17px; }
+    .pad-grip { position: absolute; top: 0; left: 0; right: 0; height: 13px; z-index: 11; }
+    .pad-grip.is-handle { cursor: grab; }
+    .pad-grip.is-handle::after {
+      content: ""; position: absolute; left: 50%; top: 50%; width: 26px; height: 6px; transform: translate(-50%, -50%);
+      background-image: radial-gradient(circle, rgb(0 0 0 / .5) 1.1px, transparent 1.5px); background-size: 5px 3px;
+    }
+    .pad-grip.is-handle:hover::after { background-image: radial-gradient(circle, rgb(0 0 0 / .75) 1.2px, transparent 1.6px); }
+    body.is-pad-dragging, body.is-pad-dragging * { cursor: grabbing !important; }
+    .sampler-pad.is-drag-source { opacity: .3; }
+    .pad-drag-ghost {
+      position: fixed !important; z-index: 60; pointer-events: none; margin: 0; opacity: .92;
+      transform: scale(1.05) rotate(-1.5deg); box-shadow: 0 18px 40px rgb(0 0 0 / .55) !important; transition: none !important;
+    }
+    #bankTabs .is-drop-tab { box-shadow: 0 0 0 2px rgb(var(--ac-400)); color: rgb(var(--n-f1f5f9)); background: rgb(var(--ac-500) / .2); }
+    #bankTabs .is-drop-tab.is-drop-full { box-shadow: 0 0 0 2px rgb(248 113 113); background: rgb(248 113 113 / .15); }
+
     .sampler-pad.drag-over {
       border-color: rgb(var(--ac-400)) !important;
       background-color: rgb(var(--ac-400) / 0.14) !important;
@@ -629,6 +647,9 @@
     #padGrid[data-density="xs"] .pad-edit-btn { width: 20px; height: 20px; }
     #padGrid[data-density="xs"] .sampler-pad { padding: 4px 6px; }
     #padGrid[data-density="xs"] .pad-name { font-size: 12px; }
+    #padGrid[data-density="xs"] .sampler-pad.has-grip { padding-top: 12px; }
+    #padGrid[data-density="xs"] .pad-grip { height: 9px; }
+    #padGrid[data-density="xs"] .pad-top { top: 12px; }
     /* MIXERを横長にしたとき、フェーダーが離れすぎないようにまとめて真ん中に置く */
     .mixer-grid { width: 100%; max-width: 560px; margin-left: auto; margin-right: auto; }
     @container (max-width: 150px) {
@@ -5374,6 +5395,12 @@ registerProcessor('livepad-rec', LivepadRec);
           ] },
           { name: 'AUTO DUCKING', fig: 'autoDuck', text: 'ONにすると、SEが鳴っている間だけBGMの音量を自動で下げ、鳴り終わると戻します。SEがBGMに埋もれません。' },
           { name: 'TABS', text: '上のタブでパッドのセットを切り替えます。タブの右の ✎ で、選んでいるタブの名前を変えられます。' },
+          { name: '並べ替え', text: [
+            'パッドの上の<b>色の帯</b>をつかんで動かします（帯を押しても音は鳴りません）',
+            'ほかのパッドの上で離すと<b>入れ替え</b>、空きパッドの上なら<b>移動</b>します',
+            '<b>タブ</b>の上で離すと、そのタブの最後（音の入った最後のパッドの次）へ移します。空きがないときはタブが赤くなり、移しません',
+            '音・名前・色・モード・音量などパッドの設定ごと動きます。キーボードのキーは場所に付いたままです。Ctrl+Z で戻せます。LOCK中はつかめません'
+          ] },
           { name: 'REC（その場で録音）', fig: 'seRec', text: [
             '右上の <b>● REC</b> を押すと録音の待機になり、パッドが赤い点線になります。録りたいパッドを<b>押している間だけ録音</b>し、離すと止まって、そのままそのパッドで鳴らせます。PCはキーを押している間も同じです。最長30秒',
             '<b>MIC</b>：マイクの音を録ります。録音中はBGMを大きく下げます。iPhoneはマイクを使っている間だけ音が小さくなることがあるので、マイクは録音の間だけ使い、終わるとすぐ止めます',
@@ -8815,6 +8842,7 @@ registerProcessor('livepad-rec', LivepadRec);
             : 'bg-[rgb(var(--n-14171f))] text-slate-400 border-[rgb(var(--n-242a38))] hover:text-slate-200 hover:bg-[rgb(var(--n-1a1f2b))]'
         }`;
         btn.textContent = bank.label;
+        btn.dataset.bankIndex = String(idx);
         btn.addEventListener('click', () => {
           state.activeBankIndex = idx;
           renderBankTabs();
@@ -8926,8 +8954,11 @@ registerProcessor('livepad-rec', LivepadRec);
             ? `<span class="pad-src-badge px-1 py-0.5 rounded text-[8px] font-mono-num font-bold bg-slate-800 text-slate-400 border border-slate-700">SYNTH</span>`
             : `<span class="pad-src-badge px-1 py-0.5 rounded text-[8px] font-mono-num font-bold text-slate-600">EMPTY</span>`;
 
+        // 上の色の帯：音の入ったパッドは、つかんで並べ替える場所（押しても鳴らない）。LOCK中とREC待機中は今までどおり
+        const grip = !isEmpty && !state.perfLock && !recUi.armed;
+        el.classList.add('has-grip');
         el.innerHTML = `
-          <div class="absolute top-0 left-0 right-0 h-1.5" style="background-color: ${isEmpty ? '#334155' : palette.hex}; opacity: ${isEmpty ? 0.4 : 0.92};"></div>
+          <div class="pad-grip${grip ? ' is-handle' : ''}" style="background-color: ${isEmpty ? '#334155' : palette.hex}; opacity: ${isEmpty ? 0.4 : 0.92};"${grip ? ' title="つかんで並べ替え（ほかのパッドで入れ替え、タブに落とすとそのタブの最後へ）"' : ''}></div>
           <div class="pad-progress-fill" id="prog-${pad.id}"></div>
 
           <div class="pad-top relative z-10 flex items-center justify-between gap-1 pt-0.5">
@@ -8987,6 +9018,10 @@ registerProcessor('livepad-rec', LivepadRec);
         el.addEventListener('pointerdown', (e) => {
           if (e.button !== 0 && e.pointerType === 'mouse') return;
           e.preventDefault();
+          if (e.target.closest('.pad-grip.is-handle')) {   // 色の帯：つかんで並べ替え（鳴らさない）
+            padDragBegin(e, pad, el);
+            return;
+          }
           if (recConsumesTap(pad)) {   // REC待機中：鳴らさずに、押している間だけ録音
             recPadDown(pad, `p:${e.pointerId}`);
             return;
@@ -8997,6 +9032,7 @@ registerProcessor('livepad-rec', LivepadRec);
         });
 
         const onRelease = () => {
+          if (!el.classList.contains('is-pressed')) return;   // 色の帯をつかんだとき・REC のときは鳴らしていない
           el.classList.remove('is-pressed');
           audioEngine.triggerPadUp(pad);
         };
@@ -9024,6 +9060,122 @@ registerProcessor('livepad-rec', LivepadRec);
 
         grid.appendChild(el);
       });
+    }
+
+    // =========================================================================
+    // SEパッドの並べ替え：上の色の帯をつかんで、ほかのパッドに落とすと入れ替え、
+    //   タブに落とすとそのタブの最後（音の入った最後のパッドの次）へ。空きがなければ知らせる
+    // =========================================================================
+    const padDrag = { active: null };
+    const padSlotCount = () => (state.layoutMode === 'iphone' ? 8 : 16);
+
+    /** タブに落としたときに入る場所：音の入った最後のパッドの次。そこがなければ後ろから空きを探す。なければ -1 */
+    function tabDropSlot(bank) {
+      const n = Math.min(padSlotCount(), bank.pads.length);
+      let last = -1;
+      for (let i = 0; i < n; i++) if (bank.pads[i].sourceType !== 'empty') last = i;
+      if (last + 1 < n) return last + 1;
+      for (let i = n - 1; i >= 0; i--) if (bank.pads[i].sourceType === 'empty') return i;
+      return -1;
+    }
+
+    function padDragBegin(e, pad, el) {
+      if (state.perfLock || padDrag.active) return;
+      const r = el.getBoundingClientRect();
+      const d = { pad, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, ox: e.clientX - r.left, oy: e.clientY - r.top, w: r.width, h: r.height, ghost: null, over: null, started: false };
+      padDrag.active = d;
+      const move = (ev) => { if (ev.pointerId === d.pointerId) padDragMove(ev); };
+      const up = (ev) => { if (ev.pointerId === d.pointerId) finish(ev.type === 'pointerup'); };
+      const key = (ev) => { if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); finish(false); } };
+      const finish = (drop) => {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+        window.removeEventListener('pointercancel', up);
+        window.removeEventListener('keydown', key, true);
+        padDragEnd(drop);
+      };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+      window.addEventListener('pointercancel', up);
+      window.addEventListener('keydown', key, true);
+    }
+
+    function padDragMove(ev) {
+      const d = padDrag.active;
+      if (!d) return;
+      if (!d.started) {
+        if (Math.hypot(ev.clientX - d.x0, ev.clientY - d.y0) < 6) return;   // 少し動かしたらドラッグ開始
+        d.started = true;
+        const src = $(`pad-${d.pad.id}`);
+        const ghost = (src || document.createElement('div')).cloneNode(true);
+        ghost.removeAttribute('id');
+        ghost.querySelectorAll('[id]').forEach(x => x.removeAttribute('id'));
+        ghost.classList.remove('is-pressed', 'is-playing', 'drag-over');
+        ghost.classList.add('pad-drag-ghost');
+        Object.assign(ghost.style, { width: `${d.w}px`, height: `${d.h}px` });
+        document.body.appendChild(ghost);
+        d.ghost = ghost;
+        document.body.classList.add('is-pad-dragging');
+      }
+      d.ghost.style.left = `${ev.clientX - d.ox}px`;
+      d.ghost.style.top = `${ev.clientY - d.oy}px`;
+      const src = $(`pad-${d.pad.id}`);
+      if (src) src.classList.add('is-drag-source');
+      // 下にあるもの：ほかのパッド、または別のタブ
+      const hit = document.elementFromPoint(ev.clientX, ev.clientY);
+      const padEl = hit && hit.closest ? hit.closest('#padGrid .sampler-pad') : null;
+      const tabEl = hit && hit.closest ? hit.closest('#bankTabs [data-bank-index]') : null;
+      let over = null;
+      if (padEl && padEl.id !== `pad-${d.pad.id}`) over = { kind: 'pad', id: padEl.id.slice(4) };
+      else if (tabEl && Number(tabEl.dataset.bankIndex) !== state.activeBankIndex) {
+        const idx = Number(tabEl.dataset.bankIndex);
+        over = { kind: 'tab', idx, full: tabDropSlot(state.banks[idx]) < 0 };
+      }
+      d.over = over;
+      document.querySelectorAll('#padGrid .sampler-pad.drag-over').forEach(x => { if (!over || x.id !== `pad-${over.id}`) x.classList.remove('drag-over'); });
+      document.querySelectorAll('#bankTabs .is-drop-tab').forEach(x => x.classList.remove('is-drop-tab', 'is-drop-full'));
+      if (over && over.kind === 'pad') { const t = $(`pad-${over.id}`); if (t) t.classList.add('drag-over'); }
+      if (over && over.kind === 'tab') {
+        const t = document.querySelector(`#bankTabs [data-bank-index="${over.idx}"]`);
+        if (t) t.classList.add('is-drop-tab', ...(over.full ? ['is-drop-full'] : []));
+      }
+    }
+
+    function padDragEnd(drop) {
+      const d = padDrag.active;
+      padDrag.active = null;
+      if (!d) return;
+      if (d.ghost) d.ghost.remove();
+      document.body.classList.remove('is-pad-dragging');
+      document.querySelectorAll('.sampler-pad.is-drag-source, .sampler-pad.drag-over').forEach(x => x.classList.remove('is-drag-source', 'drag-over'));
+      document.querySelectorAll('#bankTabs .is-drop-tab').forEach(x => x.classList.remove('is-drop-tab', 'is-drop-full'));
+      if (!drop || !d.started || !d.over || state.perfLock) return;
+      const bank = state.banks[state.activeBankIndex];
+      const from = bank.pads.findIndex(p => p.id === d.pad.id);
+      if (from < 0) return;
+      const name = bank.pads[from].name;
+      if (d.over.kind === 'pad') {
+        const to = bank.pads.findIndex(p => p.id === d.over.id);
+        if (to < 0) return;
+        const other = bank.pads[to];
+        const u = undoBegin(['pads'], other.sourceType === 'empty' ? 'パッドの移動' : 'パッドの入れ替え');
+        bank.pads[from] = other;
+        bank.pads[to] = d.pad;
+        storage.saveState();
+        renderPads();
+        undoCommit(u, other.sourceType === 'empty' ? `「${name}」を移しました` : `「${name}」と「${other.name}」を入れ替えました`);
+      } else {
+        const dest = state.banks[d.over.idx];
+        const slot = tabDropSlot(dest);
+        if (slot < 0) { showToast(`「${dest.label}」に空きパッドがありません`); return; }
+        const u = undoBegin(['pads'], 'パッドを別のタブへ移動');
+        const empty = dest.pads[slot];
+        dest.pads[slot] = d.pad;
+        bank.pads[from] = empty;
+        storage.saveState();
+        renderPads();
+        undoCommit(u, `「${name}」を「${dest.label}」の ${slot + 1}番に移しました`);
+      }
     }
 
     async function assignFileToPad(pad, file) {
