@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#0d1017">
-  <title>[DEV] LIVEPAD DJ 試作</title>
+  <title>LIVEPAD DJ 試作</title>
   <!--
     LIVEPAD DJ の試作ページ（アプリ本体とは別。感触を確かめるためのもの）
     ・ディスク2枚：内側をつかむとスクラッチ、外側を回すとナッジ（少し速める・遅らせる）
     ・ミキサー：3バンドEQ・フィルター・チャンネルの音量・クロスフェーダー（SMOOTH / SCRATCH）
-    ・曲：デモ音、LIVEPAD DECK（テスト版）のBGM、PCのファイル（ボタン・ドロップ）
+    ・曲：デモ音、LIVEPAD DECK（同じ場所の本体：dev/ ならテスト版）のBGM、PCのファイル（ボタン・ドロップ）
   -->
   <style>
     :root {
@@ -275,7 +275,7 @@
       <h1>LIVEPAD DJ（試作）</h1>
       <div>スクラッチの手応えを確かめるための試作ページです。LIVEPAD DECK 本体とは別に動きます。</div>
       <ul>
-        <li><b>LOAD</b> で曲を選びます（デモ音、LIVEPAD DECK のテスト版の BGM、PCのファイル）。ファイルをデッキに落としても読み込めます。</li>
+        <li><b>LOAD</b> で曲を選びます（デモ音、このブラウザの LIVEPAD DECK に入れた BGM、PCのファイル）。ファイルをデッキに落としても読み込めます。</li>
         <li>ディスクの<b>内側</b>をつかんで前後に動かすとスクラッチ、<b>外側</b>を回すと少し速める・遅らせる（ナッジ）。</li>
         <li>真ん中のミキサーで、EQ・フィルター・A/Bの音量・クロスフェーダー。スクラッチには <b>SCRATCH</b> の形が向いています。</li>
         <li>Bluetoothのイヤホンは音が遅れるので、有線で試すのがおすすめです。</li>
@@ -286,6 +286,8 @@
 
 <script>
 'use strict';
+const IS_DEV = /\/dev\//.test(location.pathname);   // テスト版（dev/）に置いたときは、テスト版の LIVEPAD DECK の BGM を読む
+if (IS_DEV) document.title = `[DEV] ${document.title}`;
 // =========================================================================
 // 音を作るところ（AudioWorklet）：曲を好きな速さ・向きで読む。スクラッチ中は手の位置に追いつくように動く
 // =========================================================================
@@ -948,8 +950,8 @@ async function makeDemoVoice() {
   return oc.startRendering();
 }
 
-/** LIVEPAD DECK（このページと同じ場所のテスト版）に入っている BGM */
-const LIVEPAD_DB = /\/dev\//.test(location.pathname) ? 'LivePadDeckDB_dev' : 'LivePadDeckDB_v1';
+/** LIVEPAD DECK（このページと同じ場所の本体）に入っている BGM */
+const LIVEPAD_DB = IS_DEV ? 'LivePadDeckDB_dev' : 'LivePadDeckDB_v1';
 function openLivepadDb() {
   return new Promise((resolve) => {
     const go = () => {
@@ -1003,7 +1005,7 @@ async function openLoadMenu(deck, anchor) {
   if (!box) return;
   box.innerHTML = list.length
     ? list.map((t, i) => `<button data-lp="${i}">${escapeHtml(t.name)}<small>${escapeHtml(t.folderName)}${t.durationSec ? `・${fmt(t.durationSec)}` : ''}</small></button>`).join('')
-    : '<p>テスト版の LIVEPAD DECK に BGM がまだありません（同じブラウザで入れた曲がここに出ます）</p>';
+    : `<p>${IS_DEV ? 'テスト版の ' : ''}LIVEPAD DECK に BGM がまだありません（同じブラウザで入れた曲がここに出ます）</p>`;
   menu._lp = list;
   menu.style.top = `${clamp(r.bottom + 6, 8, innerHeight - menu.offsetHeight - 8)}px`;
 }

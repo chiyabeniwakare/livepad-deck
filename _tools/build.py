@@ -56,6 +56,9 @@ def release():
         sys.exit('先に python3 _tools/build.py でテスト版を作ってください')
     shutil.copyfile(dev, ROOT / 'index.html')
     shutil.copyfile(ROOT / '_src' / 'apple-touch-icon.png', ROOT / 'apple-touch-icon.png')
+    # DJの試作ページ（テスト版で確かめたものをそのまま）
+    if (DEV_DIR / 'dj.html').exists():
+        shutil.copyfile(DEV_DIR / 'dj.html', ROOT / 'dj.html')
     stamp = re.search(r"const APP_BUILD = '([^']+)'", dev.read_text(encoding='utf-8'))
     print(f'公開版にしました: index.html（{stamp.group(1) if stamp else "?"}）')
 
