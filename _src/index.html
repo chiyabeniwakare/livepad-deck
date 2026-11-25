@@ -754,7 +754,7 @@
 
     /* OBS連携 */
     .obs-pill {
-      display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 9px; border-radius: 8px;
+      display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 10px; border-radius: 8px;
       font-size: 10px; font-weight: 800; letter-spacing: .08em; color: rgb(var(--n-94a3b8));
       background: rgb(var(--n-1a1f2b)); border: 1px solid rgb(var(--n-2c3445));
     }
@@ -775,8 +775,14 @@
     .obs-btn { padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; color: rgb(var(--ac-200)); background: rgb(var(--ac-500) / .14); border: 1px solid rgb(var(--ac-500) / .45); white-space: nowrap; }
     .obs-btn:hover { background: rgb(var(--ac-500) / .25); }
     .obs-btn:disabled { opacity: .45; }
-    .obs-sub { padding-top: 10px; border-top: 1px solid rgb(var(--n-262c3a)); display: flex; flex-direction: column; gap: 8px; }
+    .obs-sub { display: flex; flex-direction: column; gap: 8px; }
     #obsCard.is-off .obs-sub { opacity: .55; }
+    /* OBS連携は、OBSが動くPCだけ。iPhone・iPad・タブレットでは全部隠す（ブラウザの音はWindowsだけ） */
+    .no-obs .obs-only, .no-obs .pad-obs-tag, .not-win .win-only { display: none !important; }
+    .obs-pill:hover { color: rgb(var(--n-e2e8f0)); background: rgb(var(--n-222838)); }
+    .obs-sheet { max-height: calc(100dvh - 32px); }
+    /* 設定・OBS連携：中の欄 */
+    .set-card { background: rgb(var(--n-10131b)); border: 1px solid rgb(var(--n-262c3a)); border-radius: 12px; padding: 12px; }
     .obs-meter { position: relative; height: 8px; border-radius: 4px; background: rgb(var(--n-0b0d11)); overflow: hidden; }
     .obs-meter > span { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, #22c55e, #eab308 75%, #ef4444); transition: width .05s linear; }
     .obs-meter > i { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #f8fafc; box-shadow: 0 0 4px rgba(0,0,0,.8); }
@@ -1627,7 +1633,7 @@
         </button>
 
         <!-- 設定ボタン -->
-        <button id="btnObsPill" type="button" class="obs-pill hidden" title="OBS連携（押すと設定を開きます）"><span class="obs-pill-dot"></span>OBS</button>
+        <button id="btnObsPill" type="button" class="obs-pill obs-only" title="OBS連携" aria-label="OBS連携"><span class="obs-pill-dot"></span>OBS</button>
         <button id="btnOpenSettings" type="button" title="設定・データ管理" class="p-1.5 rounded-lg border border-[rgb(var(--n-2c3445))] bg-[rgb(var(--n-1a1f2b))] hover:bg-[rgb(var(--n-222838))] text-slate-300 hover:text-slate-50 transition-all">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="3"></circle>
@@ -2143,7 +2149,7 @@
         </div>
 
         <!-- OBS ACTION（OBS連携中、パッドを押すとOBSも動かす） -->
-        <div class="edit-obs">
+        <div class="edit-obs obs-only">
           <div class="flex items-center justify-between gap-2 mb-1.5">
             <label class="text-xs font-bold text-slate-400" for="editObsType">OBS ACTION</label>
             <span id="editObsState" class="text-[10px] text-slate-500"></span>
@@ -2163,7 +2169,7 @@
           </div>
           <datalist id="obsSceneList"></datalist>
           <datalist id="obsSourceList"></datalist>
-          <p class="text-[10px] text-slate-500 mt-1">OBSとつないでいるときだけ動きます（設定の「OBS連携」）。シーン名を空にすると、そのとき映しているシーンのソースを動かします</p>
+          <p class="text-[10px] text-slate-500 mt-1">OBSとつないでいるときだけ動きます（右上の OBS ボタン）。シーン名を空にすると、そのとき映しているシーンのソースを動かします</p>
         </div>
       </div>
 
@@ -2182,7 +2188,7 @@
 
   <!-- 設定＆データ初期化モーダル -->
   <div id="settingsModalBackdrop" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
-    <div class="settings-sheet bg-[rgb(var(--n-181c26))] border border-[rgb(var(--n-30384b))] rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col">
+    <div class="settings-sheet bg-[rgb(var(--n-181c26))] border border-[rgb(var(--n-30384b))] rounded-2xl w-full max-w-[720px] shadow-2xl overflow-hidden flex flex-col">
       <div class="px-4 py-3 bg-[rgb(var(--n-14171f))] border-b border-[rgb(var(--n-262c3a))] flex items-center justify-between shrink-0">
         <h3 class="text-sm font-bold text-slate-100">設定・データ管理</h3>
         <button id="btnSettingsClose" type="button" class="text-slate-400 hover:text-slate-50 p-1 rounded-lg hover:bg-slate-800">
@@ -2192,7 +2198,10 @@
           </svg>
         </button>
       </div>
-      <div class="settings-body p-4 space-y-4">
+      <div class="settings-body p-4 space-y-3 sm:space-y-4">
+        <!-- 広い画面は2列：左＝見た目、右＝操作 -->
+        <div class="grid sm:grid-cols-2 gap-3 sm:gap-4 items-start">
+        <div class="space-y-3">
         <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 space-y-2">
           <div class="text-xs font-bold text-accent-300">テーマカラー</div>
           <div id="themeGroup" class="grid grid-cols-6 gap-1"></div>
@@ -2208,6 +2217,17 @@
           <p class="text-[10px] text-slate-500 leading-relaxed">AUTO：iPhone・iPad・PCのダーク／ライトの設定に合わせて自動で切り替えます</p>
         </div>
 
+        <!-- OBS連携は別の画面（PCだけ） -->
+        <div class="set-card obs-only space-y-1.5">
+          <div class="flex items-center justify-between gap-2">
+            <div class="text-xs font-bold text-accent-300">OBS連携</div>
+            <button id="btnSettingsToObs" type="button" class="obs-btn">開く</button>
+          </div>
+          <p class="text-[10px] text-slate-500 leading-relaxed">OBSとつなぐ設定は、右上の OBS ボタンからも開けます</p>
+        </div>
+        </div>
+
+        <div class="space-y-3">
         <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 space-y-2">
           <div class="text-xs font-bold text-accent-300">キーボード（SEパッド）</div>
           <div id="keyMapGroup" class="grid grid-cols-2 gap-2"></div>
@@ -2222,32 +2242,110 @@
           <input id="sliderDuckAmount" type="range" min="30" max="95" step="5" value="80" class="pro-fader accent-cyan w-full" aria-label="DUCKの下げ幅">
           <p class="text-[10px] text-slate-500 leading-relaxed">MIXERのDUCKボタンを押している間、BGMを今の音量の何%にするか（例：BGM 70% で 80% の場合 → 56%）</p>
         </div>
+        </div>
+        </div>
 
-        <!-- OBS連携（obs-websocket） -->
-        <div id="obsCard" class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 text-xs text-slate-300 space-y-2.5">
-          <div class="flex items-center justify-between gap-2">
-            <div class="flex items-center gap-1.5">
-              <span class="font-bold text-accent-300">OBS連携</span>
-              <button type="button" class="help-btn" data-help="obs" title="OBS連携の使い方" aria-label="OBS連携の使い方">?</button>
+        <div class="grid sm:grid-cols-2 gap-3 sm:gap-4 items-start">
+        <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 text-[11px] text-slate-300 space-y-1.5">
+          <div class="text-xs font-bold text-accent-300">保存と同期</div>
+          <p class="text-slate-400 leading-relaxed">
+            登録した音声ファイル・パッド設定・BGMプレイリストはブラウザ内に自動保存されます。Googleでログインすると、Googleドライブの「<span id="driveFolderLabel">LIVEPAD DECK</span>」フォルダにも保存され、別の端末やブラウザのデータを消したあとでも、ログインするだけで元に戻せます。
+          </p>
+          <p class="text-slate-400 leading-relaxed">
+            ※ iPhone・iPadのSafariは、しばらく開かないサイトのデータを消すことがあります。<b class="text-slate-200">ホーム画面に追加</b>して使うか、Googleでログインしてバックアップしておくのがおすすめです。
+          </p>
+          <a href="privacy.html" target="_blank" rel="noopener" class="inline-block text-accent-300 hover:text-accent-200 underline underline-offset-2">プライバシーポリシー</a>
+        </div>
+        <div class="space-y-3">
+        <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 text-[11px] text-slate-300 space-y-1.5">
+          <div class="text-xs font-bold text-accent-300">ABOUT</div>
+          <p class="text-slate-400 leading-relaxed">
+            内蔵の効果音はこのアプリがその場で作っている音なので、配信で自由に使えます。自分で追加したBGM・効果音は、配信で流してよいものかご自身で確認してください。
+          </p>
+          <div class="flex items-center justify-between gap-2 pt-1">
+            <a href="https://github.com/chiyabeniwakare/livepad-deck/issues" target="_blank" rel="noopener" class="text-accent-300 hover:text-accent-200 underline underline-offset-2">不具合の報告・要望（GitHub）</a>
+            <span id="appBuildLabel" class="text-[10px] font-mono-num text-slate-500"></span>
+          </div>
+        </div>
+
+        <div class="set-card">
+          <div class="text-xs font-bold text-red-400 mb-2">データの初期化</div>
+          <div id="resetInitialArea">
+            <button id="btnRequestReset" type="button" class="w-full py-2 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/40 text-xs font-bold transition-colors">
+              データ初期化（すべての音源と設定をリセット）
+            </button>
+          </div>
+          <div id="resetConfirmArea" class="hidden space-y-2 bg-red-950/40 border border-red-500/50 rounded-xl p-3">
+            <p class="text-xs text-red-200 font-bold">本当にすべての音源データと設定を削除して初期状態に戻しますか？</p>
+            <div class="flex items-center gap-2">
+              <button id="btnCancelReset" type="button" class="flex-1 py-1.5 rounded-lg bg-slate-800 text-slate-200 text-xs font-bold">キャンセル</button>
+              <button id="btnConfirmReset" type="button" class="flex-1 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold">初期化する</button>
             </div>
-            <span id="obsStatusBadge" class="obs-status">OFF</span>
           </div>
-          <label class="obs-row">
-            <input id="obsEnabled" type="checkbox" class="obs-check">
-            <span>OBSにつなぐ（OBSを動かしているPCで使うとき）</span>
-          </label>
-          <div class="grid grid-cols-[1fr_auto] gap-2">
-            <input id="obsUrl" type="text" class="obs-input" placeholder="ws://127.0.0.1:4455" autocomplete="off" spellcheck="false" aria-label="OBSのアドレス">
-            <button id="btnObsConnect" type="button" class="obs-btn">接続</button>
-            <input id="obsPassword" type="password" class="obs-input col-span-2" placeholder="パスワード（OBSの「ツール」→「WebSocketサーバー設定」）" autocomplete="off" aria-label="OBSのパスワード">
-          </div>
-          <p id="obsMessage" class="text-[10px] leading-relaxed text-slate-500"></p>
-          <div class="flex items-center gap-2">
-            <button id="btnObsAudioSource" type="button" class="obs-btn" title="このブラウザの音（LIVEPAD DECKの音）だけを取り込む音声ソースを、OBSの全部のシーンに追加します">ブラウザの音をOBSに追加</button>
-            <span class="text-[10px] text-slate-500 leading-snug">LIVEPAD DECKの音を、OBSの音声ソース「LIVEPAD DECK Audio」として取り込みます（Windows）</span>
+        </div>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OBS連携モーダル（OBSが動くPCだけ。ヘッダーの OBS ボタンから開く） -->
+  <div id="obsModalBackdrop" class="obs-only fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
+    <div class="obs-sheet bg-[rgb(var(--n-181c26))] border border-[rgb(var(--n-30384b))] rounded-2xl w-full max-w-[720px] shadow-2xl overflow-hidden flex flex-col" role="dialog" aria-modal="true" aria-labelledby="obsModalTitle">
+      <div class="px-4 py-3 bg-[rgb(var(--n-14171f))] border-b border-[rgb(var(--n-262c3a))] flex items-center justify-between gap-3 shrink-0">
+        <div class="flex items-center gap-2 min-w-0">
+          <h3 id="obsModalTitle" class="text-sm font-bold text-slate-100">OBS連携</h3>
+          <button type="button" class="help-btn" data-help="obs" title="OBS連携の使い方" aria-label="OBS連携の使い方">?</button>
+          <span id="obsStatusBadge" class="obs-status ml-1">OFF</span>
+        </div>
+        <button id="btnObsClose" type="button" class="text-slate-400 hover:text-slate-50 p-1 rounded-lg hover:bg-slate-800" aria-label="閉じる">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <!-- 左＝つなぎ方・音・配信の開始と終了、右＝曲名・しゃべると下げる -->
+      <div id="obsCard" class="settings-body p-4 grid sm:grid-cols-2 gap-3 sm:gap-4 items-start text-xs text-slate-300">
+        <div class="space-y-3">
+          <div class="set-card space-y-2.5">
+            <label class="obs-row font-bold text-slate-200">
+              <input id="obsEnabled" type="checkbox" class="obs-check">
+              <span>OBSにつなぐ</span>
+            </label>
+            <div class="grid grid-cols-[1fr_auto] gap-2">
+              <input id="obsUrl" type="text" class="obs-input" placeholder="ws://127.0.0.1:4455" autocomplete="off" spellcheck="false" aria-label="OBSのアドレス">
+              <button id="btnObsConnect" type="button" class="obs-btn">接続</button>
+              <input id="obsPassword" type="password" class="obs-input col-span-2" placeholder="パスワード（OBSの「ツール」→「WebSocketサーバー設定」）" autocomplete="off" aria-label="OBSのパスワード">
+            </div>
+            <p id="obsMessage" class="text-[10px] leading-relaxed text-slate-500"></p>
           </div>
 
-          <div class="obs-sub">
+          <div class="set-card obs-sub win-only">
+            <div class="font-bold text-slate-200">LIVEPAD DECK の音</div>
+            <div><button id="btnObsAudioSource" type="button" class="obs-btn" title="このブラウザの音（LIVEPAD DECKの音）だけを取り込む音声ソースを、OBSの全部のシーンに追加します">ブラウザの音をOBSに追加</button></div>
+            <p class="text-[10px] text-slate-500 leading-relaxed">このブラウザの音だけを、OBSの音声ソース「LIVEPAD DECK Audio」として全部のシーンに入れます。OBSの「デスクトップ音声」はミュートしてください（二重に入るため）</p>
+            <p id="obsAudioNote" class="text-[10px] leading-relaxed text-amber-200 hidden"></p>
+          </div>
+
+          <div class="set-card obs-sub">
+            <div class="font-bold text-slate-200">配信の開始・終了</div>
+            <label class="grid grid-cols-[auto_1fr] items-center gap-2">
+              <span class="text-slate-400">配信を始めたら</span>
+              <select id="obsOnStart" class="obs-input"></select>
+            </label>
+            <label class="grid grid-cols-[auto_1fr] items-center gap-2">
+              <span class="text-slate-400">配信を止めたら</span>
+              <select id="obsOnStop" class="obs-input">
+                <option value="none">何もしない</option>
+                <option value="fade">BGMをフェードアウトして止める</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div class="set-card obs-sub">
             <label class="obs-row font-bold text-slate-200">
               <input id="obsNpEnabled" type="checkbox" class="obs-check">
               <span>BGMの曲名をOBSのテキストに出す</span>
@@ -2258,9 +2356,10 @@
               <input id="obsNpFormat" type="text" class="obs-input col-span-2" placeholder="♪ {title}" autocomplete="off" aria-label="表示の形">
             </div>
             <p class="text-[10px] text-slate-500 leading-relaxed"><b>{title}</b>＝曲名、<b>{folder}</b>＝フォルダ名。BGMを止めると消えます</p>
+            <p id="obsNpMessage" class="text-[10px] leading-relaxed text-red-300 hidden"></p>
           </div>
 
-          <div class="obs-sub">
+          <div class="set-card obs-sub">
             <label class="obs-row font-bold text-slate-200">
               <input id="obsVdEnabled" type="checkbox" class="obs-check">
               <span>しゃべるとBGMを下げる</span>
@@ -2282,59 +2381,6 @@
               <input id="obsVdAmount" type="range" min="5" max="95" step="5" value="35" class="pro-fader accent-cyan w-full">
             </div>
             <p class="text-[10px] text-slate-500 leading-relaxed">マイクの音量のバーが線を超えている間、BGMを下げます。しゃべり終わって少しすると戻ります</p>
-          </div>
-
-          <div class="obs-sub">
-            <div class="font-bold text-slate-200">配信の開始・終了</div>
-            <label class="grid grid-cols-[auto_1fr] items-center gap-2">
-              <span class="text-slate-400">配信を始めたら</span>
-              <select id="obsOnStart" class="obs-input"></select>
-            </label>
-            <label class="grid grid-cols-[auto_1fr] items-center gap-2">
-              <span class="text-slate-400">配信を止めたら</span>
-              <select id="obsOnStop" class="obs-input">
-                <option value="none">何もしない</option>
-                <option value="fade">BGMをフェードアウトして止める</option>
-              </select>
-            </label>
-          </div>
-        </div>
-
-        <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 text-xs text-slate-300 space-y-1">
-          <div class="font-bold text-accent-300">保存と同期</div>
-          <p class="text-slate-400 leading-relaxed">
-            登録した音声ファイル・パッド設定・BGMプレイリストはブラウザ内に自動保存されます。Googleでログインすると、Googleドライブの「<span id="driveFolderLabel">LIVEPAD DECK</span>」フォルダにも保存され、別の端末やブラウザのデータを消したあとでも、ログインするだけで元に戻せます。
-          </p>
-          <p class="text-slate-400 leading-relaxed">
-            ※ iPhone・iPadのSafariは、しばらく開かないサイトのデータを消すことがあります。<b class="text-slate-200">ホーム画面に追加</b>して使うか、Googleでログインしてバックアップしておくのがおすすめです。
-          </p>
-          <a href="privacy.html" target="_blank" rel="noopener" class="inline-block text-accent-300 hover:text-accent-200 underline underline-offset-2">プライバシーポリシー</a>
-        </div>
-
-        <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 text-xs text-slate-300 space-y-1">
-          <div class="font-bold text-accent-300">ABOUT</div>
-          <p class="text-slate-400 leading-relaxed">
-            内蔵の効果音はこのアプリがその場で作っている音なので、配信で自由に使えます。自分で追加したBGM・効果音は、配信で流してよいものかご自身で確認してください。
-          </p>
-          <div class="flex items-center justify-between gap-2 pt-1">
-            <a href="https://github.com/chiyabeniwakare/livepad-deck/issues" target="_blank" rel="noopener" class="text-accent-300 hover:text-accent-200 underline underline-offset-2">不具合の報告・要望（GitHub）</a>
-            <span id="appBuildLabel" class="text-[10px] font-mono-num text-slate-500"></span>
-          </div>
-        </div>
-
-        <div class="border-t border-[rgb(var(--n-262c3a))] pt-3">
-          <div class="text-xs font-bold text-red-400 mb-2">データの初期化</div>
-          <div id="resetInitialArea">
-            <button id="btnRequestReset" type="button" class="w-full py-2 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/40 text-xs font-bold transition-colors">
-              データ初期化（すべての音源と設定をリセット）
-            </button>
-          </div>
-          <div id="resetConfirmArea" class="hidden space-y-2 bg-red-950/40 border border-red-500/50 rounded-xl p-3">
-            <p class="text-xs text-red-200 font-bold">本当にすべての音源データと設定を削除して初期状態に戻しますか？</p>
-            <div class="flex items-center gap-2">
-              <button id="btnCancelReset" type="button" class="flex-1 py-1.5 rounded-lg bg-slate-800 text-slate-200 text-xs font-bold">キャンセル</button>
-              <button id="btnConfirmReset" type="button" class="flex-1 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold">初期化する</button>
-            </div>
           </div>
         </div>
       </div>
@@ -2547,6 +2593,25 @@
     const APP_CHANNEL = (/\/dev(\/|\/index\.html)?$/.test(location.pathname) || new URLSearchParams(location.search).has('dev')) ? 'dev' : 'prod';
     const IS_DEV = APP_CHANNEL === 'dev';
     const APP_BUILD = '__APP_BUILD__';   // ビルドしたとき日時とコミットに置き換わる（_tools/build.py）
+
+    // 端末の種類。OBS連携は、OBSが動くPC（Windows・Mac・Linux）で開いたときだけ出す
+    //   iPhone・iPad・Android・Chromebook からは、https のページから別の機械のOBS（ws://）へはつなげない
+    const DEVICE_OS = (() => {
+      const ua = navigator.userAgent || '';
+      const plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+      if (/iPhone|iPad|iPod/.test(ua)) return 'ios';
+      if (/Mac/.test(plat) && navigator.maxTouchPoints > 1) return 'ios';   // iPadのSafariはMacのふりをする
+      if (/Android/i.test(ua) || /Android/i.test(plat)) return 'android';
+      if (/CrOS/.test(ua) || /Chrome OS/i.test(plat)) return 'chromeos';
+      if (/Win/.test(plat) || /Windows/.test(ua)) return 'windows';
+      if (/Mac/.test(plat) || /Macintosh/.test(ua)) return 'mac';
+      if (/Linux/.test(plat) || /Linux/.test(ua)) return 'linux';
+      return 'other';
+    })();
+    const OBS_CAPABLE = ['windows', 'mac', 'linux'].includes(DEVICE_OS);
+    const IS_WINDOWS = DEVICE_OS === 'windows';
+    document.documentElement.classList.toggle('no-obs', !OBS_CAPABLE);
+    document.documentElement.classList.toggle('not-win', !IS_WINDOWS);
 
     /**
      * =========================================================================
@@ -5038,18 +5103,18 @@ registerProcessor('livepad-rec', LivepadRec);
     const HELP_DOCS = {
       obs: {
         title: 'OBS連携',
-        intro: 'OBS Studio（28以降）とつないで、曲名を配信画面に出したり、パッドでOBSを動かしたりできます。LIVEPAD DECK は、OBSを動かしているPCの Chrome か Edge で開いてください（iPhone・iPadからはつなげません）。',
+        intro: 'OBS Studio（28以降）とつないで、曲名を配信画面に出したり、パッドでOBSを動かしたりできます。PC（Windows・Mac）で開いたときだけ、右上に <b>OBS</b> ボタンが出ます。押すとOBS連携の画面が開きます。LIVEPAD DECK は、OBSを動かしているPCの Chrome か Edge で開いてください。iPhone・iPad・タブレットからはOBSにつなげないので、ボタンも出ません。',
         sections: [
           { name: 'つなぎ方', text: [
             'OBSのメニューの<b>「ツール」→「WebSocketサーバー設定」</b>を開き、<b>「WebSocketサーバーを有効にする」</b>にチェックを入れて、右下の<b>「適用」か「OK」を押します</b>（押さないとOBS側の受け付けが始まりません）',
-            '同じ画面の<b>「接続情報を表示」</b>でパスワードをコピーし、この設定の「パスワード」に貼り付けて<b>「接続」</b>を押します。アドレスはそのまま（ws://127.0.0.1:4455）で大丈夫です',
+            '同じ画面の<b>「接続情報を表示」</b>でパスワードをコピーし、OBS連携の画面の「パスワード」に貼り付けて<b>「接続」</b>を押します。アドレスはそのまま（ws://127.0.0.1:4455）で大丈夫です',
             'Chromeが「ローカルネットワーク（このパソコンの中のアプリ）へのアクセス」の確認を出したら<b>「許可」</b>を押します',
-            '右上に <b>OBS</b> と出て、緑の点が付けばつながっています（配信中は OBS LIVE）。OBSを閉じると自動で切れ、OBSを開くと5秒ほどで自動でつなぎ直します',
+            '右上の <b>OBS</b> ボタンに緑の点が付けばつながっています（配信中は OBS LIVE）。OBSを閉じると自動で切れ、OBSを開くと5秒ほどで自動でつなぎ直します',
             'パスワードはこの端末の中にだけ保存し、Googleドライブには同期しません'
           ] },
           { name: 'ブラウザの音をOBSに入れる', text: [
             'LIVEPAD DECK の音は、そのままだとPCのスピーカーから鳴っているだけです。OBSの<b>「デスクトップ音声」</b>がオンなら配信にも入りますが、PCのほかの音（通知音やほかのアプリ）も一緒に入ります',
-            '<b>「ブラウザの音をOBSに追加」</b>を押すと、このブラウザの音だけを取り込む音声ソース「LIVEPAD DECK Audio」（OBSのアプリケーション音声キャプチャ）を、OBSの全部のシーンに追加します。Windows の OBS 28 以降で使えます',
+            '<b>「ブラウザの音をOBSに追加」</b>を押すと、このブラウザの音だけを取り込む音声ソース「LIVEPAD DECK Audio」（OBSのアプリケーション音声キャプチャ）を、OBSの全部のシーンに追加します。Windows の OBS 28 以降で使えます（Macではこのボタンは出ません）',
             'このときOBSの「デスクトップ音声」もオンだと、同じ音が二重に入ります。OBSの音声ミキサーで「デスクトップ音声」をミュートしてください',
             'このブラウザで YouTube など別のタブの音を鳴らすと、それも入ります。LIVEPAD DECK 専用のブラウザ（例：Edge）にしておくと安心です'
           ] },
@@ -8637,15 +8702,17 @@ registerProcessor('livepad-rec', LivepadRec);
       const pill = document.getElementById('btnObsPill');
       if (!pill) return;
       const cls = obs.status === 'connected' ? 'is-connected' : obs.status === 'connecting' ? 'is-connecting' : (obs.status === 'error' || obs.status === 'auth') ? 'is-error' : '';
-      pill.classList.toggle('hidden', !o.enabled);
-      pill.className = `obs-pill${o.enabled ? '' : ' hidden'}${cls ? ` ${cls}` : ''}${obs.streaming && obs.status === 'connected' ? ' is-live' : ''}`;
+      pill.className = `obs-pill obs-only${cls ? ` ${cls}` : ''}${obs.streaming && obs.status === 'connected' ? ' is-live' : ''}`;
       pill.lastChild.textContent = obs.streaming && obs.status === 'connected' ? 'OBS LIVE' : 'OBS';
       const badge = document.getElementById('obsStatusBadge');
       badge.className = `obs-status ${cls}`;
       badge.textContent = { off: 'OFF', connecting: 'CONNECTING', connected: obs.streaming ? 'CONNECTED · LIVE' : 'CONNECTED', error: 'NOT CONNECTED', auth: 'PASSWORD' }[obs.status] || 'OFF';
-      const msg = [obs.status === 'off' ? (o.enabled ? '' : 'オフ') : obs.message, obs.status === 'connected' ? obs.audioNote : '', obs.npError].filter(Boolean).join('　');
+      const msg = obs.status === 'off' ? (o.enabled ? '' : 'オフ') : obs.message;
       document.getElementById('obsMessage').textContent = msg;
-      document.getElementById('obsMessage').classList.toggle('text-red-300', obs.status === 'error' || obs.status === 'auth' || !!obs.npError);
+      document.getElementById('obsMessage').classList.toggle('text-red-300', obs.status === 'error' || obs.status === 'auth');
+      const note = (id, text) => { const el = document.getElementById(id); el.textContent = text; el.classList.toggle('hidden', !text); };
+      note('obsAudioNote', obs.status === 'connected' ? obs.audioNote : '');
+      note('obsNpMessage', obs.npError);
       document.getElementById('obsCard').classList.toggle('is-off', !o.enabled);
       document.getElementById('btnObsNpCreate').disabled = obs.status !== 'connected';
       document.getElementById('btnObsAudioSource').disabled = obs.status !== 'connected';
@@ -8728,12 +8795,28 @@ registerProcessor('livepad-rec', LivepadRec);
       renderObsStatus();
     }
 
+    /** OBS連携の画面（ヘッダーの OBS ボタン・設定の「開く」から） */
+    function openObsPanel() {
+      if (!OBS_CAPABLE) return;
+      renderObsSettings();
+      const b = $('obsModalBackdrop');
+      b.classList.remove('hidden');
+      b.classList.add('flex');
+      $('obsCard').scrollTop = 0;
+      if (obsConnected()) obsRefreshLists();
+    }
+    function closeObsPanel() {
+      const b = $('obsModalBackdrop');
+      b.classList.add('hidden');
+      b.classList.remove('flex');
+    }
+
     function initObs() {
       const save = () => storage.saveState();
-      $('btnObsPill').addEventListener('click', () => {
-        $('btnOpenSettings').click();
-        setTimeout(() => { const c = $('obsCard'); if (c) c.scrollIntoView({ block: 'start' }); }, 50);
-      });
+      $('btnObsPill').addEventListener('click', openObsPanel);
+      $('btnObsClose').addEventListener('click', closeObsPanel);
+      $('obsModalBackdrop').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeObsPanel(); });
+      $('btnSettingsToObs').addEventListener('click', () => { $('btnSettingsClose').click(); openObsPanel(); });
       $('obsEnabled').addEventListener('change', (e) => {
         state.obs.enabled = e.target.checked;
         save();
@@ -8817,7 +8900,7 @@ registerProcessor('livepad-rec', LivepadRec);
         state.editDraft.obs.sec = isFinite(v) && v > 0 ? Math.min(60, v) : 3;
       });
       renderObsSettings();
-      if (state.obs.enabled) obsConnect();
+      if (state.obs.enabled && OBS_CAPABLE) obsConnect();   // iPhone・iPad・タブレットではつながない
     }
 
     // =========================================================================
@@ -11282,7 +11365,6 @@ registerProcessor('livepad-rec', LivepadRec);
       document.getElementById('btnOpenSettings').addEventListener('click', () => {
         renderThemeGroup();
         renderKeyMapGroup();
-        renderObsSettings();
         settingsBackdrop.classList.remove('hidden');
         settingsBackdrop.classList.add('flex');
       });
@@ -11392,7 +11474,7 @@ registerProcessor('livepad-rec', LivepadRec);
       const heldKeys = new Map();
       const isOpen = (id) => !$(id).classList.contains('hidden');
       const overlayOpen = () =>
-        isOpen('editModalBackdrop') || isOpen('settingsModalBackdrop') || isOpen('tabModalBackdrop') || isOpen('bgmMenu') || isOpen('bgmFolderMenu') || isOpen('folderNameBackdrop') || isOpen('helpModalBackdrop') || isOpen('layoutNameBackdrop') || isOpen('fxOrderBackdrop');
+        isOpen('editModalBackdrop') || isOpen('settingsModalBackdrop') || isOpen('tabModalBackdrop') || isOpen('bgmMenu') || isOpen('bgmFolderMenu') || isOpen('folderNameBackdrop') || isOpen('helpModalBackdrop') || isOpen('layoutNameBackdrop') || isOpen('fxOrderBackdrop') || isOpen('obsModalBackdrop');
       const isTyping = (t) => !!t && (
         (t.tagName === 'INPUT' && !['range', 'button', 'checkbox', 'file'].includes(t.type)) ||
         t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable
@@ -11413,6 +11495,7 @@ registerProcessor('livepad-rec', LivepadRec);
             closeTabRename();
             closeEditModal();
             closeSettings();
+            closeObsPanel();
             closeHelp();
             closeLayoutName();
             closeFxOrder();
