@@ -6,6 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <!-- ホーム画面に追加したときのアイコンと名前（テスト版は dev/ のDEV付きアイコン、名前は起動時に「LIVEPAD DEV」へ） -->
+  <meta name="apple-mobile-web-app-title" content="LIVEPAD" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <title>LIVEPAD DECK - Streamer Sampler & BGM</title>
   <meta name="theme-color" content="#14171f">
   <!-- Googleログイン（Google Identity Services） -->
@@ -734,6 +737,131 @@
       .kbd { display: inline-flex; }
     }
 
+    /* OBS連携 */
+    .obs-pill {
+      display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 10px; border-radius: 8px;
+      font-size: 10px; font-weight: 800; letter-spacing: .08em; color: rgb(var(--n-94a3b8));
+      background: rgb(var(--n-1a1f2b)); border: 1px solid rgb(var(--n-2c3445));
+    }
+    .obs-pill-dot { width: 7px; height: 7px; border-radius: 50%; background: rgb(var(--n-64748b)); }
+    .obs-pill.is-connected .obs-pill-dot, .obs-status.is-connected::before { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+    .obs-pill.is-connecting .obs-pill-dot, .obs-status.is-connecting::before { background: #eab308; }
+    .obs-pill.is-error .obs-pill-dot, .obs-status.is-error::before { background: #ef4444; }
+    .obs-pill.is-live { color: #fecaca; border-color: rgba(239,68,68,.6); }
+    .obs-status { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 800; letter-spacing: .06em; color: rgb(var(--n-94a3b8)); }
+    .obs-status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: rgb(var(--n-64748b)); }
+    .obs-row { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .obs-check { width: 15px; height: 15px; accent-color: rgb(var(--ac-400)); flex: none; }
+    .obs-input, .edit-obs-input {
+      min-width: 0; padding: 6px 9px; border-radius: 8px; font-size: 12px; color: rgb(var(--n-e2e8f0));
+      background: rgb(var(--n-0d1016)); border: 1px solid rgb(var(--n-2a3242));
+    }
+    .obs-input:focus, .edit-obs-input:focus { outline: none; border-color: rgb(var(--ac-400)); }
+    .obs-btn, .soft-btn { padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; color: rgb(var(--ac-200)); background: rgb(var(--ac-500) / .14); border: 1px solid rgb(var(--ac-500) / .45); white-space: nowrap; }
+    .obs-btn:hover, .soft-btn:hover { background: rgb(var(--ac-500) / .25); }
+    .obs-btn:disabled { opacity: .45; }
+    .obs-sub { display: flex; flex-direction: column; gap: 8px; }
+    #obsCard.is-off .obs-sub { opacity: .55; }
+    /* OBS連携は、OBSが動くPCだけ。iPhone・iPad・タブレットでは全部隠す（ブラウザの音はWindowsだけ） */
+    .no-obs .obs-only, .no-obs .pad-obs-tag, .not-win .win-only { display: none !important; }
+    .obs-pill:hover { color: rgb(var(--n-e2e8f0)); background: rgb(var(--n-222838)); }
+    .obs-sheet { max-height: calc(100dvh - 32px); }
+    /* 設定・OBS連携：中の欄 */
+    .set-card { background: rgb(var(--n-10131b)); border: 1px solid rgb(var(--n-262c3a)); border-radius: 12px; padding: 12px; }
+    .obs-meter { position: relative; height: 8px; border-radius: 4px; background: rgb(var(--n-0b0d11)); overflow: hidden; }
+    .obs-meter > span { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, #22c55e, #eab308 75%, #ef4444); transition: width .05s linear; }
+    .obs-meter > i { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #f8fafc; box-shadow: 0 0 4px rgba(0,0,0,.8); }
+    .edit-obs { padding-top: 12px; border-top: 1px solid rgb(var(--n-262c3a)); }
+    /* しゃべってBGMが下がっている間、DUCKボタンを光らせる */
+    .duck-pad.is-voice { box-shadow: 0 0 0 2px rgba(34,197,94,.65), 0 0 14px rgba(34,197,94,.35); }
+    /* OBS ACTION があるパッドの札 */
+    .pad-obs-tag { padding: 0 3px; border-radius: 3px; font-size: 7.5px; font-weight: 900; letter-spacing: .04em; color: #0b0d11; background: #a78bfa; }
+
+    /* ホーム画面に追加のすすめ（iPhone・iPad） */
+    html:not(.can-a2hs) .a2hs-only { display: none !important; }
+    #a2hsRoot { position: fixed; inset: 0; z-index: 38; align-items: center; justify-content: center; padding: 12px; background: rgb(3 5 9 / .8); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+    .a2hs-sheet {
+      width: 100%; max-width: 720px; max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain;
+      padding: 18px; border-radius: 18px; background: rgb(var(--n-181c26)); border: 1px solid rgb(var(--n-30384b));
+      box-shadow: 0 24px 60px rgb(0 0 0 / .55); color: rgb(var(--n-cbd5e1)); font-size: 12.5px; line-height: 1.65;
+    }
+    .a2hs-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .a2hs-head img { width: 44px; height: 44px; border-radius: 11px; flex: none; box-shadow: 0 4px 14px rgb(var(--ac-500) / .35); }
+    .a2hs-title { font-size: 16px; font-weight: 900; color: rgb(var(--n-f1f5f9)); line-height: 1.35; }
+    .a2hs-sub { font-size: 11px; color: rgb(var(--n-94a3b8)); }
+    .a2hs-cols { display: grid; gap: 14px; }
+    @media (min-width: 600px) { .a2hs-cols { grid-template-columns: 1fr 1.25fr; } }
+    .a2hs-box { padding: 12px 14px; border-radius: 12px; background: rgb(var(--n-10131b)); border: 1px solid rgb(var(--n-262c3a)); }
+    .a2hs-box h3 { font-size: 12px; font-weight: 800; color: rgb(var(--ac-300)); margin-bottom: 6px; }
+    .a2hs-good { display: grid; gap: 8px; }
+    .a2hs-good b { display: block; color: rgb(var(--n-f1f5f9)); font-weight: 800; }
+    .a2hs-good span { color: rgb(var(--n-94a3b8)); font-size: 11.5px; }
+    .a2hs-steps { counter-reset: a2hs; display: grid; gap: 9px; }
+    .a2hs-steps li { counter-increment: a2hs; display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: start; }
+    .a2hs-steps li::before {
+      content: counter(a2hs); width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+      font-size: 11px; font-weight: 900; color: #0b0d11; background: rgb(var(--ac-400));
+    }
+    .a2hs-steps small { display: block; font-size: 11px; color: rgb(var(--n-94a3b8)); }
+    .a2hs-steps b { color: rgb(var(--n-f1f5f9)); }
+    /* 画面に出ているボタンの形 */
+    .a2hs-key {
+      display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 22px; margin: 0 2px; vertical-align: -6px;
+      border-radius: 7px; color: rgb(var(--n-e2e8f0)); background: rgb(var(--n-2a3242)); border: 1px solid rgb(var(--n-3b4559));
+    }
+    .a2hs-key svg { width: 15px; height: 15px; }
+    .a2hs-note { margin-top: 12px; padding: 9px 12px; border-radius: 10px; font-size: 11.5px; color: #fde68a; background: rgb(251 191 36 / .08); border: 1px solid rgb(251 191 36 / .3); }
+    /* ボタンは、スクロールしても下に見えたまま */
+    .a2hs-actions {
+      position: sticky; bottom: -18px; display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+      margin: 6px -18px -18px; padding: 12px 18px 14px;
+      background: linear-gradient(to bottom, rgb(var(--n-181c26) / 0), rgb(var(--n-181c26)) 34%);
+    }
+    /* iPhone横：低い画面では詰める */
+    @media (max-height: 500px) {
+      .a2hs-sheet { padding: 12px 14px; font-size: 12px; line-height: 1.55; }
+      .a2hs-head { margin-bottom: 8px; }
+      .a2hs-head img { width: 34px; height: 34px; border-radius: 9px; }
+      .a2hs-title { font-size: 14.5px; }
+      .a2hs-cols { gap: 10px; }
+      .a2hs-box { padding: 9px 12px; }
+      .a2hs-good, .a2hs-steps { gap: 6px; }
+      .a2hs-note { margin-top: 8px; padding: 7px 10px; font-size: 11px; }
+      .a2hs-actions { bottom: -12px; margin: 4px -14px -12px; padding: 10px 14px 10px; }
+    }
+
+    /* はじめの案内：1か所ずつ照らして、そばに吹き出し */
+    #tourRoot { position: fixed; inset: 0; z-index: 38; }   /* 画面の上・モーダル（z-40）の下 */
+    .tour-hole {
+      position: fixed; border-radius: 14px; pointer-events: none;
+      box-shadow: 0 0 0 200vmax rgb(3 5 9 / .74), 0 0 0 2px rgb(var(--ac-400)), 0 0 24px rgb(var(--ac-400) / .35);
+      transition: left .28s ease, top .28s ease, width .28s ease, height .28s ease;
+    }
+    .tour-hole.is-none { box-shadow: 0 0 0 200vmax rgb(3 5 9 / .74); }
+    .tour-tip {
+      position: fixed; width: min(300px, calc(100vw - 24px)); padding: 14px 14px 12px; border-radius: 14px;
+      background: rgb(var(--n-181c26)); border: 1px solid rgb(var(--ac-500) / .5); box-shadow: 0 18px 44px rgb(0 0 0 / .55);
+      color: rgb(var(--n-cbd5e1)); font-size: 12px; line-height: 1.65;
+      transition: left .28s ease, top .28s ease;
+    }
+    @media (max-height: 500px) { .tour-tip { width: min(260px, calc(100vw - 24px)); } }   /* iPhone横：DECKの横に入るように */
+    .tour-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+    .tour-title { font-size: 14px; font-weight: 800; color: rgb(var(--n-f1f5f9)); }
+    .tour-count { font-size: 10px; font-weight: 800; color: rgb(var(--n-64748b)); font-variant-numeric: tabular-nums; }
+    .tour-text b { color: rgb(var(--ac-200)); font-weight: 800; }
+    .tour-list { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; row-gap: 3px; margin-top: 2px; }
+    .tour-list dt { font-size: 10.5px; font-weight: 800; color: rgb(var(--ac-200)); white-space: nowrap; }
+    .tour-actions { display: flex; align-items: center; gap: 6px; margin-top: 12px; }
+    .tour-skip { margin-right: auto; padding: 4px 2px; font-size: 11px; font-weight: 700; color: rgb(var(--n-94a3b8)); }
+    .tour-skip:hover { color: rgb(var(--n-e2e8f0)); }
+    .tour-btn { padding: 6px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 800; }
+    .tour-btn.is-back { color: rgb(var(--n-cbd5e1)); background: rgb(var(--n-1f2636)); }
+    .tour-btn.is-back:hover { background: rgb(var(--n-2a3347)); }
+    .tour-btn.is-next { color: #0b0d11; background: rgb(var(--ac-400)); }
+    .tour-btn.is-next:hover { background: rgb(var(--ac-300)); }
+    .tour-btn:focus-visible, .tour-skip:focus-visible { outline: 2px solid rgb(var(--ac-300)); outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) { .tour-hole, .tour-tip { transition: none; } }
+
     /* テスト版の目印 */
     .dev-badge { flex: none; padding: 1px 6px; border-radius: 5px; font-size: 10px; font-weight: 900; letter-spacing: .1em; color: #1a1205; background: #fbbf24; box-shadow: 0 0 10px rgba(251,191,36,.45); }
 
@@ -1456,7 +1584,7 @@
     html.tone-light .duck-btn.is-on { color: #92400e; border-color: rgba(217, 119, 6, .55); background: #fef3c7; }
     html.tone-light .layout-btn.is-primary { color: #fff; }
   </style>
-  <style id="tailwind">*,:after,:before{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/*! tailwindcss v3.4.19 | MIT License | https://tailwindcss.com*/*,:after,:before{box-sizing:border-box;border:0 solid #e5e7eb}:after,:before{--tw-content:""}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0}fieldset,legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.container{width:100%}@media (min-width:640px){.container{max-width:640px}}@media (min-width:768px){.container{max-width:768px}}@media (min-width:1024px){.container{max-width:1024px}}@media (min-width:1280px){.container{max-width:1280px}}@media (min-width:1536px){.container{max-width:1536px}}.pointer-events-none{pointer-events:none}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0}.-right-1{right:-.25rem}.-top-1{top:-.25rem}.bottom-4{bottom:1rem}.left-0{left:0}.left-1\/2{left:50%}.right-0{right:0}.top-0{top:0}.z-10{z-index:10}.z-20{z-index:20}.z-30{z-index:30}.z-40{z-index:40}.z-50{z-index:50}.mb-1{margin-bottom:.25rem}.mb-1\.5{margin-bottom:.375rem}.mb-2{margin-bottom:.5rem}.mb-5{margin-bottom:1.25rem}.mb-7{margin-bottom:1.75rem}.ml-0\.5{margin-left:.125rem}.ml-auto{margin-left:auto}.mt-0\.5{margin-top:.125rem}.mt-1{margin-top:.25rem}.mt-1\.5{margin-top:.375rem}.mt-4{margin-top:1rem}.line-clamp-2{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}.block{display:block}.inline-block{display:inline-block}.inline{display:inline}.flex{display:flex}.\!grid{display:grid!important}.grid{display:grid}.\!hidden{display:none!important}.hidden{display:none}.h-1\.5{height:.375rem}.h-12{height:3rem}.h-16{height:4rem}.h-2{height:.5rem}.h-2\.5{height:.625rem}.h-3{height:.75rem}.h-3\.5{height:.875rem}.h-4{height:1rem}.h-5{height:1.25rem}.h-6{height:1.5rem}.h-7{height:1.75rem}.h-8{height:2rem}.h-9{height:2.25rem}.h-full{height:100%}.max-h-\[150px\]{max-height:150px}.max-h-\[640px\]{max-height:640px}.max-h-\[92dvh\]{max-height:92dvh}.max-h-\[940px\]{max-height:940px}.min-h-0{min-height:0}.min-h-\[110px\]{min-height:110px}.min-h-\[200px\]{min-height:200px}.min-h-\[230px\]{min-height:230px}.w-1\.5{width:.375rem}.w-16{width:4rem}.w-2{width:.5rem}.w-2\.5{width:.625rem}.w-3{width:.75rem}.w-3\.5{width:.875rem}.w-4{width:1rem}.w-5{width:1.25rem}.w-6{width:1.5rem}.w-7{width:1.75rem}.w-8{width:2rem}.w-9{width:2.25rem}.w-\[210px\]{width:210px}.w-\[270px\]{width:270px}.w-\[34\%\]{width:34%}.w-full{width:100%}.min-w-0{min-width:0}.min-w-\[280px\]{min-width:280px}.max-w-\[440px\]{max-width:440px}.max-w-md{max-width:28rem}.max-w-sm{max-width:24rem}.max-w-xl{max-width:36rem}.max-w-xs{max-width:20rem}.flex-1{flex:1 1 0%}.flex-shrink{flex-shrink:1}.shrink-0{flex-shrink:0}.-translate-x-1\/2{--tw-translate-x:-50%}.-translate-x-1\/2,.translate-y-0{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.translate-y-0{--tw-translate-y:0px}.translate-y-2{--tw-translate-y:0.5rem}.scale-110,.translate-y-2{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.scale-110{--tw-scale-x:1.1;--tw-scale-y:1.1}.transform{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@keyframes spin{to{transform:rotate(1turn)}}.animate-spin{animation:spin 1s linear infinite}.cursor-pointer{cursor:pointer}.select-none{-webkit-user-select:none;-moz-user-select:none;user-select:none}.resize{resize:both}.grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}.grid-cols-6{grid-template-columns:repeat(6,minmax(0,1fr))}.grid-rows-2{grid-template-rows:repeat(2,minmax(0,1fr))}.grid-rows-4{grid-template-rows:repeat(4,minmax(0,1fr))}.flex-row{flex-direction:row}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-center{align-items:center}.items-stretch{align-items:stretch}.justify-end{justify-content:flex-end}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-1{gap:.25rem}.gap-1\.5{gap:.375rem}.gap-2{gap:.5rem}.gap-2\.5{gap:.625rem}.gap-3{gap:.75rem}.space-y-1>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.25rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.25rem*var(--tw-space-y-reverse))}.space-y-2>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.5rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.5rem*var(--tw-space-y-reverse))}.space-y-2\.5>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.625rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.625rem*var(--tw-space-y-reverse))}.space-y-3>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.75rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.75rem*var(--tw-space-y-reverse))}.space-y-3\.5>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.875rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.875rem*var(--tw-space-y-reverse))}.space-y-4>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem*var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.overflow-y-auto{overflow-y:auto}.truncate{overflow:hidden;text-overflow:ellipsis}.truncate,.whitespace-nowrap{white-space:nowrap}.rounded{border-radius:.25rem}.rounded-2xl{border-radius:1rem}.rounded-\[1px\]{border-radius:1px}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:.5rem}.rounded-md{border-radius:.375rem}.rounded-xl{border-radius:.75rem}.border{border-width:1px}.border-b{border-bottom-width:1px}.border-r{border-right-width:1px}.border-t{border-top-width:1px}.border-dashed{border-style:dashed}.border-\[rgb\(var\(--n-242a38\)\)\]{border-color:rgb(var(--n-242a38))}.border-\[rgb\(var\(--n-242b38\)\)\]{border-color:rgb(var(--n-242b38))}.border-\[rgb\(var\(--n-262c3a\)\)\]{border-color:rgb(var(--n-262c3a))}.border-\[rgb\(var\(--n-282f3d\)\)\]{border-color:rgb(var(--n-282f3d))}.border-\[rgb\(var\(--n-2a3242\)\)\]{border-color:rgb(var(--n-2a3242))}.border-\[rgb\(var\(--n-2c3445\)\)\]{border-color:rgb(var(--n-2c3445))}.border-\[rgb\(var\(--n-30384b\)\)\]{border-color:rgb(var(--n-30384b))}.border-\[rgb\(var\(--n-3a4458\)\)\]{border-color:rgb(var(--n-3a4458))}.border-accent-400{--tw-border-opacity:1;border-color:rgb(var(--ac-400)/var(--tw-border-opacity,1))}.border-accent-400\/60{border-color:rgb(var(--ac-400)/.6)}.border-accent-500\/30{border-color:rgb(var(--ac-500)/.3)}.border-accent-500\/40{border-color:rgb(var(--ac-500)/.4)}.border-accent-500\/50{border-color:rgb(var(--ac-500)/.5)}.border-amber-400\/30{border-color:rgba(251,191,36,.3)}.border-amber-400\/60{border-color:rgba(251,191,36,.6)}.border-emerald-400\/60{border-color:rgba(52,211,153,.6)}.border-emerald-500\/30{border-color:rgba(16,185,129,.3)}.border-emerald-500\/40{border-color:rgba(16,185,129,.4)}.border-red-400\/40{border-color:hsla(0,91%,71%,.4)}.border-red-500\/30{border-color:rgba(239,68,68,.3)}.border-red-500\/40{border-color:rgba(239,68,68,.4)}.border-red-500\/50{border-color:rgba(239,68,68,.5)}.border-red-500\/60{border-color:rgba(239,68,68,.6)}.border-slate-700{--tw-border-opacity:1;border-color:rgb(var(--sl-700)/var(--tw-border-opacity,1))}.border-transparent{border-color:transparent}.border-violet-400{--tw-border-opacity:1;border-color:rgb(167 139 250/var(--tw-border-opacity,1))}.border-violet-400\/30{border-color:rgba(167,139,250,.3)}.border-violet-500\/40{border-color:rgba(139,92,246,.4)}.bg-\[rgb\(var\(--n-07090d\)\/0\.95\)\]{background-color:rgb(var(--n-07090d)/.95)}.bg-\[rgb\(var\(--n-0b0d11\)\)\]{background-color:rgb(var(--n-0b0d11))}.bg-\[rgb\(var\(--n-0d1016\)\)\]{background-color:rgb(var(--n-0d1016))}.bg-\[rgb\(var\(--n-0e1118\)\)\]{background-color:rgb(var(--n-0e1118))}.bg-\[rgb\(var\(--n-0f1115\)\)\]{background-color:rgb(var(--n-0f1115))}.bg-\[rgb\(var\(--n-0f1219\)\/0\.85\)\]{background-color:rgb(var(--n-0f1219)/.85)}.bg-\[rgb\(var\(--n-10131b\)\)\]{background-color:rgb(var(--n-10131b))}.bg-\[rgb\(var\(--n-12151d\)\)\]{background-color:rgb(var(--n-12151d))}.bg-\[rgb\(var\(--n-14171f\)\)\]{background-color:rgb(var(--n-14171f))}.bg-\[rgb\(var\(--n-181c26\)\)\]{background-color:rgb(var(--n-181c26))}.bg-\[rgb\(var\(--n-1a1f2b\)\)\]{background-color:rgb(var(--n-1a1f2b))}.bg-\[rgb\(var\(--n-1a202c\)\)\]{background-color:rgb(var(--n-1a202c))}.bg-\[rgb\(var\(--n-1b202b\)\)\]{background-color:rgb(var(--n-1b202b))}.bg-\[rgb\(var\(--n-1c2230\)\)\]{background-color:rgb(var(--n-1c2230))}.bg-\[rgb\(var\(--n-1f2636\)\)\]{background-color:rgb(var(--n-1f2636))}.bg-accent-400{--tw-bg-opacity:1;background-color:rgb(var(--ac-400)/var(--tw-bg-opacity,1))}.bg-accent-500{--tw-bg-opacity:1;background-color:rgb(var(--ac-500)/var(--tw-bg-opacity,1))}.bg-accent-500\/10{background-color:rgb(var(--ac-500)/.1)}.bg-accent-500\/15{background-color:rgb(var(--ac-500)/.15)}.bg-accent-500\/20{background-color:rgb(var(--ac-500)/.2)}.bg-accent2-400{--tw-bg-opacity:1;background-color:rgb(var(--ac2-400)/var(--tw-bg-opacity,1))}.bg-amber-500{--tw-bg-opacity:1;background-color:rgb(245 158 11/var(--tw-bg-opacity,1))}.bg-amber-500\/15{background-color:rgba(245,158,11,.15)}.bg-black\/75{background-color:rgba(0,0,0,.75)}.bg-emerald-400{--tw-bg-opacity:1;background-color:rgb(52 211 153/var(--tw-bg-opacity,1))}.bg-emerald-500\/10{background-color:rgba(16,185,129,.1)}.bg-emerald-500\/15{background-color:rgba(16,185,129,.15)}.bg-emerald-500\/20{background-color:rgba(16,185,129,.2)}.bg-red-500\/15{background-color:rgba(239,68,68,.15)}.bg-red-500\/25{background-color:rgba(239,68,68,.25)}.bg-red-600{--tw-bg-opacity:1;background-color:rgb(220 38 38/var(--tw-bg-opacity,1))}.bg-red-950\/40{background-color:rgba(69,10,10,.4)}.bg-rose-400{--tw-bg-opacity:1;background-color:rgb(251 113 133/var(--tw-bg-opacity,1))}.bg-slate-800{--tw-bg-opacity:1;background-color:rgb(var(--sl-800)/var(--tw-bg-opacity,1))}.bg-slate-800\/80{background-color:rgb(var(--sl-800)/.8)}.bg-violet-400{--tw-bg-opacity:1;background-color:rgb(167 139 250/var(--tw-bg-opacity,1))}.bg-violet-500\/15{background-color:rgba(139,92,246,.15)}.bg-violet-500\/20{background-color:rgba(139,92,246,.2)}.bg-gradient-to-b{background-image:linear-gradient(to bottom,var(--tw-gradient-stops))}.bg-gradient-to-br{background-image:linear-gradient(to bottom right,var(--tw-gradient-stops))}.bg-gradient-to-r{background-image:linear-gradient(to right,var(--tw-gradient-stops))}.from-accent-500{--tw-gradient-from:rgb(var(--ac-500)/1) var(--tw-gradient-from-position);--tw-gradient-to:rgb(var(--ac-500)/0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}.from-amber-400{--tw-gradient-from:#fbbf24 var(--tw-gradient-from-position);--tw-gradient-to:rgba(251,191,36,0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}.to-accent-600{--tw-gradient-to:rgb(var(--ac-600)/1) var(--tw-gradient-to-position)}.to-accent2-500{--tw-gradient-to:rgb(var(--ac2-500)/1) var(--tw-gradient-to-position)}.to-accent2-600{--tw-gradient-to:rgb(var(--ac2-600)/1) var(--tw-gradient-to-position)}.to-amber-500{--tw-gradient-to:#f59e0b var(--tw-gradient-to-position)}.p-0\.5{padding:.125rem}.p-1{padding:.25rem}.p-1\.5{padding:.375rem}.p-2{padding:.5rem}.p-2\.5{padding:.625rem}.p-3{padding:.75rem}.p-4{padding:1rem}.p-6{padding:1.5rem}.px-1{padding-left:.25rem;padding-right:.25rem}.px-1\.5{padding-left:.375rem;padding-right:.375rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-2\.5{padding-left:.625rem;padding-right:.625rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-3\.5{padding-left:.875rem;padding-right:.875rem}.px-4{padding-left:1rem;padding-right:1rem}.px-7{padding-left:1.75rem;padding-right:1.75rem}.px-8{padding-left:2rem;padding-right:2rem}.py-0\.5{padding-top:.125rem;padding-bottom:.125rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}.py-4{padding-top:1rem;padding-bottom:1rem}.pb-1{padding-bottom:.25rem}.pb-1\.5{padding-bottom:.375rem}.pb-2{padding-bottom:.5rem}.pr-1{padding-right:.25rem}.pt-0\.5{padding-top:.125rem}.pt-1{padding-top:.25rem}.pt-1\.5{padding-top:.375rem}.pt-2{padding-top:.5rem}.pt-3{padding-top:.75rem}.text-left{text-align:left}.text-center{text-align:center}.align-middle{vertical-align:middle}.text-2xl{font-size:1.5rem;line-height:2rem}.text-\[10px\]{font-size:10px}.text-\[11px\]{font-size:11px}.text-\[12px\]{font-size:12px}.text-\[13px\]{font-size:13px}.text-\[8px\]{font-size:8px}.text-\[9\.5px\]{font-size:9.5px}.text-\[9px\]{font-size:9px}.text-base{font-size:1rem;line-height:1.5rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-xs{font-size:.75rem;line-height:1rem}.font-black{font-weight:900}.font-bold{font-weight:700}.font-extrabold{font-weight:800}.uppercase{text-transform:uppercase}.leading-\[14px\]{line-height:14px}.leading-none{line-height:1}.leading-relaxed{line-height:1.625}.leading-snug{line-height:1.375}.leading-tight{line-height:1.25}.tracking-wide{letter-spacing:.025em}.tracking-wider{letter-spacing:.05em}.tracking-widest{letter-spacing:.1em}.text-accent-200{--tw-text-opacity:1;color:rgb(var(--ac-200)/var(--tw-text-opacity,1))}.text-accent-300{--tw-text-opacity:1;color:rgb(var(--ac-300)/var(--tw-text-opacity,1))}.text-accent-400{--tw-text-opacity:1;color:rgb(var(--ac-400)/var(--tw-text-opacity,1))}.text-amber-200{--tw-text-opacity:1;color:rgb(253 230 138/var(--tw-text-opacity,1))}.text-amber-300{--tw-text-opacity:1;color:rgb(252 211 77/var(--tw-text-opacity,1))}.text-amber-400{--tw-text-opacity:1;color:rgb(251 191 36/var(--tw-text-opacity,1))}.text-emerald-300{--tw-text-opacity:1;color:rgb(110 231 183/var(--tw-text-opacity,1))}.text-red-100\/80{color:hsla(0,93%,94%,.8)}.text-red-200{--tw-text-opacity:1;color:rgb(254 202 202/var(--tw-text-opacity,1))}.text-red-300{--tw-text-opacity:1;color:rgb(252 165 165/var(--tw-text-opacity,1))}.text-red-400{--tw-text-opacity:1;color:rgb(248 113 113/var(--tw-text-opacity,1))}.text-slate-100{--tw-text-opacity:1;color:rgb(var(--sl-100)/var(--tw-text-opacity,1))}.text-slate-200{--tw-text-opacity:1;color:rgb(var(--sl-200)/var(--tw-text-opacity,1))}.text-slate-300{--tw-text-opacity:1;color:rgb(var(--sl-300)/var(--tw-text-opacity,1))}.text-slate-400{--tw-text-opacity:1;color:rgb(var(--sl-400)/var(--tw-text-opacity,1))}.text-slate-50{--tw-text-opacity:1;color:rgb(var(--sl-50)/var(--tw-text-opacity,1))}.text-slate-500{--tw-text-opacity:1;color:rgb(var(--sl-500)/var(--tw-text-opacity,1))}.text-slate-600{--tw-text-opacity:1;color:rgb(var(--sl-600)/var(--tw-text-opacity,1))}.text-slate-950{--tw-text-opacity:1;color:rgb(var(--sl-950)/var(--tw-text-opacity,1))}.text-violet-200{--tw-text-opacity:1;color:rgb(221 214 254/var(--tw-text-opacity,1))}.text-violet-300{--tw-text-opacity:1;color:rgb(196 181 253/var(--tw-text-opacity,1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.underline{text-decoration-line:underline}.underline-offset-2{text-underline-offset:2px}.underline-offset-4{text-underline-offset:4px}.accent-cyan-500{accent-color:#06b6d4}.opacity-0{opacity:0}.opacity-100{opacity:1}.opacity-40{opacity:.4}.opacity-75{opacity:.75}.opacity-80{opacity:.8}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgba(0,0,0,.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-\[0_0_8px_\#34d399\]{--tw-shadow:0 0 8px #34d399;--tw-shadow-colored:0 0 8px var(--tw-shadow-color)}.shadow-\[0_0_8px_\#34d399\],.shadow-\[0_0_8px_\#a78bfa\]{box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-\[0_0_8px_\#a78bfa\]{--tw-shadow:0 0 8px #a78bfa;--tw-shadow-colored:0 0 8px var(--tw-shadow-color)}.shadow-\[0_0_8px_\#fb7185\]{--tw-shadow:0 0 8px #fb7185;--tw-shadow-colored:0 0 8px var(--tw-shadow-color)}.shadow-\[0_0_8px_\#fb7185\],.shadow-\[0_0_8px_rgb\(var\(--ac-400\)\)\]{box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-\[0_0_8px_rgb\(var\(--ac-400\)\)\]{--tw-shadow:0 0 8px rgb(var(--ac-400));--tw-shadow-colored:0 0 8px var(--tw-shadow-color)}.shadow-\[0_0_8px_rgb\(var\(--ac2-400\)\)\]{--tw-shadow:0 0 8px rgb(var(--ac2-400));--tw-shadow-colored:0 0 8px var(--tw-shadow-color)}.shadow-\[0_0_8px_rgb\(var\(--ac2-400\)\)\],.shadow-lg{box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-lg{--tw-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color),0 4px 6px -4px var(--tw-shadow-color)}.shadow-md{--tw-shadow:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -2px rgba(0,0,0,.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color),0 2px 4px -2px var(--tw-shadow-color)}.shadow-md,.shadow-xl{box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-xl{--tw-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 8px 10px -6px rgba(0,0,0,.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color),0 8px 10px -6px var(--tw-shadow-color)}.shadow-accent-500\/10{--tw-shadow-color:rgb(var(--ac-500)/0.1);--tw-shadow:var(--tw-shadow-colored)}.shadow-accent-500\/20{--tw-shadow-color:rgb(var(--ac-500)/0.2);--tw-shadow:var(--tw-shadow-colored)}.shadow-accent-500\/30{--tw-shadow-color:rgb(var(--ac-500)/0.3);--tw-shadow:var(--tw-shadow-colored)}.shadow-amber-500\/20{--tw-shadow-color:rgba(245,158,11,.2);--tw-shadow:var(--tw-shadow-colored)}.shadow-black\/60{--tw-shadow-color:rgba(0,0,0,.6);--tw-shadow:var(--tw-shadow-colored)}.outline{outline-style:solid}.ring-2{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow,0 0 #0000)}.ring-accent-400{--tw-ring-opacity:1;--tw-ring-color:rgb(var(--ac-400)/var(--tw-ring-opacity,1))}.ring-slate-50{--tw-ring-opacity:1;--tw-ring-color:rgb(var(--sl-50)/var(--tw-ring-opacity,1))}.ring-white{--tw-ring-opacity:1;--tw-ring-color:rgb(255 255 255/var(--tw-ring-opacity,1))}.ring-offset-2{--tw-ring-offset-width:2px}.ring-offset-\[rgb\(var\(--n-10131b\)\)\]{--tw-ring-offset-color:rgb(var(--n-10131b))}.ring-offset-\[rgb\(var\(--n-181c26\)\)\]{--tw-ring-offset-color:rgb(var(--n-181c26))}.blur{--tw-blur:blur(8px)}.blur,.drop-shadow{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.drop-shadow{--tw-drop-shadow:drop-shadow(0 1px 2px rgba(0,0,0,.1)) drop-shadow(0 1px 1px rgba(0,0,0,.06))}.filter{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.backdrop-blur-md{--tw-backdrop-blur:blur(12px)}.backdrop-blur-md,.backdrop-blur-sm{-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px)}.backdrop-filter{-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.transition-colors{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.transition-transform{transition-property:transform;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.duration-200{transition-duration:.2s}.ease-in-out{transition-timing-function:cubic-bezier(.4,0,.2,1)}.hover\:border-slate-500:hover{--tw-border-opacity:1;border-color:rgb(var(--sl-500)/var(--tw-border-opacity,1))}.hover\:bg-\[rgb\(var\(--n-1a1f2b\)\)\]:hover{background-color:rgb(var(--n-1a1f2b))}.hover\:bg-\[rgb\(var\(--n-1e2433\)\)\]:hover{background-color:rgb(var(--n-1e2433))}.hover\:bg-\[rgb\(var\(--n-222838\)\)\]:hover{background-color:rgb(var(--n-222838))}.hover\:bg-\[rgb\(var\(--n-262e40\)\)\]:hover{background-color:rgb(var(--n-262e40))}.hover\:bg-\[rgb\(var\(--n-2a3347\)\)\]:hover{background-color:rgb(var(--n-2a3347))}.hover\:bg-accent-400:hover{--tw-bg-opacity:1;background-color:rgb(var(--ac-400)/var(--tw-bg-opacity,1))}.hover\:bg-accent-500\/25:hover{background-color:rgb(var(--ac-500)/.25)}.hover\:bg-amber-500\/25:hover{background-color:rgba(245,158,11,.25)}.hover\:bg-emerald-500\/20:hover{background-color:rgba(16,185,129,.2)}.hover\:bg-red-500:hover{--tw-bg-opacity:1;background-color:rgb(239 68 68/var(--tw-bg-opacity,1))}.hover\:bg-red-500\/25:hover{background-color:rgba(239,68,68,.25)}.hover\:bg-slate-700:hover{--tw-bg-opacity:1;background-color:rgb(var(--sl-700)/var(--tw-bg-opacity,1))}.hover\:bg-slate-800:hover{--tw-bg-opacity:1;background-color:rgb(var(--sl-800)/var(--tw-bg-opacity,1))}.hover\:from-accent-400:hover{--tw-gradient-from:rgb(var(--ac-400)/1) var(--tw-gradient-from-position);--tw-gradient-to:rgb(var(--ac-400)/0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}.hover\:to-accent2-400:hover{--tw-gradient-to:rgb(var(--ac2-400)/1) var(--tw-gradient-to-position)}.hover\:text-accent-200:hover{--tw-text-opacity:1;color:rgb(var(--ac-200)/var(--tw-text-opacity,1))}.hover\:text-slate-100:hover{--tw-text-opacity:1;color:rgb(var(--sl-100)/var(--tw-text-opacity,1))}.hover\:text-slate-200:hover{--tw-text-opacity:1;color:rgb(var(--sl-200)/var(--tw-text-opacity,1))}.hover\:text-slate-300:hover{--tw-text-opacity:1;color:rgb(var(--sl-300)/var(--tw-text-opacity,1))}.hover\:text-slate-50:hover{--tw-text-opacity:1;color:rgb(var(--sl-50)/var(--tw-text-opacity,1))}.hover\:opacity-100:hover{opacity:1}.focus\:border-accent-400:focus{--tw-border-opacity:1;border-color:rgb(var(--ac-400)/var(--tw-border-opacity,1))}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}.active\:scale-95:active{--tw-scale-x:.95;--tw-scale-y:.95;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@media (min-width:640px){.sm\:inline{display:inline}.sm\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.sm\:gap-2{gap:.5rem}.sm\:gap-2\.5{gap:.625rem}.sm\:p-2\.5{padding:.625rem}.sm\:px-2\.5{padding-left:.625rem;padding-right:.625rem}.sm\:px-4{padding-left:1rem;padding-right:1rem}.sm\:text-3xl{font-size:1.875rem;line-height:2.25rem}.sm\:text-base{font-size:1rem;line-height:1.5rem}.sm\:text-lg{font-size:1.125rem;line-height:1.75rem}.sm\:text-sm{font-size:.875rem;line-height:1.25rem}}@media (min-width:768px){.md\:inline{display:inline}.md\:hidden{display:none}}@media (min-width:1024px){.lg\:inline{display:inline}.lg\:text-base{font-size:1rem;line-height:1.5rem}}@media (min-width:1280px){.xl\:inline{display:inline}}</style>
+  <style id="tailwind">*,:after,:before{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/*! tailwindcss v3.4.19 | MIT License | https://tailwindcss.com*/*,:after,:before{box-sizing:border-box;border:0 solid #e5e7eb}:after,:before{--tw-content:""}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0}fieldset,legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.container{width:100%}@media (min-width:640px){.container{max-width:640px}}@media (min-width:768px){.container{max-width:768px}}@media (min-width:1024px){.container{max-width:1024px}}@media (min-width:1280px){.container{max-width:1280px}}@media (min-width:1536px){.container{max-width:1536px}}.pointer-events-none{pointer-events:none}.invisible{visibility:hidden}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.sticky{position:sticky}.inset-0{inset:0}.-right-1{right:-.25rem}.-top-1{top:-.25rem}.bottom-4{bottom:1rem}.left-0{left:0}.left-1\/2{left:50%}.right-0{right:0}.top-0{top:0}.z-10{z-index:10}.z-20{z-index:20}.z-30{z-index:30}.z-40{z-index:40}.z-50{z-index:50}.col-span-2{grid-column:span 2/span 2}.mb-1{margin-bottom:.25rem}.mb-1\.5{margin-bottom:.375rem}.mb-2{margin-bottom:.5rem}.mb-5{margin-bottom:1.25rem}.mb-7{margin-bottom:1.75rem}.ml-0\.5{margin-left:.125rem}.ml-1{margin-left:.25rem}.ml-auto{margin-left:auto}.mt-0\.5{margin-top:.125rem}.mt-1{margin-top:.25rem}.mt-1\.5{margin-top:.375rem}.mt-2{margin-top:.5rem}.mt-2\.5{margin-top:.625rem}.mt-4{margin-top:1rem}.line-clamp-2{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}.block{display:block}.inline-block{display:inline-block}.inline{display:inline}.flex{display:flex}.\!grid{display:grid!important}.grid{display:grid}.\!hidden{display:none!important}.hidden{display:none}.h-1\.5{height:.375rem}.h-12{height:3rem}.h-16{height:4rem}.h-2{height:.5rem}.h-2\.5{height:.625rem}.h-3{height:.75rem}.h-3\.5{height:.875rem}.h-4{height:1rem}.h-5{height:1.25rem}.h-6{height:1.5rem}.h-7{height:1.75rem}.h-8{height:2rem}.h-9{height:2.25rem}.h-full{height:100%}.max-h-\[150px\]{max-height:150px}.max-h-\[640px\]{max-height:640px}.max-h-\[92dvh\]{max-height:92dvh}.max-h-\[940px\]{max-height:940px}.min-h-0{min-height:0}.min-h-\[110px\]{min-height:110px}.min-h-\[200px\]{min-height:200px}.min-h-\[230px\]{min-height:230px}.w-1\.5{width:.375rem}.w-16{width:4rem}.w-2{width:.5rem}.w-2\.5{width:.625rem}.w-20{width:5rem}.w-3{width:.75rem}.w-3\.5{width:.875rem}.w-4{width:1rem}.w-5{width:1.25rem}.w-6{width:1.5rem}.w-7{width:1.75rem}.w-8{width:2rem}.w-9{width:2.25rem}.w-\[210px\]{width:210px}.w-\[270px\]{width:270px}.w-\[34\%\]{width:34%}.w-full{width:100%}.min-w-0{min-width:0}.min-w-\[280px\]{min-width:280px}.max-w-\[440px\]{max-width:440px}.max-w-\[720px\]{max-width:720px}.max-w-md{max-width:28rem}.max-w-sm{max-width:24rem}.max-w-xl{max-width:36rem}.max-w-xs{max-width:20rem}.flex-1{flex:1 1 0%}.flex-shrink{flex-shrink:1}.shrink-0{flex-shrink:0}.-translate-x-1\/2{--tw-translate-x:-50%}.-translate-x-1\/2,.translate-y-0{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.translate-y-0{--tw-translate-y:0px}.translate-y-2{--tw-translate-y:0.5rem}.scale-110,.translate-y-2{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.scale-110{--tw-scale-x:1.1;--tw-scale-y:1.1}.transform{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@keyframes spin{to{transform:rotate(1turn)}}.animate-spin{animation:spin 1s linear infinite}.cursor-pointer{cursor:pointer}.select-none{-webkit-user-select:none;-moz-user-select:none;user-select:none}.resize{resize:both}.grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}.grid-cols-6{grid-template-columns:repeat(6,minmax(0,1fr))}.grid-cols-\[1fr_auto\]{grid-template-columns:1fr auto}.grid-cols-\[auto_1fr\]{grid-template-columns:auto 1fr}.grid-rows-2{grid-template-rows:repeat(2,minmax(0,1fr))}.grid-rows-4{grid-template-rows:repeat(4,minmax(0,1fr))}.flex-row{flex-direction:row}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-start{align-items:flex-start}.items-center{align-items:center}.items-stretch{align-items:stretch}.justify-end{justify-content:flex-end}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-1{gap:.25rem}.gap-1\.5{gap:.375rem}.gap-2{gap:.5rem}.gap-2\.5{gap:.625rem}.gap-3{gap:.75rem}.space-y-1\.5>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.375rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.375rem*var(--tw-space-y-reverse))}.space-y-2>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.5rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.5rem*var(--tw-space-y-reverse))}.space-y-2\.5>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.625rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.625rem*var(--tw-space-y-reverse))}.space-y-3>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.75rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.75rem*var(--tw-space-y-reverse))}.space-y-3\.5>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.875rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.875rem*var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.overflow-y-auto{overflow-y:auto}.truncate{overflow:hidden;text-overflow:ellipsis}.truncate,.whitespace-nowrap{white-space:nowrap}.rounded{border-radius:.25rem}.rounded-2xl{border-radius:1rem}.rounded-\[1px\]{border-radius:1px}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:.5rem}.rounded-md{border-radius:.375rem}.rounded-xl{border-radius:.75rem}.border{border-width:1px}.border-b{border-bottom-width:1px}.border-r{border-right-width:1px}.border-t{border-top-width:1px}.border-dashed{border-style:dashed}.border-\[rgb\(var\(--n-242a38\)\)\]{border-color:rgb(var(--n-242a38))}.border-\[rgb\(var\(--n-242b38\)\)\]{border-color:rgb(var(--n-242b38))}.border-\[rgb\(var\(--n-262c3a\)\)\]{border-color:rgb(var(--n-262c3a))}.border-\[rgb\(var\(--n-282f3d\)\)\]{border-color:rgb(var(--n-282f3d))}.border-\[rgb\(var\(--n-2a3242\)\)\]{border-color:rgb(var(--n-2a3242))}.border-\[rgb\(var\(--n-2c3445\)\)\]{border-color:rgb(var(--n-2c3445))}.border-\[rgb\(var\(--n-30384b\)\)\]{border-color:rgb(var(--n-30384b))}.border-\[rgb\(var\(--n-3a4458\)\)\]{border-color:rgb(var(--n-3a4458))}.border-accent-400{--tw-border-opacity:1;border-color:rgb(var(--ac-400)/var(--tw-border-opacity,1))}.border-accent-400\/60{border-color:rgb(var(--ac-400)/.6)}.border-accent-500\/30{border-color:rgb(var(--ac-500)/.3)}.border-accent-500\/40{border-color:rgb(var(--ac-500)/.4)}.border-accent-500\/50{border-color:rgb(var(--ac-500)/.5)}.border-amber-400\/30{border-color:rgba(251,191,36,.3)}.border-amber-400\/60{border-color:rgba(251,191,36,.6)}.border-emerald-400\/60{border-color:rgba(52,211,153,.6)}.border-emerald-500\/30{border-color:rgba(16,185,129,.3)}.border-emerald-500\/40{border-color:rgba(16,185,129,.4)}.border-red-400\/40{border-color:hsla(0,91%,71%,.4)}.border-red-500\/30{border-color:rgba(239,68,68,.3)}.border-red-500\/40{border-color:rgba(239,68,68,.4)}.border-red-500\/50{border-color:rgba(239,68,68,.5)}.border-red-500\/60{border-color:rgba(239,68,68,.6)}.border-slate-700{--tw-border-opacity:1;border-color:rgb(var(--sl-700)/var(--tw-border-opacity,1))}.border-transparent{border-color:transparent}.border-violet-400{--tw-border-opacity:1;border-color:rgb(167 139 250/var(--tw-border-opacity,1))}.border-violet-400\/30{border-color:rgba(167,139,250,.3)}.border-violet-500\/40{border-color:rgba(139,92,246,.4)}.bg-\[rgb\(var\(--n-07090d\)\/0\.95\)\]{background-color:rgb(var(--n-07090d)/.95)}.bg-\[rgb\(var\(--n-0b0d11\)\)\]{background-color:rgb(var(--n-0b0d11))}.bg-\[rgb\(var\(--n-0d1016\)\)\]{background-color:rgb(var(--n-0d1016))}.bg-\[rgb\(var\(--n-0e1118\)\)\]{background-color:rgb(var(--n-0e1118))}.bg-\[rgb\(var\(--n-0f1115\)\)\]{background-color:rgb(var(--n-0f1115))}.bg-\[rgb\(var\(--n-0f1219\)\/0\.85\)\]{background-color:rgb(var(--n-0f1219)/.85)}.bg-\[rgb\(var\(--n-10131b\)\)\]{background-color:rgb(var(--n-10131b))}.bg-\[rgb\(var\(--n-12151d\)\)\]{background-color:rgb(var(--n-12151d))}.bg-\[rgb\(var\(--n-14171f\)\)\]{background-color:rgb(var(--n-14171f))}.bg-\[rgb\(var\(--n-181c26\)\)\]{background-color:rgb(var(--n-181c26))}.bg-\[rgb\(var\(--n-1a1f2b\)\)\]{background-color:rgb(var(--n-1a1f2b))}.bg-\[rgb\(var\(--n-1a202c\)\)\]{background-color:rgb(var(--n-1a202c))}.bg-\[rgb\(var\(--n-1b202b\)\)\]{background-color:rgb(var(--n-1b202b))}.bg-\[rgb\(var\(--n-1c2230\)\)\]{background-color:rgb(var(--n-1c2230))}.bg-\[rgb\(var\(--n-1f2636\)\)\]{background-color:rgb(var(--n-1f2636))}.bg-accent-400{--tw-bg-opacity:1;background-color:rgb(var(--ac-400)/var(--tw-bg-opacity,1))}.bg-accent-500{--tw-bg-opacity:1;background-color:rgb(var(--ac-500)/var(--tw-bg-opacity,1))}.bg-accent-500\/10{background-color:rgb(var(--ac-500)/.1)}.bg-accent-500\/15{background-color:rgb(var(--ac-500)/.15)}.bg-accent-500\/20{background-color:rgb(var(--ac-500)/.2)}.bg-accent2-400{--tw-bg-opacity:1;background-color:rgb(var(--ac2-400)/var(--tw-bg-opacity,1))}.bg-amber-500{--tw-bg-opacity:1;background-color:rgb(245 158 11/var(--tw-bg-opacity,1))}.bg-amber-500\/15{background-color:rgba(245,158,11,.15)}.bg-black\/75{background-color:rgba(0,0,0,.75)}.bg-emerald-400{--tw-bg-opacity:1;background-color:rgb(52 211 153/var(--tw-bg-opacity,1))}.bg-emerald-500\/10{background-color:rgba(16,185,129,.1)}.bg-emerald-500\/15{background-color:rgba(16,185,129,.15)}.bg-emerald-500\/20{background-color:rgba(16,185,129,.2)}.bg-red-500\/15{background-color:rgba(239,68,68,.15)}.bg-red-500\/25{background-color:rgba(239,68,68,.25)}.bg-red-600{--tw-bg-opacity:1;background-color:rgb(220 38 38/var(--tw-bg-opacity,1))}.bg-red-950\/40{background-color:rgba(69,10,10,.4)}.bg-rose-400{--tw-bg-opacity:1;background-color:rgb(251 113 133/var(--tw-bg-opacity,1))}.bg-slate-800{--tw-bg-opacity:1;background-color:rgb(var(--sl-800)/var(--tw-bg-opacity,1))}.bg-slate-800\/80{background-color:rgb(var(--sl-800)/.8)}.bg-violet-400{--tw-bg-opacity:1;background-color:rgb(167 139 250/var(--tw-bg-opacity,1))}.bg-violet-500\/15{background-color:rgba(139,92,246,.15)}.bg-violet-500\/20{background-color:rgba(139,92,246,.2)}.bg-gradient-to-b{background-image:linear-gradient(to bottom,var(--tw-gradient-stops))}.bg-gradient-to-br{background-image:linear-gradient(to bottom right,var(--tw-gradient-stops))}.bg-gradient-to-r{background-image:linear-gradient(to right,var(--tw-gradient-stops))}.from-accent-500{--tw-gradient-from:rgb(var(--ac-500)/1) var(--tw-gradient-from-position);--tw-gradient-to:rgb(var(--ac-500)/0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}.from-amber-400{--tw-gradient-from:#fbbf24 var(--tw-gradient-from-position);--tw-gradient-to:rgba(251,191,36,0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}.to-accent-600{--tw-gradient-to:rgb(var(--ac-600)/1) var(--tw-gradient-to-position)}.to-accent2-500{--tw-gradient-to:rgb(var(--ac2-500)/1) var(--tw-gradient-to-position)}.to-accent2-600{--tw-gradient-to:rgb(var(--ac2-600)/1) var(--tw-gradient-to-position)}.to-amber-500{--tw-gradient-to:#f59e0b var(--tw-gradient-to-position)}.p-0\.5{padding:.125rem}.p-1{padding:.25rem}.p-1\.5{padding:.375rem}.p-2{padding:.5rem}.p-2\.5{padding:.625rem}.p-3{padding:.75rem}.p-4{padding:1rem}.p-6{padding:1.5rem}.px-1{padding-left:.25rem;padding-right:.25rem}.px-1\.5{padding-left:.375rem;padding-right:.375rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-2\.5{padding-left:.625rem;padding-right:.625rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-3\.5{padding-left:.875rem;padding-right:.875rem}.px-4{padding-left:1rem;padding-right:1rem}.px-7{padding-left:1.75rem;padding-right:1.75rem}.px-8{padding-left:2rem;padding-right:2rem}.py-0\.5{padding-top:.125rem;padding-bottom:.125rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}.py-4{padding-top:1rem;padding-bottom:1rem}.pb-1{padding-bottom:.25rem}.pb-1\.5{padding-bottom:.375rem}.pb-2{padding-bottom:.5rem}.pr-1{padding-right:.25rem}.pt-0\.5{padding-top:.125rem}.pt-1{padding-top:.25rem}.pt-1\.5{padding-top:.375rem}.pt-2{padding-top:.5rem}.text-left{text-align:left}.text-center{text-align:center}.align-middle{vertical-align:middle}.text-2xl{font-size:1.5rem;line-height:2rem}.text-\[10px\]{font-size:10px}.text-\[11\.5px\]{font-size:11.5px}.text-\[11px\]{font-size:11px}.text-\[12px\]{font-size:12px}.text-\[13px\]{font-size:13px}.text-\[8px\]{font-size:8px}.text-\[9\.5px\]{font-size:9.5px}.text-\[9px\]{font-size:9px}.text-base{font-size:1rem;line-height:1.5rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-xs{font-size:.75rem;line-height:1rem}.font-black{font-weight:900}.font-bold{font-weight:700}.font-extrabold{font-weight:800}.uppercase{text-transform:uppercase}.leading-\[14px\]{line-height:14px}.leading-none{line-height:1}.leading-relaxed{line-height:1.625}.leading-snug{line-height:1.375}.leading-tight{line-height:1.25}.tracking-wide{letter-spacing:.025em}.tracking-wider{letter-spacing:.05em}.tracking-widest{letter-spacing:.1em}.text-accent-200{--tw-text-opacity:1;color:rgb(var(--ac-200)/var(--tw-text-opacity,1))}.text-accent-300{--tw-text-opacity:1;color:rgb(var(--ac-300)/var(--tw-text-opacity,1))}.text-accent-400{--tw-text-opacity:1;color:rgb(var(--ac-400)/var(--tw-text-opacity,1))}.text-amber-200{--tw-text-opacity:1;color:rgb(253 230 138/var(--tw-text-opacity,1))}.text-amber-300{--tw-text-opacity:1;color:rgb(252 211 77/var(--tw-text-opacity,1))}.text-amber-400{--tw-text-opacity:1;color:rgb(251 191 36/var(--tw-text-opacity,1))}.text-emerald-300{--tw-text-opacity:1;color:rgb(110 231 183/var(--tw-text-opacity,1))}.text-red-100\/80{color:hsla(0,93%,94%,.8)}.text-red-200{--tw-text-opacity:1;color:rgb(254 202 202/var(--tw-text-opacity,1))}.text-red-300{--tw-text-opacity:1;color:rgb(252 165 165/var(--tw-text-opacity,1))}.text-red-400{--tw-text-opacity:1;color:rgb(248 113 113/var(--tw-text-opacity,1))}.text-slate-100{--tw-text-opacity:1;color:rgb(var(--sl-100)/var(--tw-text-opacity,1))}.text-slate-200{--tw-text-opacity:1;color:rgb(var(--sl-200)/var(--tw-text-opacity,1))}.text-slate-300{--tw-text-opacity:1;color:rgb(var(--sl-300)/var(--tw-text-opacity,1))}.text-slate-400{--tw-text-opacity:1;color:rgb(var(--sl-400)/var(--tw-text-opacity,1))}.text-slate-50{--tw-text-opacity:1;color:rgb(var(--sl-50)/var(--tw-text-opacity,1))}.text-slate-500{--tw-text-opacity:1;color:rgb(var(--sl-500)/var(--tw-text-opacity,1))}.text-slate-600{--tw-text-opacity:1;color:rgb(var(--sl-600)/var(--tw-text-opacity,1))}.text-slate-950{--tw-text-opacity:1;color:rgb(var(--sl-950)/var(--tw-text-opacity,1))}.text-violet-200{--tw-text-opacity:1;color:rgb(221 214 254/var(--tw-text-opacity,1))}.text-violet-300{--tw-text-opacity:1;color:rgb(196 181 253/var(--tw-text-opacity,1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.underline{text-decoration-line:underline}.underline-offset-2{text-underline-offset:2px}.underline-offset-4{text-underline-offset:4px}.accent-cyan-500{accent-color:#06b6d4}.opacity-0{opacity:0}.opacity-100{opacity:1}.opacity-40{opacity:.4}.opacity-75{opacity:.75}.opacity-80{opacity:.8}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgba(0,0,0,.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-\[0_0_8px_\#34d399\]{--tw-shadow:0 0 8px #34d399;--tw-shadow-colored:0 0 8px var(--tw-shadow-color)}.shadow-\[0_0_8px_\#34d399\],.shadow-\[0_0_8px_\#a78bfa\]{box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-\[0_0_8px_\#a78bfa\]{--tw-shadow:0 0 8px #a78bfa;--tw-shadow-colored:0 0 8px var(--tw-shadow-color)}.shadow-\[0_0_8px_\#fb7185\]{--tw-shadow:0 0 8px #fb7185;--tw-shadow-colored:0 0 8px var(--tw-shadow-color)}.shadow-\[0_0_8px_\#fb7185\],.shadow-\[0_0_8px_rgb\(var\(--ac-400\)\)\]{box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-\[0_0_8px_rgb\(var\(--ac-400\)\)\]{--tw-shadow:0 0 8px rgb(var(--ac-400));--tw-shadow-colored:0 0 8px var(--tw-shadow-color)}.shadow-\[0_0_8px_rgb\(var\(--ac2-400\)\)\]{--tw-shadow:0 0 8px rgb(var(--ac2-400));--tw-shadow-colored:0 0 8px var(--tw-shadow-color)}.shadow-\[0_0_8px_rgb\(var\(--ac2-400\)\)\],.shadow-lg{box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-lg{--tw-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color),0 4px 6px -4px var(--tw-shadow-color)}.shadow-md{--tw-shadow:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -2px rgba(0,0,0,.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color),0 2px 4px -2px var(--tw-shadow-color)}.shadow-md,.shadow-xl{box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-xl{--tw-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 8px 10px -6px rgba(0,0,0,.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color),0 8px 10px -6px var(--tw-shadow-color)}.shadow-accent-500\/10{--tw-shadow-color:rgb(var(--ac-500)/0.1);--tw-shadow:var(--tw-shadow-colored)}.shadow-accent-500\/20{--tw-shadow-color:rgb(var(--ac-500)/0.2);--tw-shadow:var(--tw-shadow-colored)}.shadow-accent-500\/30{--tw-shadow-color:rgb(var(--ac-500)/0.3);--tw-shadow:var(--tw-shadow-colored)}.shadow-amber-500\/20{--tw-shadow-color:rgba(245,158,11,.2);--tw-shadow:var(--tw-shadow-colored)}.shadow-black\/60{--tw-shadow-color:rgba(0,0,0,.6);--tw-shadow:var(--tw-shadow-colored)}.outline{outline-style:solid}.ring-2{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow,0 0 #0000)}.ring-accent-400{--tw-ring-opacity:1;--tw-ring-color:rgb(var(--ac-400)/var(--tw-ring-opacity,1))}.ring-slate-50{--tw-ring-opacity:1;--tw-ring-color:rgb(var(--sl-50)/var(--tw-ring-opacity,1))}.ring-white{--tw-ring-opacity:1;--tw-ring-color:rgb(255 255 255/var(--tw-ring-opacity,1))}.ring-offset-2{--tw-ring-offset-width:2px}.ring-offset-\[rgb\(var\(--n-10131b\)\)\]{--tw-ring-offset-color:rgb(var(--n-10131b))}.ring-offset-\[rgb\(var\(--n-181c26\)\)\]{--tw-ring-offset-color:rgb(var(--n-181c26))}.blur{--tw-blur:blur(8px)}.blur,.drop-shadow{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.drop-shadow{--tw-drop-shadow:drop-shadow(0 1px 2px rgba(0,0,0,.1)) drop-shadow(0 1px 1px rgba(0,0,0,.06))}.filter{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.backdrop-blur-md{--tw-backdrop-blur:blur(12px)}.backdrop-blur-md,.backdrop-blur-sm{-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px)}.backdrop-filter{-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.transition-colors{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.transition-transform{transition-property:transform;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.duration-200{transition-duration:.2s}.ease-in-out{transition-timing-function:cubic-bezier(.4,0,.2,1)}.hover\:border-slate-500:hover{--tw-border-opacity:1;border-color:rgb(var(--sl-500)/var(--tw-border-opacity,1))}.hover\:bg-\[rgb\(var\(--n-1a1f2b\)\)\]:hover{background-color:rgb(var(--n-1a1f2b))}.hover\:bg-\[rgb\(var\(--n-1e2433\)\)\]:hover{background-color:rgb(var(--n-1e2433))}.hover\:bg-\[rgb\(var\(--n-222838\)\)\]:hover{background-color:rgb(var(--n-222838))}.hover\:bg-\[rgb\(var\(--n-262e40\)\)\]:hover{background-color:rgb(var(--n-262e40))}.hover\:bg-\[rgb\(var\(--n-2a3347\)\)\]:hover{background-color:rgb(var(--n-2a3347))}.hover\:bg-accent-400:hover{--tw-bg-opacity:1;background-color:rgb(var(--ac-400)/var(--tw-bg-opacity,1))}.hover\:bg-accent-500\/25:hover{background-color:rgb(var(--ac-500)/.25)}.hover\:bg-amber-500\/25:hover{background-color:rgba(245,158,11,.25)}.hover\:bg-emerald-500\/20:hover{background-color:rgba(16,185,129,.2)}.hover\:bg-red-500:hover{--tw-bg-opacity:1;background-color:rgb(239 68 68/var(--tw-bg-opacity,1))}.hover\:bg-red-500\/25:hover{background-color:rgba(239,68,68,.25)}.hover\:bg-slate-700:hover{--tw-bg-opacity:1;background-color:rgb(var(--sl-700)/var(--tw-bg-opacity,1))}.hover\:bg-slate-800:hover{--tw-bg-opacity:1;background-color:rgb(var(--sl-800)/var(--tw-bg-opacity,1))}.hover\:from-accent-400:hover{--tw-gradient-from:rgb(var(--ac-400)/1) var(--tw-gradient-from-position);--tw-gradient-to:rgb(var(--ac-400)/0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}.hover\:to-accent2-400:hover{--tw-gradient-to:rgb(var(--ac2-400)/1) var(--tw-gradient-to-position)}.hover\:text-accent-200:hover{--tw-text-opacity:1;color:rgb(var(--ac-200)/var(--tw-text-opacity,1))}.hover\:text-slate-100:hover{--tw-text-opacity:1;color:rgb(var(--sl-100)/var(--tw-text-opacity,1))}.hover\:text-slate-200:hover{--tw-text-opacity:1;color:rgb(var(--sl-200)/var(--tw-text-opacity,1))}.hover\:text-slate-300:hover{--tw-text-opacity:1;color:rgb(var(--sl-300)/var(--tw-text-opacity,1))}.hover\:text-slate-50:hover{--tw-text-opacity:1;color:rgb(var(--sl-50)/var(--tw-text-opacity,1))}.hover\:opacity-100:hover{opacity:1}.focus\:border-accent-400:focus{--tw-border-opacity:1;border-color:rgb(var(--ac-400)/var(--tw-border-opacity,1))}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}.active\:scale-95:active{--tw-scale-x:.95;--tw-scale-y:.95;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@media (min-width:640px){.sm\:inline{display:inline}.sm\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.sm\:gap-2{gap:.5rem}.sm\:gap-2\.5{gap:.625rem}.sm\:gap-4{gap:1rem}.sm\:space-y-4>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem*var(--tw-space-y-reverse))}.sm\:p-2\.5{padding:.625rem}.sm\:px-2\.5{padding-left:.625rem;padding-right:.625rem}.sm\:px-4{padding-left:1rem;padding-right:1rem}.sm\:text-3xl{font-size:1.875rem;line-height:2.25rem}.sm\:text-base{font-size:1rem;line-height:1.5rem}.sm\:text-lg{font-size:1.125rem;line-height:1.75rem}.sm\:text-sm{font-size:.875rem;line-height:1.25rem}}@media (min-width:768px){.md\:inline{display:inline}.md\:hidden{display:none}}@media (min-width:1024px){.lg\:inline{display:inline}.lg\:text-base{font-size:1rem;line-height:1.5rem}}@media (min-width:1280px){.xl\:inline{display:inline}}</style>
 </head>
 <body class="flex items-center justify-center">
 
@@ -1528,7 +1656,7 @@
       </div>
 
       <!-- 右：Wake Lock / Performance Lock / Settings -->
-      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+      <div id="headerTools" class="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <!-- 狭い画面用：MIXERがタブの中に入るので、PANIC STOPをここにも置く -->
         <button id="btnPanicMini" type="button" class="compact-only panic-mini" title="全SE・BGMを即フェード停止 [Esc]">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><rect x="9" y="9" width="6" height="6" fill="currentColor"></rect></svg>
@@ -1576,6 +1704,7 @@
         </button>
 
         <!-- 設定ボタン -->
+        <button id="btnObsPill" type="button" class="obs-pill obs-only" title="OBS連携" aria-label="OBS連携"><span class="obs-pill-dot"></span>OBS</button>
         <button id="btnOpenSettings" type="button" title="設定・データ管理" class="p-1.5 rounded-lg border border-[rgb(var(--n-2c3445))] bg-[rgb(var(--n-1a1f2b))] hover:bg-[rgb(var(--n-222838))] text-slate-300 hover:text-slate-50 transition-all">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="3"></circle>
@@ -2089,6 +2218,30 @@
           <input id="editPadPitch" type="range" min="-12" max="12" step="1" value="0" class="pro-fader accent-cyan w-full">
           <p class="text-[10px] text-slate-500 mt-1">半音単位（±12で1オクターブ）。音声ファイルは高くすると短く、低くすると長くなります</p>
         </div>
+
+        <!-- OBS ACTION（OBS連携中、パッドを押すとOBSも動かす） -->
+        <div class="edit-obs obs-only">
+          <div class="flex items-center justify-between gap-2 mb-1.5">
+            <label class="text-xs font-bold text-slate-400" for="editObsType">OBS ACTION</label>
+            <span id="editObsState" class="text-[10px] text-slate-500"></span>
+          </div>
+          <select id="editObsType" class="edit-obs-input w-full">
+            <option value="none">なし</option>
+            <option value="scene">シーンを切り替える</option>
+            <option value="show">ソースを数秒だけ表示する</option>
+            <option value="toggle">ソースの表示・非表示を切り替える</option>
+          </select>
+          <div id="editObsFields" class="grid grid-cols-2 gap-2 mt-2 hidden">
+            <input id="editObsScene" class="edit-obs-input" list="obsSceneList" placeholder="シーン名" autocomplete="off">
+            <input id="editObsSource" class="edit-obs-input" list="obsSourceList" placeholder="ソース名" autocomplete="off">
+            <label id="editObsSecWrap" class="flex items-center gap-1.5 text-xs text-slate-400">
+              <input id="editObsSec" class="edit-obs-input w-20" type="number" min="0.5" max="60" step="0.5" value="3"> 秒だけ表示
+            </label>
+          </div>
+          <datalist id="obsSceneList"></datalist>
+          <datalist id="obsSourceList"></datalist>
+          <p class="text-[10px] text-slate-500 mt-1">OBSとつないでいるときだけ動きます（右上の OBS ボタン）。シーン名を空にすると、そのとき映しているシーンのソースを動かします</p>
+        </div>
       </div>
 
       <div class="px-4 py-3 bg-[rgb(var(--n-14171f))] border-t border-[rgb(var(--n-262c3a))] flex items-center justify-between shrink-0">
@@ -2106,7 +2259,7 @@
 
   <!-- 設定＆データ初期化モーダル -->
   <div id="settingsModalBackdrop" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
-    <div class="settings-sheet bg-[rgb(var(--n-181c26))] border border-[rgb(var(--n-30384b))] rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col">
+    <div class="settings-sheet bg-[rgb(var(--n-181c26))] border border-[rgb(var(--n-30384b))] rounded-2xl w-full max-w-[720px] shadow-2xl overflow-hidden flex flex-col">
       <div class="px-4 py-3 bg-[rgb(var(--n-14171f))] border-b border-[rgb(var(--n-262c3a))] flex items-center justify-between shrink-0">
         <h3 class="text-sm font-bold text-slate-100">設定・データ管理</h3>
         <button id="btnSettingsClose" type="button" class="text-slate-400 hover:text-slate-50 p-1 rounded-lg hover:bg-slate-800">
@@ -2116,7 +2269,10 @@
           </svg>
         </button>
       </div>
-      <div class="settings-body p-4 space-y-4">
+      <div class="settings-body p-4 space-y-3 sm:space-y-4">
+        <!-- 広い画面は2列：左＝見た目、右＝操作 -->
+        <div class="grid sm:grid-cols-2 gap-3 sm:gap-4 items-start">
+        <div class="space-y-3">
         <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 space-y-2">
           <div class="text-xs font-bold text-accent-300">テーマカラー</div>
           <div id="themeGroup" class="grid grid-cols-6 gap-1"></div>
@@ -2132,6 +2288,17 @@
           <p class="text-[10px] text-slate-500 leading-relaxed">AUTO：iPhone・iPad・PCのダーク／ライトの設定に合わせて自動で切り替えます</p>
         </div>
 
+        <!-- OBS連携は別の画面（PCだけ） -->
+        <div class="set-card obs-only space-y-1.5">
+          <div class="flex items-center justify-between gap-2">
+            <div class="text-xs font-bold text-accent-300">OBS連携</div>
+            <button id="btnSettingsToObs" type="button" class="obs-btn">開く</button>
+          </div>
+          <p class="text-[10px] text-slate-500 leading-relaxed">OBSとつなぐ設定は、右上の OBS ボタンからも開けます</p>
+        </div>
+        </div>
+
+        <div class="space-y-3">
         <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 space-y-2">
           <div class="text-xs font-bold text-accent-300">キーボード（SEパッド）</div>
           <div id="keyMapGroup" class="grid grid-cols-2 gap-2"></div>
@@ -2146,30 +2313,35 @@
           <input id="sliderDuckAmount" type="range" min="30" max="95" step="5" value="80" class="pro-fader accent-cyan w-full" aria-label="DUCKの下げ幅">
           <p class="text-[10px] text-slate-500 leading-relaxed">MIXERのDUCKボタンを押している間、BGMを今の音量の何%にするか（例：BGM 70% で 80% の場合 → 56%）</p>
         </div>
+        </div>
+        </div>
 
-        <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 text-xs text-slate-300 space-y-1">
-          <div class="font-bold text-accent-300">保存と同期</div>
+        <div class="grid sm:grid-cols-2 gap-3 sm:gap-4 items-start">
+        <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 text-[11px] text-slate-300 space-y-1.5">
+          <div class="text-xs font-bold text-accent-300">保存と同期</div>
           <p class="text-slate-400 leading-relaxed">
             登録した音声ファイル・パッド設定・BGMプレイリストはブラウザ内に自動保存されます。Googleでログインすると、Googleドライブの「<span id="driveFolderLabel">LIVEPAD DECK</span>」フォルダにも保存され、別の端末やブラウザのデータを消したあとでも、ログインするだけで元に戻せます。
           </p>
           <p class="text-slate-400 leading-relaxed">
             ※ iPhone・iPadのSafariは、しばらく開かないサイトのデータを消すことがあります。<b class="text-slate-200">ホーム画面に追加</b>して使うか、Googleでログインしてバックアップしておくのがおすすめです。
           </p>
-          <a href="privacy.html" target="_blank" rel="noopener" class="inline-block text-accent-300 hover:text-accent-200 underline underline-offset-2">プライバシーポリシー</a>
+          <button id="btnA2hsHelp" type="button" class="soft-btn a2hs-only">ホーム画面に追加する方法</button>
+          <div><a href="privacy.html" target="_blank" rel="noopener" class="inline-block text-accent-300 hover:text-accent-200 underline underline-offset-2">プライバシーポリシー</a></div>
         </div>
-
-        <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 text-xs text-slate-300 space-y-1">
-          <div class="font-bold text-accent-300">ABOUT</div>
+        <div class="space-y-3">
+        <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 text-[11px] text-slate-300 space-y-1.5">
+          <div class="text-xs font-bold text-accent-300">ABOUT</div>
           <p class="text-slate-400 leading-relaxed">
             内蔵の効果音はこのアプリがその場で作っている音なので、配信で自由に使えます。自分で追加したBGM・効果音は、配信で流してよいものかご自身で確認してください。
           </p>
+          <button id="btnReplayTour" type="button" class="soft-btn">はじめの案内をもう一度見る</button>
           <div class="flex items-center justify-between gap-2 pt-1">
             <a href="https://github.com/chiyabeniwakare/livepad-deck/issues" target="_blank" rel="noopener" class="text-accent-300 hover:text-accent-200 underline underline-offset-2">不具合の報告・要望（GitHub）</a>
             <span id="appBuildLabel" class="text-[10px] font-mono-num text-slate-500"></span>
           </div>
         </div>
 
-        <div class="border-t border-[rgb(var(--n-262c3a))] pt-3">
+        <div class="set-card">
           <div class="text-xs font-bold text-red-400 mb-2">データの初期化</div>
           <div id="resetInitialArea">
             <button id="btnRequestReset" type="button" class="w-full py-2 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/40 text-xs font-bold transition-colors">
@@ -2184,6 +2356,172 @@
             </div>
           </div>
         </div>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OBS連携モーダル（OBSが動くPCだけ。ヘッダーの OBS ボタンから開く） -->
+  <div id="obsModalBackdrop" class="obs-only fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
+    <div class="obs-sheet bg-[rgb(var(--n-181c26))] border border-[rgb(var(--n-30384b))] rounded-2xl w-full max-w-[720px] shadow-2xl overflow-hidden flex flex-col" role="dialog" aria-modal="true" aria-labelledby="obsModalTitle">
+      <div class="px-4 py-3 bg-[rgb(var(--n-14171f))] border-b border-[rgb(var(--n-262c3a))] flex items-center justify-between gap-3 shrink-0">
+        <div class="flex items-center gap-2 min-w-0">
+          <h3 id="obsModalTitle" class="text-sm font-bold text-slate-100">OBS連携</h3>
+          <button type="button" class="help-btn" data-help="obs" title="OBS連携の使い方" aria-label="OBS連携の使い方">?</button>
+          <span id="obsStatusBadge" class="obs-status ml-1">OFF</span>
+        </div>
+        <button id="btnObsClose" type="button" class="text-slate-400 hover:text-slate-50 p-1 rounded-lg hover:bg-slate-800" aria-label="閉じる">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <!-- 左＝つなぎ方・音・配信の開始と終了、右＝曲名・しゃべると下げる -->
+      <div id="obsCard" class="settings-body p-4 grid sm:grid-cols-2 gap-3 sm:gap-4 items-start text-xs text-slate-300">
+        <div class="space-y-3">
+          <div class="set-card space-y-2.5">
+            <label class="obs-row font-bold text-slate-200">
+              <input id="obsEnabled" type="checkbox" class="obs-check">
+              <span>OBSにつなぐ</span>
+            </label>
+            <div class="grid grid-cols-[1fr_auto] gap-2">
+              <input id="obsUrl" type="text" class="obs-input" placeholder="ws://127.0.0.1:4455" autocomplete="off" spellcheck="false" aria-label="OBSのアドレス">
+              <button id="btnObsConnect" type="button" class="obs-btn">接続</button>
+              <input id="obsPassword" type="password" class="obs-input col-span-2" placeholder="パスワード（OBSの「ツール」→「WebSocketサーバー設定」）" autocomplete="off" aria-label="OBSのパスワード">
+            </div>
+            <p id="obsMessage" class="text-[10px] leading-relaxed text-slate-500"></p>
+          </div>
+
+          <div class="set-card obs-sub win-only">
+            <div class="font-bold text-slate-200">LIVEPAD DECK の音</div>
+            <div><button id="btnObsAudioSource" type="button" class="obs-btn" title="このブラウザの音（LIVEPAD DECKの音）だけを取り込む音声ソースを、OBSの全部のシーンに追加します">ブラウザの音をOBSに追加</button></div>
+            <p class="text-[10px] text-slate-500 leading-relaxed">このブラウザの音だけを、OBSの音声ソース「LIVEPAD DECK Audio」として全部のシーンに入れます。OBSの「デスクトップ音声」はミュートしてください（二重に入るため）</p>
+            <p id="obsAudioNote" class="text-[10px] leading-relaxed text-amber-200 hidden"></p>
+          </div>
+
+          <div class="set-card obs-sub">
+            <div class="font-bold text-slate-200">配信の開始・終了</div>
+            <label class="grid grid-cols-[auto_1fr] items-center gap-2">
+              <span class="text-slate-400">配信を始めたら</span>
+              <select id="obsOnStart" class="obs-input"></select>
+            </label>
+            <label class="grid grid-cols-[auto_1fr] items-center gap-2">
+              <span class="text-slate-400">配信を止めたら</span>
+              <select id="obsOnStop" class="obs-input">
+                <option value="none">何もしない</option>
+                <option value="fade">BGMをフェードアウトして止める</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div class="set-card obs-sub">
+            <label class="obs-row font-bold text-slate-200">
+              <input id="obsNpEnabled" type="checkbox" class="obs-check">
+              <span>BGMの曲名をOBSのテキストに出す</span>
+            </label>
+            <div class="grid grid-cols-[1fr_auto] gap-2">
+              <input id="obsNpInput" type="text" class="obs-input" placeholder="テキストソースの名前" autocomplete="off" aria-label="テキストソースの名前">
+              <button id="btnObsNpCreate" type="button" class="obs-btn" title="今映しているシーンに、この名前のテキストソースを追加します">OBSにソースを追加</button>
+              <input id="obsNpFormat" type="text" class="obs-input col-span-2" placeholder="♪ {title}" autocomplete="off" aria-label="表示の形">
+            </div>
+            <p class="text-[10px] text-slate-500 leading-relaxed"><b>{title}</b>＝曲名、<b>{folder}</b>＝フォルダ名。BGMを止めると消えます</p>
+            <p id="obsNpMessage" class="text-[10px] leading-relaxed text-red-300 hidden"></p>
+          </div>
+
+          <div class="set-card obs-sub">
+            <label class="obs-row font-bold text-slate-200">
+              <input id="obsVdEnabled" type="checkbox" class="obs-check">
+              <span>しゃべるとBGMを下げる</span>
+            </label>
+            <select id="obsVdInput" class="obs-input w-full" aria-label="マイク（OBSの音声ソース）"></select>
+            <div>
+              <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 mb-1">
+                <span>反応する声の大きさ</span>
+                <span id="obsVdThresholdVal" class="font-mono-num text-accent-300">-35 dB</span>
+              </div>
+              <div class="obs-meter"><span id="obsVdLevel"></span><i id="obsVdMark"></i></div>
+              <input id="obsVdThreshold" type="range" min="-60" max="-5" step="1" value="-35" class="pro-fader accent-cyan w-full mt-1.5">
+            </div>
+            <div>
+              <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 mb-1">
+                <span>しゃべっている間のBGM</span>
+                <span id="obsVdAmountVal" class="font-mono-num text-accent-300">35%</span>
+              </div>
+              <input id="obsVdAmount" type="range" min="5" max="95" step="5" value="35" class="pro-fader accent-cyan w-full">
+            </div>
+            <p class="text-[10px] text-slate-500 leading-relaxed">マイクの音量のバーが線を超えている間、BGMを下げます。しゃべり終わって少しすると戻ります</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ホーム画面に追加のすすめ（iPhone・iPad のブラウザで開いたとき、案内の前に1回だけ。設定の「保存と同期」からも見られる） -->
+  <div id="a2hsRoot" class="hidden" role="dialog" aria-modal="true" aria-labelledby="a2hsTitle">
+    <div class="a2hs-sheet">
+      <div class="a2hs-head">
+        <img src="apple-touch-icon.png" alt="" onerror="this.remove()">
+        <div>
+          <div id="a2hsTitle" class="a2hs-title">ホーム画面に追加して使うのがおすすめです</div>
+          <div class="a2hs-sub">アプリのように、アイコンから開けるようになります</div>
+        </div>
+      </div>
+      <div class="a2hs-cols">
+        <div class="a2hs-box">
+          <h3>良いこと</h3>
+          <div class="a2hs-good">
+            <div><b>画面が広くなる</b><span>アドレスバーなどが消えて、パッドを大きく使えます</span></div>
+            <div><b>データが消えにくい</b><span>Safariは、しばらく開かないサイトのデータを消すことがあります。ホーム画面から開けば消えません</span></div>
+            <div><b>すぐ開ける</b><span>ホーム画面のアイコンをタップするだけ</span></div>
+          </div>
+        </div>
+        <div class="a2hs-box">
+          <h3 id="a2hsStepsTitle">追加のしかた</h3>
+          <!-- iPhone（Safari） -->
+          <ol class="a2hs-steps" data-a2hs="iphone">
+            <li><div>画面右下の <span class="a2hs-key"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="18.5" cy="12" r="1.9"/></svg></span> を押す<small>下に <span class="a2hs-key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9H6.5A1.5 1.5 0 0 0 5 10.5v9A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 17.5 9H16"/><path d="M12 15V3"/><path d="M8.5 6.5 12 3l3.5 3.5"/></svg></span> があるときは、それを押して 3 へ</small></div></li>
+            <li><div><b>「共有」</b>を押す</div></li>
+            <li><div><b>「その他」</b>→<b>「ホーム画面に追加」</b><small>見当たらないときは、上にスクロール</small></div></li>
+            <li><div><b>「追加」</b>を押す<small>「Webアプリとして開く」はオンのまま</small></div></li>
+          </ol>
+          <!-- iPad（Safari） -->
+          <ol class="a2hs-steps" data-a2hs="ipad">
+            <li><div>画面の上にある <span class="a2hs-key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9H6.5A1.5 1.5 0 0 0 5 10.5v9A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 17.5 9H16"/><path d="M12 15V3"/><path d="M8.5 6.5 12 3l3.5 3.5"/></svg></span>（共有）を押す</div></li>
+            <li><div><b>「その他」</b>→<b>「ホーム画面に追加」</b><small>見当たらないときは、上にスクロール</small></div></li>
+            <li><div><b>「追加」</b>を押す<small>「Webアプリとして開く」はオンのまま</small></div></li>
+          </ol>
+          <!-- Safari 以外のブラウザ -->
+          <ol class="a2hs-steps" data-a2hs="other">
+            <li><div>このブラウザのメニューの<b>「共有」</b>から<b>「ホーム画面に追加」</b>を選ぶ</div></li>
+            <li><div>見つからないときは、このページを <b>Safari</b> で開いてから追加します<small><button id="btnA2hsCopy" type="button" class="soft-btn mt-1.5">このページのアドレスをコピー</button></small></div></li>
+          </ol>
+          <p class="mt-2.5 text-[11.5px] text-slate-400">追加したら、ホーム画面の <b class="text-slate-200" id="a2hsAppName">LIVEPAD</b> のアイコンから開いてください</p>
+        </div>
+      </div>
+      <p class="a2hs-note">ホーム画面のアイコンから開くと、Safari とはデータの保存場所が別になります（Safari で入れた音は引き継がれません）。音を入れる前に追加しておくのがおすすめです。Googleでログインしていれば、ログインするだけで元に戻せます。</p>
+      <div class="a2hs-actions">
+        <button id="btnA2hsClose" type="button" class="tour-btn is-next">このまま使う</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- はじめの案内（初回だけ。設定の ABOUT からもう一度見られる） -->
+  <div id="tourRoot" class="hidden" role="dialog" aria-modal="true" aria-labelledby="tourTitle">
+    <div id="tourHole" class="tour-hole"></div>
+    <div id="tourTip" class="tour-tip">
+      <div class="tour-head">
+        <div id="tourTitle" class="tour-title"></div>
+        <div id="tourCount" class="tour-count"></div>
+      </div>
+      <div id="tourText" class="tour-text"></div>
+      <div class="tour-actions">
+        <button id="tourSkip" type="button" class="tour-skip">スキップ</button>
+        <button id="tourBack" type="button" class="tour-btn is-back">戻る</button>
+        <button id="tourNext" type="button" class="tour-btn is-next">次へ</button>
       </div>
     </div>
   </div>
@@ -2393,7 +2731,32 @@
     // =========================================================================
     const APP_CHANNEL = (/\/dev(\/|\/index\.html)?$/.test(location.pathname) || new URLSearchParams(location.search).has('dev')) ? 'dev' : 'prod';
     const IS_DEV = APP_CHANNEL === 'dev';
-    const APP_BUILD = '2026.11.25-0121';   // ビルドしたとき日時とコミットに置き換わる（_tools/build.py）
+    const APP_BUILD = '2026.11.25-1450';   // ビルドしたとき日時とコミットに置き換わる（_tools/build.py）
+
+    // 端末の種類。OBS連携は、OBSが動くPC（Windows・Mac・Linux）で開いたときだけ出す
+    //   iPhone・iPad・Android・Chromebook からは、https のページから別の機械のOBS（ws://）へはつなげない
+    const DEVICE_OS = (() => {
+      const ua = navigator.userAgent || '';
+      const plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+      if (/iPhone|iPad|iPod/.test(ua)) return 'ios';
+      if (/Mac/.test(plat) && navigator.maxTouchPoints > 1) return 'ios';   // iPadのSafariはMacのふりをする
+      if (/Android/i.test(ua) || /Android/i.test(plat)) return 'android';
+      if (/CrOS/.test(ua) || /Chrome OS/i.test(plat)) return 'chromeos';
+      if (/Win/.test(plat) || /Windows/.test(ua)) return 'windows';
+      if (/Mac/.test(plat) || /Macintosh/.test(ua)) return 'mac';
+      if (/Linux/.test(plat) || /Linux/.test(ua)) return 'linux';
+      return 'other';
+    })();
+    const OBS_CAPABLE = ['windows', 'mac', 'linux'].includes(DEVICE_OS);
+    const IS_WINDOWS = DEVICE_OS === 'windows';
+    document.documentElement.classList.toggle('no-obs', !OBS_CAPABLE);
+    document.documentElement.classList.toggle('not-win', !IS_WINDOWS);
+    // ホーム画面に追加のすすめ：iPhone・iPad のブラウザで開いていて、ホーム画面のアイコンから開いていないとき
+    const IS_STANDALONE = navigator.standalone === true || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    const IOS_KIND = DEVICE_OS !== 'ios' ? '' : (/iPhone|iPod/.test(navigator.userAgent) ? 'iphone' : 'ipad');
+    const IOS_SAFARI = DEVICE_OS === 'ios' && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA\/|Line\/|Instagram|FBAN|FBAV|YJApp/i.test(navigator.userAgent);
+    const A2HS_SUGGEST = DEVICE_OS === 'ios' && !IS_STANDALONE;
+    document.documentElement.classList.toggle('can-a2hs', A2HS_SUGGEST);
 
     /**
      * =========================================================================
@@ -2503,6 +2866,47 @@
       return [];   // BGMは「+ BGM追加」で登録した音声ファイルのみ（内蔵シンセBGMは廃止）
     }
 
+    // OBS連携（obs-websocket 5）の設定。OBSはPCごとなので、この設定は同期しない（端末ごと）
+    function createDefaultObs() {
+      return {
+        enabled: false,
+        url: 'ws://127.0.0.1:4455',
+        password: '',
+        nowPlaying: { enabled: true, inputName: 'LIVEPAD Now Playing', format: '♪ {title}' },
+        voiceDuck: { enabled: false, inputName: '', thresholdDb: -35, amount: 0.35 },
+        stream: { onStart: 'none', onStop: 'none' }   // onStart：none / resume / folder:<id>、onStop：none / fade
+      };
+    }
+
+    function normalizeObs(o) {
+      const d = createDefaultObs();
+      const x = o && typeof o === 'object' ? o : {};
+      const np = x.nowPlaying || {};
+      const vd = x.voiceDuck || {};
+      const st = x.stream || {};
+      const num = (v, lo, hi, def) => (typeof v === 'number' && isFinite(v) ? Math.max(lo, Math.min(hi, v)) : def);
+      return {
+        enabled: !!x.enabled,
+        url: typeof x.url === 'string' && x.url.trim() ? x.url.trim() : d.url,
+        password: typeof x.password === 'string' ? x.password : '',
+        nowPlaying: {
+          enabled: np.enabled !== false,
+          inputName: typeof np.inputName === 'string' ? np.inputName : d.nowPlaying.inputName,
+          format: typeof np.format === 'string' && np.format ? np.format : d.nowPlaying.format
+        },
+        voiceDuck: {
+          enabled: !!vd.enabled,
+          inputName: typeof vd.inputName === 'string' ? vd.inputName : '',
+          thresholdDb: num(vd.thresholdDb, -60, -5, d.voiceDuck.thresholdDb),
+          amount: num(vd.amount, 0.05, 0.95, d.voiceDuck.amount)
+        },
+        stream: {
+          onStart: typeof st.onStart === 'string' ? st.onStart : 'none',
+          onStop: st.onStop === 'fade' ? 'fade' : 'none'
+        }
+      };
+    }
+
     // BGMのフォルダ。1曲は1つのフォルダに入る（folderId）。UNSORTED は消せない最初のフォルダ
     const BGM_UNSORTED = 'unsorted';
     function createDefaultBgmFolders() {
@@ -2525,7 +2929,10 @@
       layout: createDefaultLayout(),   // 広い画面のDECKの並び（タイル型）と保存したレイアウト
       themeColor: DEFAULT_THEME,
       keyMap: 'standard',    // SEパッドを鳴らすキーの並び：standard / numpad（端末ごと）
+      tourSeen: false,       // はじめの案内を見終わったか（端末ごと）
+      a2hsSeen: false,       // ホーム画面に追加のすすめを見たか（iPhone・iPad、端末ごと）
       recSource: 'mic',      // REC で録る音：mic / resample（端末ごと）
+      obs: createDefaultObs(),   // OBS連携（端末ごと）
       tone: 'dark',          // 背景の色調：dark / dim / navy / warm / light / auto
       toneTint: false,       // テーマカラーの色味を背景にも少し乗せる
       banks: createDefaultBanks(),
@@ -2601,6 +3008,9 @@
             toneTint: state.toneTint,
             keyMap: state.keyMap,
             recSource: state.recSource,
+            tourSeen: state.tourSeen,
+            a2hsSeen: state.a2hsSeen,
+            obs: state.obs,
             duckAmount: state.duckAmount,
             eq: state.eq,
             fx: state.fx,
@@ -4840,6 +5250,41 @@ registerProcessor('livepad-rec', LivepadRec);
     };
 
     const HELP_DOCS = {
+      obs: {
+        title: 'OBS連携',
+        intro: 'OBS Studio（28以降）とつないで、曲名を配信画面に出したり、パッドでOBSを動かしたりできます。PC（Windows・Mac）で開いたときだけ、右上に <b>OBS</b> ボタンが出ます。押すとOBS連携の画面が開きます。LIVEPAD DECK は、OBSを動かしているPCの Chrome か Edge で開いてください。iPhone・iPad・タブレットからはOBSにつなげないので、ボタンも出ません。',
+        sections: [
+          { name: 'つなぎ方', text: [
+            'OBSのメニューの<b>「ツール」→「WebSocketサーバー設定」</b>を開き、<b>「WebSocketサーバーを有効にする」</b>にチェックを入れて、右下の<b>「適用」か「OK」を押します</b>（押さないとOBS側の受け付けが始まりません）',
+            '同じ画面の<b>「接続情報を表示」</b>でパスワードをコピーし、OBS連携の画面の「パスワード」に貼り付けて<b>「接続」</b>を押します。アドレスはそのまま（ws://127.0.0.1:4455）で大丈夫です',
+            'Chromeが「ローカルネットワーク（このパソコンの中のアプリ）へのアクセス」の確認を出したら<b>「許可」</b>を押します',
+            '右上の <b>OBS</b> ボタンに緑の点が付けばつながっています（配信中は OBS LIVE）。OBSを閉じると自動で切れ、OBSを開くと5秒ほどで自動でつなぎ直します',
+            'パスワードはこの端末の中にだけ保存し、Googleドライブには同期しません'
+          ] },
+          { name: 'ブラウザの音をOBSに入れる', text: [
+            'LIVEPAD DECK の音は、そのままだとPCのスピーカーから鳴っているだけです。OBSの<b>「デスクトップ音声」</b>がオンなら配信にも入りますが、PCのほかの音（通知音やほかのアプリ）も一緒に入ります',
+            '<b>「ブラウザの音をOBSに追加」</b>を押すと、このブラウザの音だけを取り込む音声ソース「LIVEPAD DECK Audio」（OBSのアプリケーション音声キャプチャ）を、OBSの全部のシーンに追加します。Windows の OBS 28 以降で使えます（Macではこのボタンは出ません）',
+            'このときOBSの「デスクトップ音声」もオンだと、同じ音が二重に入ります。OBSの音声ミキサーで「デスクトップ音声」をミュートしてください',
+            'このブラウザで YouTube など別のタブの音を鳴らすと、それも入ります。LIVEPAD DECK 専用のブラウザ（例：Edge）にしておくと安心です'
+          ] },
+          { name: '曲名を出す', text: [
+            '「<b>OBSにソースを追加</b>」を押すと、OBSで今映しているシーンに「LIVEPAD Now Playing」というテキストソースが追加されます。場所・大きさ・文字の色はOBSで自由に変えてください',
+            'BGMが変わるたびに「♪ 曲名」に書き換わり、BGMを止めると消えます。表示の形は <b>{title}</b>（曲名）と <b>{folder}</b>（フォルダ名）を使って変えられます'
+          ] },
+          { name: 'しゃべるとBGMを下げる', text: [
+            'マイクにOBSの音声ソース（マイク）を選びます。しゃべってバーが白い線を超えると、BGMを「しゃべっている間のBGM」の大きさまで下げ、黙って少しすると戻ります',
+            '息やキーボードの音で下がってしまうときは、線を右（大きい声だけに反応）へ。しゃべっても下がらないときは左へ動かします',
+            '下がっている間は MIXER の DUCK ボタンが緑に光ります'
+          ] },
+          { name: 'パッドでOBSを動かす', text: [
+            'パッドの ✎（編集画面）の一番下の <b>OBS ACTION</b> で、パッドを押したときにOBSを動かせます（パッドに OBS の札が付きます）',
+            '<b>シーンを切り替える</b>：例）「ED」パッドで、音を鳴らしながらエンディングのシーンへ',
+            '<b>ソースを数秒だけ表示する</b>：例）「拍手」パッドで、拍手の画像を3秒だけ出す（ソースはOBSで非表示にしておく）',
+            '<b>ソースの表示・非表示を切り替える</b>：押すたびに表示・非表示'
+          ] },
+          { name: '配信の開始・終了', text: 'OBSで配信を始めたときにBGMを再生する（今の曲から／フォルダの最初から）、配信を止めたときにBGMをフェードアウトする、を選べます。' }
+        ]
+      },
       bgm: {
         title: 'BGM DECK',
         intro: '配信のBGMを並べて再生するデッキです。',
@@ -5037,6 +5482,221 @@ registerProcessor('livepad-rec', LivepadRec);
       document.getElementById('btnHelpClose').addEventListener('click', closeHelp);
       const backdrop = document.getElementById('helpModalBackdrop');
       backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeHelp(); });
+    }
+
+    // =========================================================================
+    // はじめの案内（初回起動のときだけ。設定の ABOUT からもう一度見られる）
+    //   DECKを1つずつ照らして、そばに短い説明を出す。LAYOUTで隠したDECKは飛ばす
+    //   iPhone（狭い画面）は1度に1つのDECKしか出ないので、タブを切り替えて見せ、終わったら戻す
+    // =========================================================================
+    const TOUR_STEPS = [
+      { panel: 'bgm', title: 'BGM DECK', text: '配信のBGMを流す場所。<b>＋ ADD BGM</b> で曲を追加し、フォルダに分けて順番に流せます' },
+      { panel: 'eq', title: 'EQ DECK', text: 'BGMだけの音質の調整（低音・高音など）' },
+      { panel: 'pitch', title: 'PITCH DECK', text: 'BGMの速さ（<b>TEMPO</b>）と音程（<b>KEY</b>）を変えます' },
+      { panel: 'se', title: 'SE DECK', text: '効果音のパッド。タップで鳴らします。<b>✎</b> で音を入れ替えたり、<b>REC</b> でその場で録音したりもできます' },
+      { panel: 'fx', title: 'FX PAD', text: 'パッドを指でなぞると、BGMやSEにエフェクトがかかります' },
+      { panel: 'mixer', title: 'MIXER', text: 'BGM・SE・全体の音量。<b>DUCK</b> を押している間はBGMが下がり、<b>PANIC STOP</b> で全部止まります' },
+      { target: 'headerTools', title: '右上のボタン', list: [
+        ['btnPanicMini', 'PANIC', '全部止める'],
+        ['btnLayoutEdit', 'LAYOUT', 'DECKの並びを変える'],
+        ['btnWakeLock', 'WAKE', '画面が消えないようにする'],
+        ['btnPerfLock', 'LOCK', '配信中の誤操作を防ぐ'],
+        ['btnAccount', 'LOGIN', 'Googleドライブに保存する'],
+        ['btnObsPill', 'OBS', 'OBS連携'],
+        ['btnOpenSettings', '⚙', '設定']
+      ] },
+      { panel: 'first', sel: '.help-btn', title: 'くわしい使い方', text: '各DECKの <b>?</b> で、くわしい使い方が見られます。この案内は ⚙ の設定からもう一度見られます' }
+    ];
+    const tour = { steps: [], index: 0, saved: null, timer: null };
+
+    const tourVisible = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+
+    function startTour() {
+      if (!$('tourRoot').classList.contains('hidden')) return;
+      const hidden = new Set(state.layout.hidden);
+      const panels = TOUR_STEPS.filter(st => st.panel && st.panel !== 'first').map(st => st.panel).filter(id => !hidden.has(id));
+      tour.steps = TOUR_STEPS.filter(st => !st.panel || (st.panel === 'first' ? panels.length > 0 : panels.includes(st.panel)))
+        .map(st => (st.panel === 'first' ? { ...st, panel: panels[0] } : st));
+      tour.index = 0;
+      tour.saved = { left: layoutUi.leftTab, right: layoutUi.rightTab };
+      $('tourRoot').classList.remove('hidden');
+      showTourStep();
+      $('tourNext').focus({ preventScroll: true });
+    }
+
+    /** 案内を閉じる（最後まで見ても、スキップしても、もう出さない） */
+    function endTour() {
+      if ($('tourRoot').classList.contains('hidden')) return;
+      $('tourRoot').classList.add('hidden');
+      if (tour.saved && layoutUi.compact) {
+        layoutUi.leftTab = tour.saved.left;
+        layoutUi.rightTab = tour.saved.right;
+        applyColTabs();
+      }
+      if (!state.tourSeen) { state.tourSeen = true; storage.saveState(); }
+    }
+
+    /** 狭い画面では、案内するDECKのタブを開く */
+    function tourShowPanel(id) {
+      if (!layoutUi.compact || !id) return;
+      if (COMPACT_RIGHT.includes(id)) layoutUi.rightTab = id;
+      else if (COMPACT_LEFT.includes(id)) layoutUi.leftTab = id;
+      applyColTabs();
+    }
+
+    function tourTarget(st) {
+      if (st.panel) {
+        const panel = $(`panel-${st.panel}`);
+        return st.sel ? panel && panel.querySelector(st.sel) : panel;
+      }
+      return $(st.target);
+    }
+
+    function showTourStep() {
+      const st = tour.steps[tour.index];
+      if (!st) { endTour(); return; }
+      tourShowPanel(st.panel);
+      $('tourTitle').textContent = st.title;
+      $('tourCount').textContent = `${tour.index + 1} / ${tour.steps.length}`;
+      if (st.list) {
+        $('tourText').innerHTML = `<dl class="tour-list">${st.list.filter(([id]) => tourVisible($(id)))
+          .map(([, k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`;
+      } else {
+        $('tourText').innerHTML = st.text;
+      }
+      const last = tour.index === tour.steps.length - 1;
+      $('tourBack').classList.toggle('hidden', tour.index === 0);
+      $('tourNext').textContent = last ? 'はじめる' : '次へ';
+      $('tourSkip').classList.toggle('invisible', last);
+      requestAnimationFrame(placeTour);
+    }
+
+    /** 照らす枠と吹き出しの位置（DECKの横→下→上、入らなければDECKの中の下側） */
+    function placeTour() {
+      if ($('tourRoot').classList.contains('hidden')) return;
+      const st = tour.steps[tour.index];
+      const el = st && tourTarget(st);
+      const hole = $('tourHole');
+      const tip = $('tourTip');
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const M = 12;
+      if (!tourVisible(el)) {
+        hole.classList.add('is-none');
+        Object.assign(hole.style, { left: `${vw / 2}px`, top: `${vh / 2}px`, width: '0px', height: '0px' });
+        tip.style.left = `${(vw - tip.offsetWidth) / 2}px`;
+        tip.style.top = `${(vh - tip.offsetHeight) / 2}px`;
+        return;
+      }
+      if (el.scrollIntoView) el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      hole.classList.remove('is-none');
+      const pad = st.sel ? 5 : 4;
+      const r0 = el.getBoundingClientRect();
+      const r = {
+        left: Math.max(2, r0.left - pad), top: Math.max(2, r0.top - pad),
+        right: Math.min(vw - 2, r0.right + pad), bottom: Math.min(vh - 2, r0.bottom + pad)
+      };
+      Object.assign(hole.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.right - r.left}px`, height: `${r.bottom - r.top}px` });
+      const tw = tip.offsetWidth;
+      const th = tip.offsetHeight;
+      const clampX = (x) => Math.max(M, Math.min(vw - tw - M, x));
+      const clampY = (y) => Math.max(M, Math.min(vh - th - M, y));
+      const midY = (r.top + r.bottom) / 2 - th / 2;
+      const midX = (r.left + r.right) / 2 - tw / 2;
+      const fits = {
+        right: () => vw - r.right >= tw + M + 4 && { x: r.right + M, y: clampY(midY) },
+        left: () => r.left >= tw + M + 4 && { x: r.left - tw - M, y: clampY(midY) },
+        below: () => vh - r.bottom >= th + M + 4 && { x: clampX(midX), y: r.bottom + M },
+        above: () => r.top >= th + M + 4 && { x: clampX(midX), y: r.top - th - M }
+      };
+      // 横長で低いもの（ヘッダーのボタン）は下・上を先に、DECKは横を先に
+      const order = r.bottom - r.top < 90 ? ['below', 'above', 'right', 'left'] : ['right', 'left', 'below', 'above'];
+      const pos = order.map(k => fits[k]()).find(Boolean) || { x: clampX(midX), y: clampY(r.bottom - th - M * 2) };   // 入らなければDECKの中の下側
+      tip.style.left = `${pos.x}px`;
+      tip.style.top = `${pos.y}px`;
+    }
+
+    function initTour() {
+      $('tourNext').addEventListener('click', () => {
+        if (tour.index >= tour.steps.length - 1) { endTour(); return; }
+        tour.index += 1;
+        showTourStep();
+      });
+      $('tourBack').addEventListener('click', () => {
+        if (tour.index === 0) return;
+        tour.index -= 1;
+        showTourStep();
+        $('tourNext').focus({ preventScroll: true });
+      });
+      $('tourSkip').addEventListener('click', endTour);
+      // 案内中は、後ろの画面を触れないようにする（ボタン以外は何もしない）
+      $('tourRoot').addEventListener('pointerdown', (e) => { if (!e.target.closest('button')) e.preventDefault(); });
+      document.addEventListener('keydown', (e) => {
+        if ($('tourRoot').classList.contains('hidden')) return;
+        if (e.key === 'ArrowRight') { e.preventDefault(); $('tourNext').click(); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); $('tourBack').click(); }
+      });
+      window.addEventListener('resize', () => {
+        if ($('tourRoot').classList.contains('hidden')) return;
+        clearTimeout(tour.timer);
+        tour.timer = setTimeout(() => { const st = tour.steps[tour.index]; if (st) tourShowPanel(st.panel); placeTour(); }, 140);
+      });
+      $('btnReplayTour').addEventListener('click', () => {
+        $('btnSettingsClose').click();
+        setTimeout(startTour, 120);
+      });
+    }
+
+    // =========================================================================
+    // ホーム画面に追加のすすめ（iPhone・iPad のブラウザで、ホーム画面から開いていないとき）
+    //   初回は「はじめる」のあと、案内の前に1回だけ。設定の「保存と同期」からいつでも見られる
+    // =========================================================================
+    const a2hs = { first: false };
+
+    function openA2hs(first) {
+      a2hs.first = !!first;
+      const kind = IOS_SAFARI ? IOS_KIND : 'other';
+      document.querySelectorAll('[data-a2hs]').forEach(el => el.classList.toggle('hidden', el.dataset.a2hs !== kind));
+      $('a2hsStepsTitle').textContent = { iphone: '追加のしかた（iPhone の Safari）', ipad: '追加のしかた（iPad の Safari）', other: '追加のしかた' }[kind];
+      $('a2hsAppName').textContent = IS_DEV ? 'LIVEPAD DEV' : 'LIVEPAD';
+      $('btnA2hsClose').textContent = first ? 'このまま使う' : '閉じる';
+      $('a2hsRoot').classList.remove('hidden');
+      $('a2hsRoot').classList.add('flex');
+      $('a2hsRoot').querySelector('.a2hs-sheet').scrollTop = 0;
+      $('btnA2hsClose').focus({ preventScroll: true });
+    }
+
+    /** 閉じる（初回のときは、続けて「はじめの案内」へ） */
+    function closeA2hs() {
+      if ($('a2hsRoot').classList.contains('hidden')) return;
+      $('a2hsRoot').classList.add('hidden');
+      $('a2hsRoot').classList.remove('flex');
+      if (!state.a2hsSeen) { state.a2hsSeen = true; storage.saveState(); }
+      if (a2hs.first && !state.tourSeen) setTimeout(startTour, 200);
+      a2hs.first = false;
+    }
+
+    /** 起動したとき：初回だけ、ホーム画面に追加のすすめ → はじめの案内（window.__LIVEPAD_NO_TOUR はテスト用） */
+    function startFirstRunGuides() {
+      if (window.__LIVEPAD_NO_TOUR) return;
+      if (A2HS_SUGGEST && !state.a2hsSeen) { openA2hs(true); return; }
+      if (!state.tourSeen) startTour();
+    }
+
+    function initA2hs() {
+      $('btnA2hsClose').addEventListener('click', closeA2hs);
+      $('btnA2hsHelp').addEventListener('click', () => {
+        $('btnSettingsClose').click();
+        setTimeout(() => openA2hs(false), 120);
+      });
+      $('btnA2hsCopy').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(location.href.split('#')[0]);
+          showToast('アドレスをコピーしました。Safari に貼り付けて開いてください');
+        } catch (err) {
+          showToast(`コピーできませんでした：${location.href.split('#')[0]}`);
+        }
+      });
     }
 
     const storage = new DeckStorage();
@@ -5673,10 +6333,14 @@ registerProcessor('livepad-rec', LivepadRec);
           this.recDuckGain = this.ctx.createGain();
           this.recDuckGain.gain.value = 1.0;
           this.bgmManualGain.connect(this.recDuckGain);
+          // OBS連携：しゃべっている間だけBGMを下げるゲイン
+          this.voiceDuckGain = this.ctx.createGain();
+          this.voiceDuckGain.gain.value = 1.0;
+          this.recDuckGain.connect(this.voiceDuckGain);
           // BGM専用EQ（手動DUCKの後、BGMフェーダーの手前）。SEはここを通らない
           this.eqNodes = buildEqNodes(this.ctx);
           const eqChain = EQ_CHAIN.map(c => this.eqNodes[c.key]);
-          this.recDuckGain.connect(eqChain[0]);
+          this.voiceDuckGain.connect(eqChain[0]);
           for (let i = 0; i < eqChain.length - 1; i++) eqChain[i].connect(eqChain[i + 1]);
           // KEY（PITCH DECK）：速さはそのままで音程だけ変える段。0のときは素通り（Workletの読み込み後につなぐ）
           const kg = (v) => { const n = this.ctx.createGain(); n.gain.value = v; return n; };
@@ -6228,6 +6892,13 @@ registerProcessor('livepad-rec', LivepadRec);
       setRecDuck(on) {
         if (!this.recDuckGain) return;
         this.recDuckGain.gain.setTargetAtTime(on ? 0.15 : 1, this.ctx.currentTime, on ? 0.05 : 0.15);
+      }
+
+      /** OBS連携：しゃべっている間はBGMを下げる（下げるのは速く、戻すのはゆっくり） */
+      setVoiceDuck(on) {
+        if (!this.voiceDuckGain) return;
+        const amount = state.obs.voiceDuck.amount;
+        this.voiceDuckGain.gain.setTargetAtTime(on ? amount : 1, this.ctx.currentTime, on ? 0.06 : 0.35);
       }
 
       /** PANIC STOP：全部外し、エコー・リバーブの残響も止める */
@@ -7658,6 +8329,7 @@ registerProcessor('livepad-rec', LivepadRec);
     function updateBgmUI() {
       const track = state.bgmList[state.bgm.trackIndex];
       const playing = state.bgm.isPlaying;
+      obsSyncNowPlaying();   // 曲名が変わったときだけOBSのテキストを書き換える
 
       $('iconBgmPlay').classList.toggle('hidden', playing);
       $('iconBgmPause').classList.toggle('hidden', !playing);
@@ -7851,6 +8523,7 @@ registerProcessor('livepad-rec', LivepadRec);
             <div class="pad-badges flex items-center gap-1">
               ${!isEmpty ? `<span class="whitespace-nowrap px-1.5 py-0.5 rounded text-[9px] font-mono-num font-bold border ${modeBadgeColor}">${pad.mode}</span>` : ''}
               ${sourceBadgeHtml}
+              ${padHasObs(pad) ? `<span class="pad-obs-tag" title="OBS ACTION：${escapeHtml(pad.obs.type === 'scene' ? `シーン「${pad.obs.scene}」へ` : `ソース「${pad.obs.source}」`)}">OBS</span>` : ''}
             </div>
             ${
               !state.perfLock
@@ -7909,6 +8582,7 @@ registerProcessor('livepad-rec', LivepadRec);
           }
           el.classList.add('is-pressed');
           audioEngine.triggerPadDown(pad);
+          if (pad.sourceType !== 'empty') obsRunPadAction(pad);   // OBS ACTION（OBS連携中だけ）
         });
 
         const onRelease = () => {
@@ -7957,6 +8631,640 @@ registerProcessor('livepad-rec', LivepadRec);
         console.error(err);
         showToast('ファイルの保存に失敗しました');
       }
+    }
+
+    // =========================================================================
+    // OBS連携（OBS Studio 28 以降に入っている obs-websocket 5 につなぐ）
+    //   A：BGMの曲名をテキストソースに出す
+    //   B：マイクの音量（InputVolumeMeters）を見て、しゃべっている間BGMを下げる
+    //   C：パッドを押すとシーンを切り替える／ソースを表示する
+    //   D：配信の開始・終了に合わせてBGMを再生・停止
+    // =========================================================================
+    const OBS_EV = { Scenes: 1 << 2, Inputs: 1 << 3, Outputs: 1 << 6, SceneItems: 1 << 7, InputVolumeMeters: 1 << 16 };
+    const obs = {
+      ws: null,
+      status: 'off',        // off / connecting / connected / error / auth
+      message: '',
+      reqId: 0,
+      pending: new Map(),
+      retryTimer: null,
+      inputs: [],           // [{ inputName, inputKind }]
+      scenes: [],           // シーン名
+      lastNowPlaying: null,
+      npError: '',
+      audioNote: '',
+      streaming: false,
+      voice: { db: -100, on: false, releaseTimer: null, lastUi: 0 },
+      showTimers: new Map()
+    };
+
+    async function sha256Base64(text) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+      let bin = '';
+      new Uint8Array(buf).forEach(b => { bin += String.fromCharCode(b); });
+      return btoa(bin);
+    }
+
+    function obsEventMask() {
+      let m = OBS_EV.Scenes | OBS_EV.Inputs | OBS_EV.Outputs | OBS_EV.SceneItems;
+      if (state.obs.voiceDuck.enabled) m |= OBS_EV.InputVolumeMeters;   // 音量の知らせは多いので、使うときだけ受け取る
+      return m;
+    }
+
+    function setObsStatus(status, message = '') {
+      obs.status = status;
+      obs.message = message;
+      renderObsStatus();
+    }
+
+    function obsConnected() {
+      return obs.status === 'connected' && obs.ws && obs.ws.readyState === 1;
+    }
+
+    /** OBSにつなぐ（つながらなければ5秒ごとにやり直す。パスワード違いのときはやり直さない） */
+    function obsConnect() {
+      obsDisconnect();
+      const o = state.obs;
+      if (!o.enabled) {
+        setObsStatus('off');
+        return;
+      }
+      let ws;
+      try {
+        ws = new WebSocket(o.url, 'obswebsocket.json');
+      } catch (err) {
+        setObsStatus('error', 'アドレスの形が正しくありません（例：ws://127.0.0.1:4455）');
+        return;
+      }
+      obs.ws = ws;
+      setObsStatus('connecting', 'OBSにつないでいます…');
+      ws.onmessage = async (ev) => {
+        if (obs.ws !== ws) return;
+        let m;
+        try { m = JSON.parse(ev.data); } catch (err) { return; }
+        const d = m.d || {};
+        if (m.op === 0) {   // Hello：パスワードが要るなら、OBSから来た値と合わせて答える
+          let authentication;
+          if (d.authentication) {
+            if (!o.password) {
+              obs.noRetry = true;
+              setObsStatus('auth', 'パスワードを入れてください（OBSの「ツール」→「WebSocketサーバー設定」→「接続情報を表示」）');
+              ws.close();
+              return;
+            }
+            const secret = await sha256Base64(o.password + d.authentication.salt);
+            authentication = await sha256Base64(secret + d.authentication.challenge);
+          }
+          ws.send(JSON.stringify({ op: 1, d: { rpcVersion: 1, authentication, eventSubscriptions: obsEventMask() } }));
+        } else if (m.op === 2) {   // Identified：つながった
+          setObsStatus('connected', 'OBSにつながりました');
+          obsOnConnected();
+        } else if (m.op === 5) {
+          obsOnEvent(d.eventType, d.eventData || {});
+        } else if (m.op === 7) {
+          const p = obs.pending.get(d.requestId);
+          if (!p) return;
+          obs.pending.delete(d.requestId);
+          clearTimeout(p.timer);
+          const st = d.requestStatus || {};
+          if (st.result) p.resolve(d.responseData || {});
+          else p.reject(Object.assign(new Error(st.comment || `OBSのエラー（${st.code}）`), { code: st.code }));
+        }
+      };
+      ws.onclose = (ev) => {
+        if (obs.ws !== ws) return;
+        obs.ws = null;
+        obsFailPending();
+        obsVoiceRelease(true);
+        if (ev.code === 4009) {
+          obs.noRetry = true;
+          setObsStatus('auth', 'パスワードが違います');
+          return;
+        }
+        if (!state.obs.enabled) {
+          setObsStatus('off');
+          return;
+        }
+        if (obs.noRetry) return;
+        setObsStatus('error', 'OBSにつながりません。OBSが起動しているか、「ツール」→「WebSocketサーバー設定」で「WebSocketサーバーを有効にする」にチェックを入れて「適用」か「OK」を押したか確認してください（5秒ごとにやり直します）');
+        clearTimeout(obs.retryTimer);
+        obs.retryTimer = setTimeout(obsConnect, 5000);
+      };
+      obs.noRetry = false;
+    }
+
+    function obsDisconnect() {
+      clearTimeout(obs.retryTimer);
+      obs.retryTimer = null;
+      const ws = obs.ws;
+      obs.ws = null;
+      if (ws) {
+        try { ws.close(); } catch (err) { /* 閉じ済み */ }
+      }
+      obsFailPending();
+      obsVoiceRelease(true);
+      obs.lastNowPlaying = null;
+    }
+
+    function obsFailPending() {
+      obs.pending.forEach(p => { clearTimeout(p.timer); p.reject(new Error('OBSとの接続が切れました')); });
+      obs.pending.clear();
+    }
+
+    /** OBSに頼みごとをして、答えを待つ */
+    function obsRequest(requestType, requestData) {
+      return new Promise((resolve, reject) => {
+        if (!obsConnected()) {
+          reject(new Error('OBSにつながっていません'));
+          return;
+        }
+        const requestId = `r${++obs.reqId}`;
+        const timer = setTimeout(() => {
+          obs.pending.delete(requestId);
+          reject(new Error('OBSから返事がありません'));
+        }, 5000);
+        obs.pending.set(requestId, { resolve, reject, timer });
+        obs.ws.send(JSON.stringify({ op: 6, d: { requestType, requestId, requestData } }));
+      });
+    }
+
+    /** 受け取る知らせの種類を変える（しゃべって下げるをオン・オフしたとき） */
+    function obsReidentify() {
+      if (!obsConnected()) return;
+      obs.ws.send(JSON.stringify({ op: 3, d: { eventSubscriptions: obsEventMask() } }));
+    }
+
+    async function obsOnConnected() {
+      obs.lastNowPlaying = null;
+      await obsRefreshLists();
+      try {
+        const st = await obsRequest('GetStreamStatus');
+        obs.streaming = !!st.outputActive;
+      } catch (err) { obs.streaming = false; }
+      renderObsStatus();
+      obsSyncNowPlaying(true);
+    }
+
+    /** シーンと音声ソースの一覧を取り直す（設定・パッド編集の候補に使う） */
+    async function obsRefreshLists() {
+      if (!obsConnected()) return;
+      try {
+        const [inp, sc] = await Promise.all([obsRequest('GetInputList'), obsRequest('GetSceneList')]);
+        obs.inputs = (inp.inputs || []).map(i => ({ inputName: i.inputName, inputKind: i.unversionedInputKind || i.inputKind || '' }));
+        obs.scenes = (sc.scenes || []).map(x => x.sceneName).reverse();   // OBSの画面と同じ並び（上から）
+      } catch (err) {
+        console.warn('OBSの一覧を取れません:', err);
+      }
+      renderObsLists();
+    }
+
+    function obsOnEvent(type, data) {
+      if (type === 'InputVolumeMeters') {
+        obsOnVolumeMeters(data.inputs || []);
+      } else if (type === 'StreamStateChanged') {
+        obsOnStreamState(data);
+      } else if (/^(Scene(Created|Removed|NameChanged|ListChanged)|Input(Created|Removed|NameChanged))$/.test(type)) {
+        clearTimeout(obs.listTimer);
+        obs.listTimer = setTimeout(obsRefreshLists, 300);
+      }
+    }
+
+    // ---- A：曲名 ----
+    function obsNowPlayingText() {
+      if (!state.bgm.isPlaying) return '';
+      const tr = state.bgmList[state.bgm.trackIndex];
+      if (!tr) return '';
+      const folder = bgmFolderById(bgmFolderOf(tr));
+      return (state.obs.nowPlaying.format || '{title}')
+        .replace(/\{title\}/g, tr.name || '')
+        .replace(/\{folder\}/g, folder ? folder.name : '');
+    }
+
+    /** 曲名が変わったときだけ、OBSのテキストを書き換える（BGMの表示を更新するたびに呼ばれる） */
+    function obsSyncNowPlaying(force = false) {
+      const np = state.obs.nowPlaying;
+      if (!obsConnected() || !np.enabled || !np.inputName) return;
+      const text = obsNowPlayingText();
+      if (!force && text === obs.lastNowPlaying) return;
+      obs.lastNowPlaying = text;
+      obsRequest('SetInputSettings', { inputName: np.inputName, inputSettings: { text }, overlay: true })
+        .then(() => {
+          if (obs.npError) { obs.npError = ''; renderObsStatus(); }
+        })
+        .catch((err) => {
+          obs.npError = err.code === 600 ? `OBSに「${np.inputName}」というソースがありません（「OBSにソースを追加」で追加できます）` : `曲名を出せませんでした：${err.message}`;
+          renderObsStatus();
+        });
+    }
+
+    /** 今映しているシーンに、曲名用のテキストソースを作る */
+    async function obsCreateNowPlayingSource() {
+      const name = state.obs.nowPlaying.inputName.trim();
+      if (!name) { showToast('テキストソースの名前を入れてください'); return; }
+      try {
+        const { inputKinds } = await obsRequest('GetInputKindList', { unversioned: false });
+        const kind = (inputKinds || []).find(k => k.startsWith('text_gdiplus')) || (inputKinds || []).find(k => k.startsWith('text_ft2_source'));
+        if (!kind) throw new Error('テキストソースの種類が見つかりません');
+        const scene = await obsRequest('GetCurrentProgramScene');
+        const sceneName = scene.currentProgramSceneName || scene.sceneName;
+        await obsRequest('CreateInput', {
+          sceneName, inputName: name, inputKind: kind, sceneItemEnabled: true,
+          inputSettings: { text: obsNowPlayingText() || '♪ LIVEPAD DECK', font: { face: 'Arial', size: 48, style: 'Bold', flags: 1 } }
+        });
+        obs.npError = '';
+        showToast(`OBSのシーン「${sceneName}」に「${name}」を追加しました`);
+        obs.lastNowPlaying = null;
+        obsSyncNowPlaying(true);
+        obsRefreshLists();
+      } catch (err) {
+        showToast(err.code === 601 ? `「${name}」はもうOBSにあります` : `追加できませんでした：${err.message}`);
+      }
+    }
+
+    /** このブラウザの音を取り込む音声ソース（アプリケーション音声キャプチャ）を、全部のシーンに追加する */
+    const OBS_AUDIO_SOURCE = 'LIVEPAD DECK Audio';
+    async function obsAddBrowserAudioSource() {
+      const btn = $('btnObsAudioSource');
+      btn.disabled = true;
+      try {
+        const { inputKinds } = await obsRequest('GetInputKindList', { unversioned: false });
+        const kind = (inputKinds || []).find(k => k.startsWith('wasapi_process_output_capture'));
+        if (!kind) {
+          showToast('この機能は Windows の OBS 28 以降で使えます。OBSの「アプリケーション音声キャプチャ」を手で追加してください');
+          return;
+        }
+        await obsRefreshLists();
+        const cur = await obsRequest('GetCurrentProgramScene');
+        const current = cur.currentProgramSceneName || cur.sceneName;
+        const exists = obs.inputs.some(i => i.inputName === OBS_AUDIO_SOURCE);
+        if (!exists) {
+          // 窓の選び方：題名が合えばその窓、変わっても同じアプリ（chrome.exe など）なら取り込み続ける
+          await obsRequest('CreateInput', { sceneName: current, inputName: OBS_AUDIO_SOURCE, inputKind: kind, inputSettings: { priority: 2 }, sceneItemEnabled: true });
+        }
+        // OBSが見つけている窓の中から、このページ（LIVEPAD DECK）の窓を選ぶ
+        const { propertyItems } = await obsRequest('GetInputPropertiesListPropertyItems', { inputName: OBS_AUDIO_SOURCE, propertyName: 'window' });
+        const items = (propertyItems || []).filter(it => it.itemValue);
+        const item = items.find(it => it.itemName.includes(document.title))
+          || items.find(it => /LIVEPAD DECK/.test(it.itemName))
+          || items.find(it => /\b(chrome|msedge)\.exe/i.test(it.itemName));
+        if (item) {
+          await obsRequest('SetInputSettings', { inputName: OBS_AUDIO_SOURCE, inputSettings: { window: item.itemValue, priority: 2 }, overlay: true });
+        }
+        // ほかのシーンにも同じソースを入れる（シーンを切り替えても音が途切れないように。同じソースなので音は二重にならない）
+        let added = 0;
+        for (const sceneName of obs.scenes) {
+          try {
+            const { sceneItems } = await obsRequest('GetSceneItemList', { sceneName });
+            if ((sceneItems || []).some(it => it.sourceName === OBS_AUDIO_SOURCE)) continue;
+            await obsRequest('CreateSceneItem', { sceneName, sourceName: OBS_AUDIO_SOURCE, sceneItemEnabled: true });
+            added++;
+          } catch (err) { /* 入れられないシーンは飛ばす */ }
+        }
+        obsRefreshLists();
+        // デスクトップ音声もオンだと、同じ音が二重に入る
+        let desktopOn = false;
+        try {
+          const sp = await obsRequest('GetSpecialInputs');
+          for (const n of [sp.desktop1, sp.desktop2].filter(Boolean)) {
+            const { inputMuted } = await obsRequest('GetInputMute', { inputName: n });
+            if (!inputMuted) desktopOn = true;
+          }
+        } catch (err) { /* 分からなければ何も言わない */ }
+        obs.audioNote = !item
+          ? `「${OBS_AUDIO_SOURCE}」を追加しましたが、ブラウザの窓が見つかりませんでした。OBSでこのソースをダブルクリックし、「ウィンドウ」でこのブラウザを選んでください`
+          : desktopOn
+            ? `「${OBS_AUDIO_SOURCE}」を追加しました。OBSの「デスクトップ音声」もオンなので、LIVEPAD DECKの音が二重に入ります。OBSの音声ミキサーで「デスクトップ音声」をミュートしてください（ほかのアプリの音も入らなくなります）`
+            : `「${OBS_AUDIO_SOURCE}」を追加しました（${item.itemName}）。OBSの音声ミキサーで、BGMを流すとメーターが動くか確認してください`;
+        renderObsStatus();
+        showToast(exists ? `「${OBS_AUDIO_SOURCE}」の設定を直しました` : `「${OBS_AUDIO_SOURCE}」を追加しました${added ? `（${added + 1}個のシーン）` : ''}`);
+      } catch (err) {
+        showToast(`追加できませんでした：${err.message}`);
+      } finally {
+        btn.disabled = obs.status !== 'connected';
+      }
+    }
+
+    // ---- B：しゃべるとBGMを下げる ----
+    function obsOnVolumeMeters(inputs) {
+      const v = state.obs.voiceDuck;
+      if (!v.enabled || !v.inputName) return;
+      const it = inputs.find(i => i.inputName === v.inputName);
+      if (!it) return;
+      let peak = 0;
+      (it.inputLevelsMul || []).forEach(ch => {
+        const x = Array.isArray(ch) ? (typeof ch[1] === 'number' ? ch[1] : ch[0]) : 0;
+        if (x > peak) peak = x;
+      });
+      const db = peak > 0 ? 20 * Math.log10(peak) : -100;
+      obs.voice.db = db;
+      if (db > v.thresholdDb) {
+        if (!obs.voice.on) {
+          obs.voice.on = true;
+          audioEngine.setVoiceDuck(true);
+          $('btnManualDuck').classList.add('is-voice');
+        }
+        clearTimeout(obs.voice.releaseTimer);
+        obs.voice.releaseTimer = setTimeout(() => obsVoiceRelease(), 700);   // 黙ってから0.7秒で戻す
+      }
+      const now = performance.now();
+      if (now - obs.voice.lastUi > 60) {
+        obs.voice.lastUi = now;
+        renderObsMeter();
+      }
+    }
+
+    function obsVoiceRelease(immediate = false) {
+      clearTimeout(obs.voice.releaseTimer);
+      obs.voice.releaseTimer = null;
+      if (!obs.voice.on) return;
+      obs.voice.on = false;
+      audioEngine.setVoiceDuck(false);
+      const btn = document.getElementById('btnManualDuck');
+      if (btn) btn.classList.remove('is-voice');
+      if (immediate) { obs.voice.db = -100; renderObsMeter(); }
+    }
+
+    function renderObsMeter() {
+      const lvl = document.getElementById('obsVdLevel');
+      if (!lvl) return;
+      const pos = (db) => Math.max(0, Math.min(100, ((db + 60) / 60) * 100));
+      lvl.style.width = `${pos(obs.voice.db)}%`;
+      document.getElementById('obsVdMark').style.left = `calc(${pos(state.obs.voiceDuck.thresholdDb)}% - 1px)`;
+    }
+
+    // ---- C：パッドでOBSを動かす ----
+    function padHasObs(pad) {
+      return !!(pad && pad.obs && pad.obs.type && pad.obs.type !== 'none');
+    }
+
+    async function obsRunPadAction(pad) {
+      if (!padHasObs(pad) || !obsConnected()) return;
+      const a = pad.obs;
+      try {
+        if (a.type === 'scene') {
+          if (!a.scene) return;
+          await obsRequest('SetCurrentProgramScene', { sceneName: a.scene });
+          return;
+        }
+        if (!a.source) return;
+        let sceneName = a.scene;
+        if (!sceneName) {
+          const cur = await obsRequest('GetCurrentProgramScene');
+          sceneName = cur.currentProgramSceneName || cur.sceneName;
+        }
+        const { sceneItemId } = await obsRequest('GetSceneItemId', { sceneName, sourceName: a.source });
+        if (a.type === 'toggle') {
+          const { sceneItemEnabled } = await obsRequest('GetSceneItemEnabled', { sceneName, sceneItemId });
+          await obsRequest('SetSceneItemEnabled', { sceneName, sceneItemId, sceneItemEnabled: !sceneItemEnabled });
+        } else {
+          const key = `${sceneName}\u0000${sceneItemId}`;
+          clearTimeout(obs.showTimers.get(key));
+          await obsRequest('SetSceneItemEnabled', { sceneName, sceneItemId, sceneItemEnabled: true });
+          obs.showTimers.set(key, setTimeout(() => {
+            obs.showTimers.delete(key);
+            obsRequest('SetSceneItemEnabled', { sceneName, sceneItemId, sceneItemEnabled: false }).catch(() => {});
+          }, Math.max(0.5, a.sec || 3) * 1000));
+        }
+      } catch (err) {
+        showToast(err.code === 600 ? `OBS：「${a.type === 'scene' ? a.scene : a.source}」が見つかりません` : `OBS：${err.message}`);
+      }
+    }
+
+    // ---- D：配信の開始・終了 ----
+    function obsOnStreamState(data) {
+      const st = data.outputState;
+      if (st === 'OBS_WEBSOCKET_OUTPUT_STARTED') {
+        obs.streaming = true;
+        renderObsStatus();
+        const act = state.obs.stream.onStart;
+        if (act === 'resume') {
+          if (!state.bgm.isPlaying && state.bgmList.length) audioEngine.togglePlayPause();
+        } else if (act.startsWith('folder:')) {
+          const fid = act.slice(7);
+          const first = state.bgmList.findIndex(t => bgmFolderOf(t) === fid);
+          if (first >= 0) {
+            state.bgm.trackIndex = first;
+            state.bgm.elapsedSec = 0;
+            renderBgmList();
+            audioEngine.startBgm(state.bgm.isPlaying && state.bgm.crossfade, 0);
+          }
+        }
+        if (act !== 'none') showToast('配信が始まりました：BGMを再生します');
+      } else if (st === 'OBS_WEBSOCKET_OUTPUT_STOPPED') {
+        obs.streaming = false;
+        renderObsStatus();
+        if (state.obs.stream.onStop === 'fade' && state.bgm.isPlaying) {
+          audioEngine.stopBgm(3);
+          showToast('配信が終わりました：BGMをフェードアウトしました');
+        }
+      }
+    }
+
+    // ---- 画面 ----
+    function renderObsStatus() {
+      const o = state.obs;
+      const pill = document.getElementById('btnObsPill');
+      if (!pill) return;
+      const cls = obs.status === 'connected' ? 'is-connected' : obs.status === 'connecting' ? 'is-connecting' : (obs.status === 'error' || obs.status === 'auth') ? 'is-error' : '';
+      pill.className = `obs-pill obs-only${cls ? ` ${cls}` : ''}${obs.streaming && obs.status === 'connected' ? ' is-live' : ''}`;
+      pill.lastChild.textContent = obs.streaming && obs.status === 'connected' ? 'OBS LIVE' : 'OBS';
+      const badge = document.getElementById('obsStatusBadge');
+      badge.className = `obs-status ${cls}`;
+      badge.textContent = { off: 'OFF', connecting: 'CONNECTING', connected: obs.streaming ? 'CONNECTED · LIVE' : 'CONNECTED', error: 'NOT CONNECTED', auth: 'PASSWORD' }[obs.status] || 'OFF';
+      const msg = obs.status === 'off' ? (o.enabled ? '' : 'オフ') : obs.message;
+      document.getElementById('obsMessage').textContent = msg;
+      document.getElementById('obsMessage').classList.toggle('text-red-300', obs.status === 'error' || obs.status === 'auth');
+      const note = (id, text) => { const el = document.getElementById(id); el.textContent = text; el.classList.toggle('hidden', !text); };
+      note('obsAudioNote', obs.status === 'connected' ? obs.audioNote : '');
+      note('obsNpMessage', obs.npError);
+      document.getElementById('obsCard').classList.toggle('is-off', !o.enabled);
+      document.getElementById('btnObsNpCreate').disabled = obs.status !== 'connected';
+      document.getElementById('btnObsAudioSource').disabled = obs.status !== 'connected';
+      document.getElementById('btnObsConnect').textContent = obs.status === 'connected' ? '再接続' : '接続';
+      const es = document.getElementById('editObsState');
+      if (es) es.textContent = obs.status === 'connected' ? 'OBS：接続中' : 'OBS：未接続';
+    }
+
+    /** 設定の入力欄を今の値にする */
+    function renderObsSettings() {
+      const o = state.obs;
+      $('obsEnabled').checked = o.enabled;
+      $('obsUrl').value = o.url;
+      $('obsPassword').value = o.password;
+      $('obsNpEnabled').checked = o.nowPlaying.enabled;
+      $('obsNpInput').value = o.nowPlaying.inputName;
+      $('obsNpFormat').value = o.nowPlaying.format;
+      $('obsVdEnabled').checked = o.voiceDuck.enabled;
+      $('obsVdThreshold').value = o.voiceDuck.thresholdDb;
+      $('obsVdThresholdVal').textContent = `${o.voiceDuck.thresholdDb} dB`;
+      $('obsVdAmount').value = Math.round(o.voiceDuck.amount * 100);
+      $('obsVdAmountVal').textContent = `${Math.round(o.voiceDuck.amount * 100)}%`;
+      $('obsOnStop').value = o.stream.onStop;
+      renderObsLists();
+      renderObsStatus();
+      renderObsMeter();
+    }
+
+    /** マイクの候補・シーンの候補・配信開始の選択肢を作り直す */
+    function renderObsLists() {
+      const o = state.obs;
+      const isMic = (k) => /input_capture|input_client/.test(k);
+      const inputs = obs.inputs.slice().sort((a, b) => (isMic(b.inputKind) - isMic(a.inputKind)));
+      const sel = $('obsVdInput');
+      const opts = inputs.filter(i => /capture|audio|input/.test(i.inputKind)).map(i => i.inputName);
+      if (o.voiceDuck.inputName && !opts.includes(o.voiceDuck.inputName)) opts.unshift(o.voiceDuck.inputName);
+      sel.innerHTML = `<option value="">マイクを選ぶ（OBSの音声ソース）</option>` + opts.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+      sel.value = o.voiceDuck.inputName;
+      // 配信を始めたら
+      const start = $('obsOnStart');
+      start.innerHTML = `<option value="none">何もしない</option><option value="resume">BGMを再生する（今の曲から）</option>`
+        + state.bgmFolders.map(f => `<option value="folder:${escapeHtml(f.id)}">フォルダ「${escapeHtml(f.name)}」を最初から再生</option>`).join('');
+      start.value = o.stream.onStart;
+      if (start.value !== o.stream.onStart) start.value = 'none';
+      // パッド編集の候補
+      const sl = document.getElementById('obsSceneList');
+      if (sl) sl.innerHTML = obs.scenes.map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+    }
+
+    /** パッド編集：選んだシーンのソースを候補に出す */
+    async function obsFillSourceList(sceneName) {
+      const dl = document.getElementById('obsSourceList');
+      if (!dl) return;
+      if (!obsConnected()) { dl.innerHTML = ''; return; }
+      try {
+        let name = sceneName;
+        if (!name) {
+          const cur = await obsRequest('GetCurrentProgramScene');
+          name = cur.currentProgramSceneName || cur.sceneName;
+        }
+        const { sceneItems } = await obsRequest('GetSceneItemList', { sceneName: name });
+        dl.innerHTML = (sceneItems || []).map(it => `<option value="${escapeHtml(it.sourceName)}"></option>`).join('');
+      } catch (err) {
+        dl.innerHTML = '';
+      }
+    }
+
+    function renderEditObs() {
+      const d = state.editDraft;
+      if (!d) return;
+      const a = d.obs;
+      $('editObsType').value = a.type;
+      $('editObsFields').classList.toggle('hidden', a.type === 'none');
+      $('editObsScene').value = a.scene || '';
+      $('editObsSource').value = a.source || '';
+      $('editObsSec').value = a.sec || 3;
+      $('editObsScene').placeholder = a.type === 'scene' ? '切り替えるシーン名' : 'シーン名（空なら今のシーン）';
+      $('editObsSource').classList.toggle('hidden', a.type === 'scene');
+      $('editObsSecWrap').classList.toggle('hidden', a.type !== 'show');
+      renderObsStatus();
+    }
+
+    /** OBS連携の画面（ヘッダーの OBS ボタン・設定の「開く」から） */
+    function openObsPanel() {
+      if (!OBS_CAPABLE) return;
+      renderObsSettings();
+      const b = $('obsModalBackdrop');
+      b.classList.remove('hidden');
+      b.classList.add('flex');
+      $('obsCard').scrollTop = 0;
+      if (obsConnected()) obsRefreshLists();
+    }
+    function closeObsPanel() {
+      const b = $('obsModalBackdrop');
+      b.classList.add('hidden');
+      b.classList.remove('flex');
+    }
+
+    function initObs() {
+      const save = () => storage.saveState();
+      $('btnObsPill').addEventListener('click', openObsPanel);
+      $('btnObsClose').addEventListener('click', closeObsPanel);
+      $('obsModalBackdrop').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeObsPanel(); });
+      $('btnSettingsToObs').addEventListener('click', () => { $('btnSettingsClose').click(); openObsPanel(); });
+      $('obsEnabled').addEventListener('change', (e) => {
+        state.obs.enabled = e.target.checked;
+        save();
+        if (state.obs.enabled) obsConnect();
+        else { obsDisconnect(); setObsStatus('off'); }
+      });
+      $('obsUrl').addEventListener('change', (e) => { state.obs.url = e.target.value.trim() || createDefaultObs().url; save(); });
+      $('obsPassword').addEventListener('change', (e) => { state.obs.password = e.target.value; save(); });
+      $('btnObsConnect').addEventListener('click', () => {
+        state.obs.url = $('obsUrl').value.trim() || createDefaultObs().url;
+        state.obs.password = $('obsPassword').value;
+        if (!state.obs.enabled) { state.obs.enabled = true; $('obsEnabled').checked = true; }
+        save();
+        obsConnect();
+      });
+      $('obsNpEnabled').addEventListener('change', (e) => {
+        state.obs.nowPlaying.enabled = e.target.checked;
+        save();
+        obs.lastNowPlaying = null;
+        if (e.target.checked) obsSyncNowPlaying(true);
+      });
+      $('obsNpInput').addEventListener('change', (e) => {
+        state.obs.nowPlaying.inputName = e.target.value.trim();
+        save();
+        obs.npError = '';
+        obsSyncNowPlaying(true);
+      });
+      $('obsNpFormat').addEventListener('change', (e) => {
+        state.obs.nowPlaying.format = e.target.value || '♪ {title}';
+        save();
+        obsSyncNowPlaying(true);
+      });
+      $('btnObsAudioSource').addEventListener('click', obsAddBrowserAudioSource);
+      $('btnObsNpCreate').addEventListener('click', () => {
+        state.obs.nowPlaying.inputName = $('obsNpInput').value.trim();
+        save();
+        obsCreateNowPlayingSource();
+      });
+      $('obsVdEnabled').addEventListener('change', (e) => {
+        state.obs.voiceDuck.enabled = e.target.checked;
+        if (!e.target.checked) obsVoiceRelease(true);
+        save();
+        obsReidentify();
+      });
+      $('obsVdInput').addEventListener('change', (e) => {
+        state.obs.voiceDuck.inputName = e.target.value;
+        obsVoiceRelease(true);
+        save();
+      });
+      $('obsVdThreshold').addEventListener('input', (e) => {
+        state.obs.voiceDuck.thresholdDb = Number(e.target.value);
+        $('obsVdThresholdVal').textContent = `${e.target.value} dB`;
+        renderObsMeter();
+      });
+      $('obsVdThreshold').addEventListener('change', save);
+      $('obsVdAmount').addEventListener('input', (e) => {
+        state.obs.voiceDuck.amount = Number(e.target.value) / 100;
+        $('obsVdAmountVal').textContent = `${e.target.value}%`;
+        if (obs.voice.on) audioEngine.setVoiceDuck(true);
+      });
+      $('obsVdAmount').addEventListener('change', save);
+      $('obsOnStart').addEventListener('change', (e) => { state.obs.stream.onStart = e.target.value; save(); });
+      $('obsOnStop').addEventListener('change', (e) => { state.obs.stream.onStop = e.target.value; save(); });
+      // パッド編集の OBS ACTION
+      $('editObsType').addEventListener('change', (e) => {
+        const d = state.editDraft;
+        if (!d) return;
+        d.obs.type = e.target.value;
+        renderEditObs();
+        if (d.obs.type !== 'none') { obsRefreshLists(); obsFillSourceList(d.obs.scene); }
+      });
+      $('editObsScene').addEventListener('input', (e) => {
+        if (!state.editDraft) return;
+        state.editDraft.obs.scene = e.target.value.trim();
+      });
+      $('editObsScene').addEventListener('change', () => { if (state.editDraft) obsFillSourceList(state.editDraft.obs.scene); });
+      $('editObsSource').addEventListener('input', (e) => { if (state.editDraft) state.editDraft.obs.source = e.target.value.trim(); });
+      $('editObsSec').addEventListener('input', (e) => {
+        if (!state.editDraft) return;
+        const v = Number(e.target.value);
+        state.editDraft.obs.sec = isFinite(v) && v > 0 ? Math.min(60, v) : 3;
+      });
+      renderObsSettings();
+      if (state.obs.enabled && OBS_CAPABLE) obsConnect();   // iPhone・iPad・タブレットではつながない
     }
 
     // =========================================================================
@@ -8378,7 +9686,8 @@ registerProcessor('livepad-rec', LivepadRec);
         synthType: pad.synthType || pad.defaultSynth || 'pon',
         fileId: pad.fileId,
         fileName: pad.fileName,
-        pendingFile: null
+        pendingFile: null,
+        obs: Object.assign({ type: 'none', scene: '', source: '', sec: 3 }, pad.obs || {})
       };
 
       document.getElementById('editPadName').value = state.editDraft.name;
@@ -8390,6 +9699,8 @@ registerProcessor('livepad-rec', LivepadRec);
       $('editRecPanel').classList.add('hidden');
       trimUi.buffer = null;
       trimUi.key = '';
+      renderEditObs();
+      if (state.editDraft.obs.type !== 'none') obsFillSourceList(state.editDraft.obs.scene);
 
       updateEditModalUI();
       const backdrop = document.getElementById('editModalBackdrop');
@@ -8804,7 +10115,9 @@ registerProcessor('livepad-rec', LivepadRec);
       if (!faderApi.bgm) return;
       const autoF = (state.ducking.enabled && state.ducking.isActive) ? AUTO_DUCK_LEVEL : 1;
       const manualF = state.bgm.manualDuck ? state.duckAmount : 1;
-      const target = state.bgm.volume * autoF * manualF;
+      const voiceF = obs.voice.on ? state.obs.voiceDuck.amount : 1;   // OBS連携：しゃべっている間
+      const recF = sampler.stream ? 0.15 : 1;                          // マイクで録音している間
+      const target = state.bgm.volume * autoF * manualF * voiceF * recF;
       if (bgmFaderDisplay === null) bgmFaderDisplay = target;
       // 下がる時は速く、戻る時はゆっくり（実際の音の変化に合わせる）
       const tau = target < bgmFaderDisplay ? 0.06 : 0.16;
@@ -9994,6 +11307,8 @@ registerProcessor('livepad-rec', LivepadRec);
         document.getElementById('startupOverlay').classList.add('hidden');
         if (withLogin) driveSync.signIn();   // ボタンを押した流れのまま呼ぶ（ポップアップがブロックされないように）
         showToast('LIVEPAD DECK 起動完了');
+        // 初回だけ：ホーム画面に追加のすすめ（iPhone・iPad）→ はじめの案内
+        setTimeout(startFirstRunGuides, 450);
       };
       document.getElementById('btnStartGoogle').addEventListener('click', () => startDeck(true));
       document.getElementById('btnStartDeck').addEventListener('click', () => startDeck(driveSync.meta.linked));
@@ -10374,6 +11689,9 @@ registerProcessor('livepad-rec', LivepadRec);
         pad.color = d.color;
         pad.volume = d.volume;
         pad.pitch = d.pitch || 0;
+        // OBS ACTION（なしなら持たない）
+        if (d.obs && d.obs.type !== 'none') pad.obs = { type: d.obs.type, scene: d.obs.scene || '', source: d.obs.source || '', sec: d.obs.sec || 3 };
+        else delete pad.obs;
         const rawName = document.getElementById('editPadName').value.trim();
         pad.name = rawName || (pad.sourceType === 'empty' ? '空きパッド' : 'サウンド');
 
@@ -10522,7 +11840,7 @@ registerProcessor('livepad-rec', LivepadRec);
       const heldKeys = new Map();
       const isOpen = (id) => !$(id).classList.contains('hidden');
       const overlayOpen = () =>
-        isOpen('editModalBackdrop') || isOpen('settingsModalBackdrop') || isOpen('tabModalBackdrop') || isOpen('bgmMenu') || isOpen('bgmFolderMenu') || isOpen('folderNameBackdrop') || isOpen('helpModalBackdrop') || isOpen('layoutNameBackdrop') || isOpen('fxOrderBackdrop');
+        isOpen('editModalBackdrop') || isOpen('settingsModalBackdrop') || isOpen('tabModalBackdrop') || isOpen('bgmMenu') || isOpen('bgmFolderMenu') || isOpen('folderNameBackdrop') || isOpen('helpModalBackdrop') || isOpen('layoutNameBackdrop') || isOpen('fxOrderBackdrop') || isOpen('obsModalBackdrop') || isOpen('tourRoot') || isOpen('a2hsRoot');
       const isTyping = (t) => !!t && (
         (t.tagName === 'INPUT' && !['range', 'button', 'checkbox', 'file'].includes(t.type)) ||
         t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable
@@ -10543,8 +11861,11 @@ registerProcessor('livepad-rec', LivepadRec);
             closeTabRename();
             closeEditModal();
             closeSettings();
+            closeObsPanel();
             closeHelp();
             closeLayoutName();
+            endTour();
+            closeA2hs();
             closeFxOrder();
             closeFolderName();
             return;
@@ -10583,6 +11904,7 @@ registerProcessor('livepad-rec', LivepadRec);
         const el = document.getElementById(`pad-${pad.id}`);
         if (el) el.classList.add('is-pressed');
         audioEngine.triggerPadDown(pad);
+        obsRunPadAction(pad);
       });
 
       document.addEventListener('keyup', (e) => {
@@ -10603,6 +11925,7 @@ registerProcessor('livepad-rec', LivepadRec);
         document.getElementById('devBadge').classList.remove('hidden');
         document.getElementById('devBadgeStart').classList.remove('hidden');
         document.title = `[DEV] ${document.title}`;
+        document.querySelector('meta[name="apple-mobile-web-app-title"]').content = 'LIVEPAD DEV';
       }
       document.getElementById('driveFolderLabel').textContent = DRIVE_FOLDER_NAME;
       document.getElementById('appBuildLabel').textContent = `${IS_DEV ? 'DEV ' : ''}${APP_BUILD.startsWith('__') ? 'local' : APP_BUILD}`;
@@ -10626,6 +11949,9 @@ registerProcessor('livepad-rec', LivepadRec);
         if (typeof saved.toneTint === 'boolean') state.toneTint = saved.toneTint;
         if (KEY_MAPS[saved.keyMap]) state.keyMap = saved.keyMap;
         if (REC_SOURCES[saved.recSource]) state.recSource = saved.recSource;
+        if (saved.tourSeen) state.tourSeen = true;
+        if (saved.a2hsSeen) state.a2hsSeen = true;
+        if (saved.obs) state.obs = normalizeObs(saved.obs);
         if (typeof saved.duckAmount === 'number') state.duckAmount = saved.duckAmount;
         if (saved.eq) state.eq = normalizeEq(saved.eq);
         if (saved.fx) state.fx = normalizeFx(saved.fx);
@@ -10663,6 +11989,9 @@ registerProcessor('livepad-rec', LivepadRec);
       initEqDeck();
       initFxPad();
       initEditTrim();
+      initObs();
+      initTour();
+      initA2hs();
       initPitchDeck();
       initHelp();
       if (window.ResizeObserver) new ResizeObserver(() => fitPadGrid()).observe(document.getElementById('padGrid'));
