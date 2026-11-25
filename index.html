@@ -830,6 +830,26 @@
       .a2hs-actions { bottom: -12px; margin: 4px -14px -12px; padding: 10px 14px 10px; }
     }
 
+    /* BGM DECK へのドラッグ＆ドロップ */
+    #panel-bgm.is-file-drop { box-shadow: inset 0 0 0 2px rgb(var(--ac-400)), 0 0 0 4px rgb(var(--ac-400) / .22); }
+    #panel-bgm.is-file-drop .bgm-list { background: rgb(var(--ac-500) / .06); }
+    .bgm-folder.is-drop-folder { background: rgb(var(--ac-500) / .22) !important; box-shadow: inset 3px 0 0 rgb(var(--ac-400)); }
+    .bgm-drop-hint {
+      position: fixed; z-index: 50; pointer-events: none; transform: translateX(-50%); max-width: min(320px, calc(100vw - 24px));
+      padding: 8px 14px; border-radius: 12px; text-align: center; white-space: nowrap;
+      background: rgb(var(--n-1b202b)); border: 1px solid rgb(var(--ac-400) / .6); box-shadow: 0 10px 28px rgb(0 0 0 / .45);
+    }
+    .bgm-drop-hint b { display: block; font-size: 12px; font-weight: 800; color: rgb(var(--ac-200)); overflow: hidden; text-overflow: ellipsis; }
+    .bgm-drop-hint span { display: block; margin-top: 2px; font-size: 10px; color: rgb(var(--n-94a3b8)); white-space: normal; }
+
+    /* お知らせの「元に戻す」「やり直す」 */
+    .toast-action {
+      pointer-events: auto; margin-left: 6px; padding: 7px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; line-height: 1;
+      color: rgb(var(--ac-200)); background: rgb(var(--ac-500) / .16); border: 1px solid rgb(var(--ac-400) / .45);
+    }
+    .toast-action:hover { background: rgb(var(--ac-500) / .28); }
+    #toastBox.has-action > div { padding-right: 6px; }
+
     /* はじめの案内：1か所ずつ照らして、そばに吹き出し */
     #tourRoot { position: fixed; inset: 0; z-index: 38; }   /* 画面の上・モーダル（z-40）の下 */
     .tour-hole {
@@ -2303,6 +2323,7 @@
           <div class="text-xs font-bold text-accent-300">キーボード（SEパッド）</div>
           <div id="keyMapGroup" class="grid grid-cols-2 gap-2"></div>
           <p class="text-[10px] text-slate-500 leading-relaxed">PCのキーボードでSEパッドを鳴らすときのキーの並び。NUMPAD はテンキー用です（テンキーのないPCは、USBのテンキーをつなぐと使えます）。この設定は端末ごとに保存されます</p>
+          <p class="text-[10px] text-slate-500 leading-relaxed"><b class="text-slate-300">Ctrl+Z</b>（Macは ⌘+Z）で、パッド・BGM・LAYOUT などの編集を元に戻せます。やり直しは Ctrl+Shift+Z か Ctrl+Y</p>
         </div>
 
         <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 space-y-2">
@@ -2715,11 +2736,18 @@
     </div>
   </div>
 
+  <!-- BGM DECK にファイルを持ってきたときの案内 -->
+  <div id="bgmDropHint" class="bgm-drop-hint hidden" aria-hidden="true">
+    <b>ドロップで「UNSORTED」に追加</b>
+    <span>PCのフォルダごと落とすと、同じ名前のフォルダに入ります</span>
+  </div>
+
   <!-- トースト通知 -->
   <div id="toastBox" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-200 translate-y-2">
     <div class="px-4 py-2 rounded-xl bg-[rgb(var(--n-1b202b))] border border-accent-500/40 text-xs font-bold text-slate-100 shadow-2xl flex items-center gap-2">
       <span class="w-2 h-2 rounded-full bg-accent-400"></span>
       <span id="toastMessage">通知</span>
+      <button id="toastAction" type="button" class="toast-action hidden">元に戻す</button>
     </div>
   </div>
 
@@ -2731,7 +2759,7 @@
     // =========================================================================
     const APP_CHANNEL = (/\/dev(\/|\/index\.html)?$/.test(location.pathname) || new URLSearchParams(location.search).has('dev')) ? 'dev' : 'prod';
     const IS_DEV = APP_CHANNEL === 'dev';
-    const APP_BUILD = '2026.11.25-1450';   // ビルドしたとき日時とコミットに置き換わる（_tools/build.py）
+    const APP_BUILD = '2026.11.25-2027';   // ビルドしたとき日時とコミットに置き換わる（_tools/build.py）
 
     // 端末の種類。OBS連携は、OBSが動くPC（Windows・Mac・Linux）で開いたときだけ出す
     //   iPhone・iPad・Android・Chromebook からは、https のページから別の機械のOBS（ws://）へはつなげない
@@ -2931,6 +2959,7 @@
       keyMap: 'standard',    // SEパッドを鳴らすキーの並び：standard / numpad（端末ごと）
       tourSeen: false,       // はじめの案内を見終わったか（端末ごと）
       a2hsSeen: false,       // ホーム画面に追加のすすめを見たか（iPhone・iPad、端末ごと）
+      audioTrash: [],        // 消した音のファイルID。元に戻せる間は残し、戻せなくなったら（次に開いたときにも）消す
       recSource: 'mic',      // REC で録る音：mic / resample（端末ごと）
       obs: createDefaultObs(),   // OBS連携（端末ごと）
       tone: 'dark',          // 背景の色調：dark / dim / navy / warm / light / auto
@@ -3010,6 +3039,7 @@
             recSource: state.recSource,
             tourSeen: state.tourSeen,
             a2hsSeen: state.a2hsSeen,
+            audioTrash: state.audioTrash,
             obs: state.obs,
             duckAmount: state.duckAmount,
             eq: state.eq,
@@ -4569,11 +4599,13 @@ registerProcessor('livepad-rec', LivepadRec);
         row.classList.remove('is-dragging');
         rows.forEach(r => { r.style.transform = ''; });
         if (to !== from) {
+          const u = undoBegin(['fx'], 'FXの並び替え');
           const [item] = state.fx.order.splice(from, 1);
           state.fx.order.splice(to, 0, item);
           renderFxOrderList();
           renderFxButtons();
           storage.saveState();
+          undoCommit(u);
         }
       };
       handle.addEventListener('pointermove', move);
@@ -4588,11 +4620,12 @@ registerProcessor('livepad-rec', LivepadRec);
       const backdrop = document.getElementById('fxOrderBackdrop');
       backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeFxOrder(); });
       document.getElementById('btnFxOrderReset').addEventListener('click', () => {
+        const u = undoBegin(['fx'], 'FXの並びのリセット');
         state.fx.order = FX_DEFAULT_SEQ.slice();
         renderFxOrderList();
         renderFxButtons();
         storage.saveState();
-        showToast('FXの並びを最初に戻しました');
+        undoCommit(u, 'FXの並びを最初に戻しました');
       });
       const list = document.getElementById('fxOrderList');
       list.addEventListener('pointerdown', (e) => {
@@ -5699,6 +5732,167 @@ registerProcessor('livepad-rec', LivepadRec);
       });
     }
 
+    // =========================================================================
+    // 元に戻す・やり直す（Ctrl+Z ／ Ctrl+Shift+Z・Ctrl+Y。Macは ⌘）
+    //   編集の操作だけ（パッド・タブ名・BGMとフォルダ・FXの並び・LAYOUT）。再生やフェーダーなど演奏の操作は戻さない
+    //   操作の前の状態を、関係する部分（slices）だけ文字列で取っておく。ページを開いている間、30回まで
+    // =========================================================================
+    const UNDO_MAX = 30;
+    const undoState = { past: [], future: [] };
+
+    const UNDO_SLICES = {
+      pads: {
+        take: () => ({ banks: state.banks, active: state.activeBankIndex }),
+        put: (d) => {
+          state.banks = d.banks;
+          state.activeBankIndex = Math.max(0, Math.min(d.active, state.banks.length - 1));
+        },
+        render: () => { renderBankTabs(); renderPads(); }
+      },
+      bgm: {
+        take: () => ({ list: state.bgmList, folders: state.bgmFolders.map(f => ({ id: f.id, name: f.name })) }),
+        put: (d) => {
+          const cur = state.bgmList[state.bgm.trackIndex];
+          const openOf = new Map(state.bgmFolders.map(f => [f.id, f.open]));   // 開いている／閉じているは今のまま
+          state.bgmList = d.list;
+          state.bgmFolders = d.folders.map(f => ({ ...f, open: openOf.has(f.id) ? openOf.get(f.id) : true }));
+          normalizeBgm();
+          const i = cur ? state.bgmList.findIndex(t => t.id === cur.id) : -1;
+          if (i >= 0) {
+            state.bgm.trackIndex = i;
+          } else {
+            // 流していた曲がリストからなくなった（追加を戻した）：止める
+            if (state.bgm.isPlaying) audioEngine.stopBgm(0.3);
+            state.bgm.trackIndex = Math.max(0, Math.min(state.bgm.trackIndex, state.bgmList.length - 1));
+            state.bgm.elapsedSec = 0;
+          }
+        },
+        render: () => { renderBgmList(); updateBgmUI(); }
+      },
+      fx: {
+        take: () => ({ order: state.fx.order }),
+        put: (d) => { state.fx.order = d.order; },
+        render: () => {
+          renderFxButtons();
+          if (!$('fxOrderBackdrop').classList.contains('hidden')) renderFxOrderList();
+        }
+      },
+      layout: {
+        take: () => ({
+          layout: { tree: state.layout.tree, hidden: state.layout.hidden, presets: state.layout.presets, active: state.layout.active },
+          panels: state.panels
+        }),
+        put: (d) => {
+          const n = normalizeLayout(d.layout);
+          Object.assign(state.layout, { tree: n.tree, hidden: n.hidden, presets: n.presets, active: n.active });
+          PANEL_IDS.forEach(id => {
+            const want = d.panels[id];
+            if (!want) return;
+            const wasFloating = state.panels[id].floating;
+            Object.assign(state.panels[id], want);
+            if (want.floating) floatPanel(id, { x: want.x, y: want.y, w: want.w, h: want.h });
+            else if (wasFloating) dockPanel(id);
+          });
+        },
+        render: () => { applyResponsiveLayout(); renderLayoutBar(); }
+      }
+    };
+
+    function undoTake(slices) {
+      const data = {};
+      slices.forEach(k => { data[k] = JSON.stringify(UNDO_SLICES[k].take()); });
+      return data;
+    }
+
+    /** 取っておいた状態の中で使っている音のファイルID */
+    function undoFileIds(data, out = new Set()) {
+      Object.values(data).forEach(json => {
+        for (const m of json.matchAll(/"fileId":"([^"]+)"/g)) out.add(m[1]);
+      });
+      return out;
+    }
+
+    /** 編集の操作を始める前に呼ぶ（変える前の状態を取っておく） */
+    function undoBegin(slices, label) {
+      return { slices, label, before: undoTake(slices) };
+    }
+
+    /** 編集の操作のあとに呼ぶ。何か変わっていたら記録する。toastMsg があれば「元に戻す」付きのお知らせを出す */
+    function undoCommit(u, toastMsg = '') {
+      if (!u) return false;
+      const after = undoTake(u.slices);
+      if (u.slices.every(k => after[k] === u.before[k])) {
+        if (toastMsg) showToast(toastMsg);
+        return false;
+      }
+      undoState.past.push({ label: u.label, slices: u.slices, data: u.before });
+      if (undoState.past.length > UNDO_MAX) undoState.past.shift();
+      undoState.future = [];
+      undoTrash(u.before, after);
+      purgeAudioTrash();
+      if (toastMsg) showToast(toastMsg, 'undo');
+      else $('toastAction').classList.add('hidden');   // 前のお知らせのボタンは、もう別の操作を指してしまうので消す
+      return true;
+    }
+
+    /** 使わなくなった音のファイルを「消す予定」に入れる（すぐには消さない） */
+    function undoTrash(beforeData, afterData) {
+      const after = undoFileIds(afterData);
+      undoFileIds(beforeData).forEach(id => {
+        if (!after.has(id) && !state.audioTrash.includes(id)) state.audioTrash.push(id);
+      });
+    }
+
+    /** 「消す予定」の音のうち、今も、戻せる操作の中でも使っていないものを本当に消す */
+    function purgeAudioTrash() {
+      if (!state.audioTrash.length) return;
+      const now = new Set(referencedFileIds());
+      const keep = new Set(now);
+      [...undoState.past, ...undoState.future].forEach(e => undoFileIds(e.data, keep));
+      const drop = state.audioTrash.filter(id => !keep.has(id));
+      state.audioTrash = state.audioTrash.filter(id => keep.has(id) && !now.has(id));
+      drop.forEach(id => {
+        storage.deleteAudioFile(id);
+        audioEngine.bufferCache.delete(id);
+      });
+      storage.saveState();
+    }
+
+    /** ほかの端末のデータに入れ替わったときなど：戻せる操作を全部なくす */
+    function undoClear() {
+      undoState.past = [];
+      undoState.future = [];
+      purgeAudioTrash();
+    }
+
+    /** 開いている画面があるときは戻さない（FXの並び替えの画面だけは、その場で戻せる） */
+    function undoBlocked() {
+      return ['editModalBackdrop', 'settingsModalBackdrop', 'tabModalBackdrop', 'folderNameBackdrop', 'layoutNameBackdrop',
+        'helpModalBackdrop', 'obsModalBackdrop', 'syncConflictBackdrop', 'tourRoot', 'a2hsRoot', 'startupOverlay']
+        .some(id => { const el = $(id); return el && !el.classList.contains('hidden'); });
+    }
+
+    function undoStep(redo) {
+      const from = redo ? undoState.future : undoState.past;
+      const to = redo ? undoState.past : undoState.future;
+      if (state.perfLock) { showToast('LOCK中は元に戻せません'); return; }
+      if (undoBlocked()) { showToast('開いている画面を閉じてから操作してください'); return; }
+      const entry = from.pop();
+      if (!entry) { showToast(redo ? 'やり直せる操作はありません' : 'これ以上は戻せません'); return; }
+      closeBgmMenu();
+      const cur = undoTake(entry.slices);
+      to.push({ label: entry.label, slices: entry.slices, data: cur });
+      if (to.length > UNDO_MAX) to.shift();
+      entry.slices.forEach(k => UNDO_SLICES[k].put(JSON.parse(entry.data[k])));
+      undoTrash(cur, entry.data);
+      entry.slices.forEach(k => UNDO_SLICES[k].render());
+      storage.saveState();
+      purgeAudioTrash();
+      showToast(`${redo ? 'やり直しました' : '元に戻しました'}：${entry.label}`, redo ? 'undo' : 'redo');
+    }
+    const undoEdit = () => undoStep(false);
+    const redoEdit = () => undoStep(true);
+
     const storage = new DeckStorage();
 
     // =========================================================================
@@ -6038,6 +6232,7 @@ registerProcessor('livepad-rec', LivepadRec);
         this.suppress = true;
         try {
           applySyncData(remote.data || {});
+          undoClear();   // ドライブのデータに入れ替わったので、それまでの操作は戻せない
           this.meta.fileMap = { ...(remote.files || {}) };
           const have = new Set(await storage.listAudioIds());
           const need = referencedFileIds().filter(id => !have.has(id) && this.meta.fileMap[id]);
@@ -7465,16 +7660,26 @@ registerProcessor('livepad-rec', LivepadRec);
     const audioEngine = new LiveAudioEngine();
 
     let toastTimer = null;
-    function showToast(msg) {
+    /** お知らせ。action：'undo'＝「元に戻す」、'redo'＝「やり直す」ボタンを付けて少し長く出す */
+    function showToast(msg, action = '') {
       const box = document.getElementById('toastBox');
+      const btn = document.getElementById('toastAction');
       document.getElementById('toastMessage').textContent = msg;
+      btn.classList.toggle('hidden', !action);
+      btn.dataset.action = action;
+      btn.textContent = action === 'redo' ? 'やり直す' : '元に戻す';
       box.classList.remove('opacity-0', 'translate-y-2');
       box.classList.add('opacity-100', 'translate-y-0');
+      box.classList.toggle('has-action', !!action);
       if (toastTimer) clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => {
-        box.classList.add('opacity-0', 'translate-y-2');
-        box.classList.remove('opacity-100', 'translate-y-0');
-      }, 2200);
+      toastTimer = setTimeout(hideToast, action ? 5000 : 2200);
+    }
+
+    function hideToast() {
+      const box = document.getElementById('toastBox');
+      box.classList.add('opacity-0', 'translate-y-2');
+      box.classList.remove('opacity-100', 'translate-y-0', 'has-action');
+      document.getElementById('toastAction').classList.add('hidden');
     }
 
     const $ = (id) => document.getElementById(id);
@@ -8108,6 +8313,7 @@ registerProcessor('livepad-rec', LivepadRec);
         return best;
       };
       bgmDragSession(e, row, handle, findTarget, (target) => {
+        const u = undoBegin(['bgm'], '曲の並び替え');
         const before = state.bgmList.map(t => `${t.id}:${bgmFolderOf(t)}`).join('|');
         const cur = state.bgmList[state.bgm.trackIndex];
         const [tr] = state.bgmList.splice(from, 1);
@@ -8124,6 +8330,7 @@ registerProcessor('livepad-rec', LivepadRec);
         normalizeBgm();
         renderBgmList();
         if (state.bgmList.map(t => `${t.id}:${bgmFolderOf(t)}`).join('|') !== before) storage.saveState();
+        undoCommit(u);
       });
     }
 
@@ -8147,12 +8354,14 @@ registerProcessor('livepad-rec', LivepadRec);
       bgmDragSession(e, head, handle, findTarget, (target) => {
         const from = state.bgmFolders.findIndex(f => f.id === fid);
         if (from < 0) return;
+        const u = undoBegin(['bgm'], 'フォルダの並び替え');
         const before = state.bgmFolders.map(f => f.id).join('|');
         const [f] = state.bgmFolders.splice(from, 1);
         state.bgmFolders.splice(Math.min(target.pos, state.bgmFolders.length), 0, f);
         normalizeBgm();
         renderBgmList();
         if (state.bgmFolders.map(x => x.id).join('|') !== before) storage.saveState();
+        undoCommit(u);
       });
     }
 
@@ -8179,17 +8388,20 @@ registerProcessor('livepad-rec', LivepadRec);
     function submitFolderName() {
       const name = $('folderNameInput').value.trim().slice(0, 24);
       if (!name) { $('folderNameInput').focus(); return; }
+      const u = undoBegin(['bgm'], folderNameTarget ? 'フォルダの名前の変更' : 'フォルダの作成');
+      let msg = '';
       if (folderNameTarget) {
         const f = bgmFolderById(folderNameTarget);
-        if (f && f.id !== BGM_UNSORTED) f.name = name;
+        if (f && f.id !== BGM_UNSORTED && f.name !== name) { f.name = name; msg = `フォルダの名前を「${name}」にしました`; }
       } else {
         const id = `f${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
         state.bgmFolders.push({ id, name, open: true });
-        showToast(`フォルダ「${name}」を作りました`);
+        msg = `フォルダ「${name}」を作りました`;
       }
       closeFolderName();
       renderBgmList();
       storage.saveState();
+      undoCommit(u, msg);
     }
 
     // ---- 長押しメニュー ----------------------------------------------------
@@ -8239,10 +8451,191 @@ registerProcessor('livepad-rec', LivepadRec);
     }
 
     /** 曲をほかのフォルダへ移す（移した先のフォルダの最後に入る） */
+    // ---- BGMの追加（「＋ ADD BGM」・フォルダの「＋」・ドラッグ＆ドロップ） ----
+    const AUDIO_EXT = /\.(mp3|wav|wave|m4a|aac|mp4|ogg|oga|opus|flac|webm|aif|aiff|caf)$/i;
+    const isAudioFile = (f) => !!f && ((f.type || '').startsWith('audio/') || AUDIO_EXT.test(f.name || ''));
+    const hasDragFiles = (e) => !!e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+    const byFileName = (a, b) => a.name.localeCompare(b.name, 'ja', { numeric: true });
+
+    /** 曲をフォルダの最後に追加する（長さも読む）。保存・表示・お知らせは呼んだ側で。最後に足した曲を返す */
+    async function addBgmFiles(files, folderId) {
+      let last = null;
+      for (const f of files) {
+        const saved = await storage.saveAudioFile(f);
+        const entry = {
+          id: saved.id,
+          name: saved.name.replace(/\.[^/.]+$/, ''),
+          type: 'file',
+          durationSec: 0,
+          fileId: saved.id,
+          folderId
+        };
+        // 追加した時点で長さを読み取ってリストに表示
+        try {
+          const buf = await audioEngine.getDecodedBuffer(saved.id);
+          if (buf) entry.durationSec = buf.duration;
+        } catch (err) {
+          console.error(err);
+        }
+        state.bgmList.push(entry);
+        last = entry;
+      }
+      return last;
+    }
+
+    /** 追加した曲（フォルダの最後）が見えるようにスクロール */
+    function scrollToBgmEntry(entry) {
+      const row = entry ? $('bgmList').querySelector(`.bgm-row[data-index="${state.bgmList.indexOf(entry)}"]`) : null;
+      if (row) row.scrollIntoView({ block: 'nearest' });
+    }
+
+    /** 落とされた物を取り出す（イベントの間に読まないと消えるので、ここだけは同期で） */
+    function takeDroppedItems(dt) {
+      const entries = Array.from(dt.items || [])
+        .map(it => (it.kind === 'file' && it.webkitGetAsEntry ? it.webkitGetAsEntry() : null))
+        .filter(Boolean);
+      return entries.length ? { entries, files: [] } : { entries: [], files: Array.from(dt.files || []) };
+    }
+
+    function readDirEntries(dir) {
+      return new Promise((resolve) => {
+        const reader = dir.createReader();
+        const out = [];
+        const next = () => reader.readEntries((list) => {
+          if (!list.length) { resolve(out); return; }
+          out.push(...list);
+          next();
+        }, () => resolve(out));
+        next();
+      });
+    }
+
+    const entryFile = (en) => new Promise(res => en.file(res, () => res(null)));
+
+    /** PCのフォルダの中のファイル（下のフォルダの中も全部） */
+    async function filesInDir(dir) {
+      const out = [];
+      for (const en of await readDirEntries(dir)) {
+        if (en.isFile) out.push(await entryFile(en));
+        else if (en.isDirectory) out.push(...await filesInDir(en));
+      }
+      return out.filter(Boolean);
+    }
+
+    /** 落とされたファイルを追加：ファイルは folderId へ、PCのフォルダは同じ名前のBGMフォルダへ（あればそこに足す） */
+    async function addDroppedBgm(items, folderId) {
+      const u = undoBegin(['bgm'], '曲の追加');
+      let skipped = 0;
+      const groups = [];
+      // ファイル
+      const loose = items.entries.length
+        ? (await Promise.all(items.entries.filter(en => en.isFile).map(entryFile))).filter(Boolean)
+        : items.files;
+      const looseAudio = loose.filter(isAudioFile).sort(byFileName);
+      skipped += loose.length - looseAudio.length;
+      if (looseAudio.length) groups.push({ folderId, files: looseAudio });
+      // フォルダ
+      for (const dir of items.entries.filter(en => en.isDirectory)) {
+        const all = await filesInDir(dir);
+        const audio = all.filter(isAudioFile).sort(byFileName);
+        skipped += all.length - audio.length;
+        if (!audio.length) continue;
+        const name = String(dir.name || 'FOLDER').trim().slice(0, 24) || 'FOLDER';
+        let f = state.bgmFolders.find(x => x.id !== BGM_UNSORTED && x.name === name);
+        if (!f) {
+          f = { id: `f${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, name, open: true };
+          state.bgmFolders.push(f);
+        }
+        groups.push({ folderId: f.id, files: audio, dirName: name });
+      }
+      const count = groups.reduce((n, g) => n + g.files.length, 0);
+      if (!count) {
+        showToast(skipped ? '音声ファイル（MP3・WAV・M4A など）が見つかりませんでした' : '追加できるファイルがありませんでした');
+        return 0;
+      }
+      if (count > 3) showToast(`${count}曲を読み込んでいます…`);
+      let last = null;
+      for (const g of groups) {
+        const f = bgmFolderById(g.folderId);
+        if (f) f.open = true;
+        last = await addBgmFiles(g.files, g.folderId) || last;
+      }
+      renderBgmList();
+      await storage.saveState();
+      scrollToBgmEntry(last);
+      const dirs = groups.filter(g => g.dirName);
+      let msg;
+      if (dirs.length === 1 && groups.length === 1) msg = `フォルダ「${dirs[0].dirName}」に ${count}曲を追加しました`;
+      else if (dirs.length) msg = `${count}曲を追加しました（フォルダ ${dirs.length}つ）`;
+      else msg = `${count}曲を ${(bgmFolderById(folderId) || {}).name || 'UNSORTED'} に追加しました`;
+      if (skipped) msg += `（音声ではない${skipped}件は追加していません）`;
+      undoCommit(u, msg);
+      return count;
+    }
+
+    /** ドラッグ中の表示：BGM DECKに枠、入れる先のフォルダを光らせ、どこに入るかを出す */
+    function showBgmDrop(folderId) {
+      const panel = $('panel-bgm');
+      panel.classList.add('is-file-drop');
+      panel.querySelectorAll('.bgm-folder.is-drop-folder').forEach(el => { if (el.dataset.folder !== folderId) el.classList.remove('is-drop-folder'); });
+      const head = panel.querySelector(`.bgm-folder[data-folder="${folderId}"]`);
+      if (head) head.classList.add('is-drop-folder');
+      const hint = $('bgmDropHint');
+      const f = bgmFolderById(folderId);
+      hint.querySelector('b').textContent = `ドロップで「${f ? f.name : 'UNSORTED'}」に追加`;
+      hint.classList.remove('hidden');
+      const r = $('bgmList').getBoundingClientRect();
+      hint.style.left = `${r.left + r.width / 2}px`;
+      hint.style.top = `${Math.max(8, r.bottom - hint.offsetHeight - 10)}px`;
+    }
+
+    function hideBgmDrop() {
+      $('panel-bgm').classList.remove('is-file-drop');
+      document.querySelectorAll('.bgm-folder.is-drop-folder').forEach(el => el.classList.remove('is-drop-folder'));
+      $('bgmDropHint').classList.add('hidden');
+    }
+
+    function initBgmDrop() {
+      const panel = $('panel-bgm');
+      // フォルダの見出しや、そのフォルダの曲の上ならそのフォルダ、それ以外は UNSORTED
+      const folderAt = (t) => {
+        const el = t && t.closest ? t.closest('[data-folder]') : null;
+        return el && bgmFolderById(el.dataset.folder) ? el.dataset.folder : BGM_UNSORTED;
+      };
+      panel.addEventListener('dragover', (e) => {
+        if (!hasDragFiles(e)) return;
+        e.preventDefault();
+        if (state.perfLock) { e.dataTransfer.dropEffect = 'none'; return; }
+        e.dataTransfer.dropEffect = 'copy';
+        showBgmDrop(folderAt(e.target));
+      });
+      panel.addEventListener('dragleave', (e) => { if (!panel.contains(e.relatedTarget)) hideBgmDrop(); });
+      panel.addEventListener('drop', (e) => {
+        if (!hasDragFiles(e)) return;
+        e.preventDefault();
+        hideBgmDrop();
+        if (state.perfLock) { showToast('LOCK中は追加できません'); return; }
+        addDroppedBgm(takeDroppedItems(e.dataTransfer), folderAt(e.target));
+      });
+      // パッドと BGM DECK 以外に落としても、ブラウザがファイルを開いて LIVEPAD DECK から離れないようにする
+      window.addEventListener('dragover', (e) => {
+        if (!hasDragFiles(e) || e.defaultPrevented) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'none';
+      });
+      window.addEventListener('drop', (e) => {
+        hideBgmDrop();
+        if (!hasDragFiles(e) || e.defaultPrevented) return;
+        e.preventDefault();
+        showToast('音のファイルは、SEパッドか BGM DECK の上に落としてください');
+      });
+    }
+
     function moveBgmToFolder(index, fid) {
       const tr = state.bgmList[index];
       const f = bgmFolderById(fid);
       if (!tr || !f) return;
+      const u = undoBegin(['bgm'], '曲の移動');
       const cur = state.bgmList[state.bgm.trackIndex];
       state.bgmList.splice(index, 1);
       tr.folderId = fid;
@@ -8251,7 +8644,7 @@ registerProcessor('livepad-rec', LivepadRec);
       normalizeBgm();
       renderBgmList();
       storage.saveState();
-      showToast(`「${tr.name}」を ${f.name} に移しました`);
+      undoCommit(u, `「${tr.name}」を ${f.name} に移しました`);
     }
 
     // ---- フォルダの長押しメニュー ----
@@ -8287,6 +8680,7 @@ registerProcessor('livepad-rec', LivepadRec);
     function deleteBgmFolder(fid) {
       const i = state.bgmFolders.findIndex(f => f.id === fid);
       if (i < 0 || fid === BGM_UNSORTED) return;
+      const u = undoBegin(['bgm'], 'フォルダの削除');
       const [f] = state.bgmFolders.splice(i, 1);
       const cur = state.bgmList[state.bgm.trackIndex];
       const moved = state.bgmList.filter(t => bgmFolderOf(t) === fid);
@@ -8296,16 +8690,16 @@ registerProcessor('livepad-rec', LivepadRec);
       normalizeBgm();
       renderBgmList();
       storage.saveState();
-      showToast(moved.length ? `フォルダ「${f.name}」を消しました（${moved.length}曲は UNSORTED へ）` : `フォルダ「${f.name}」を消しました`);
+      undoCommit(u, moved.length ? `フォルダ「${f.name}」を消しました（${moved.length}曲は UNSORTED へ）` : `フォルダ「${f.name}」を消しました`);
     }
 
     async function deleteBgmAt(index) {
       const tr = state.bgmList[index];
       if (!tr || tr.type !== 'file') return;
+      const u = undoBegin(['bgm'], '曲の削除');
       const isCurrent = index === state.bgm.trackIndex;
       if (isCurrent && state.bgm.isPlaying) audioEngine.stopBgm(0.05);
-      await storage.deleteAudioFile(tr.fileId);
-      audioEngine.bufferCache.delete(tr.fileId);
+      audioEngine.bufferCache.delete(tr.fileId);   // 音のファイルは、元に戻せる間は残す（undoCommit → purgeAudioTrash）
       state.bgmList.splice(index, 1);
       if (isCurrent) {
         state.bgm.trackIndex = Math.min(index, state.bgmList.length - 1);
@@ -8316,7 +8710,7 @@ registerProcessor('livepad-rec', LivepadRec);
       state.bgm.trackIndex = Math.max(0, state.bgm.trackIndex);
       await storage.saveState();
       renderBgmList();
-      showToast(`「${tr.name}」を削除しました`);
+      undoCommit(u, `「${tr.name}」を削除しました`);
     }
 
     // ---- 再生ボタン・シークバー・リピート ----------------------------------
@@ -8617,16 +9011,15 @@ registerProcessor('livepad-rec', LivepadRec);
 
     async function assignFileToPad(pad, file) {
       try {
-        const oldFileId = pad.fileId;
         const saved = await storage.saveAudioFile(file);
+        const u = undoBegin(['pads'], 'パッドに音を割り当て');
         pad.sourceType = 'file';
         pad.fileId = saved.id;
         pad.fileName = saved.name;
         pad.name = saved.name.replace(/\.[^/.]+$/, '').slice(0, 16);
-        if (oldFileId) storage.deleteAudioFile(oldFileId);
         await storage.saveState();
         renderPads();
-        showToast(`「${pad.name}」をパッドに割り当てました`);
+        undoCommit(u, `「${pad.name}」をパッドに割り当てました`);
       } catch (err) {
         console.error(err);
         showToast('ファイルの保存に失敗しました');
@@ -9629,15 +10022,14 @@ registerProcessor('livepad-rec', LivepadRec);
       if (!pad) return;
       const r = recResultToFile(result, source);
       try {
-        const oldFileId = pad.fileId;
         const saved = await storage.saveAudioFile(r.file);
+        const u = undoBegin(['pads'], 'パッドに録音');
         pad.sourceType = 'file';
         pad.fileId = saved.id;
         pad.fileName = saved.name;
         pad.name = r.padName;
-        if (oldFileId) storage.deleteAudioFile(oldFileId);
         await storage.saveState();
-        showToast(`「${r.padName}」をパッドに入れました（${r.sec.toFixed(1)}秒）`);
+        undoCommit(u, `「${r.padName}」をパッドに入れました（${r.sec.toFixed(1)}秒）`);
       } catch (err) {
         console.error(err);
         showToast('録音の保存に失敗しました');
@@ -10238,6 +10630,7 @@ registerProcessor('livepad-rec', LivepadRec);
         if (e.pointerType === 'mouse' && e.button !== 0) return;
         if (e.target.closest('button, input, select, label, a')) return;
         e.preventDefault();
+        const u = undoBegin(['layout'], `${PANEL_NAMES[id]} の移動`);
 
         const shellRect = $('deviceShell').getBoundingClientRect();
         const pr = p.getBoundingClientRect();
@@ -10284,11 +10677,9 @@ registerProcessor('livepad-rec', LivepadRec);
           p.classList.remove('is-moving');
           const dropHome = slot.classList.contains('is-drop-target');
           slot.classList.remove('is-drop-target');
-          if (dropHome) {
-            dockPanel(id);
-            showToast(`${PANEL_NAMES[id]} を元の位置に戻しました`);
-          }
+          if (dropHome) dockPanel(id);
           storage.saveState();
+          undoCommit(u, dropHome ? `${PANEL_NAMES[id]} を元の位置に戻しました` : '');
         };
 
         window.addEventListener('pointermove', move);
@@ -10303,6 +10694,7 @@ registerProcessor('livepad-rec', LivepadRec);
         e.preventDefault();
         e.stopPropagation();
         const st = state.panels[id];
+        const u = undoBegin(['layout'], `${PANEL_NAMES[id]} の大きさ`);
         const sx = e.clientX;
         const sy = e.clientY;
         const sw = st.w;
@@ -10318,6 +10710,7 @@ registerProcessor('livepad-rec', LivepadRec);
           window.removeEventListener('pointerup', up);
           window.removeEventListener('pointercancel', up);
           storage.saveState();
+          undoCommit(u);
         };
         window.addEventListener('pointermove', move);
         window.addEventListener('pointerup', up);
@@ -10326,9 +10719,10 @@ registerProcessor('livepad-rec', LivepadRec);
 
       // 📌 ボタンで元の位置に戻す
       p.querySelector('.panel-pin').addEventListener('click', () => {
+        const u = undoBegin(['layout'], `${PANEL_NAMES[id]} を元の位置へ`);
         dockPanel(id);
         storage.saveState();
-        showToast(`${PANEL_NAMES[id]} を元の位置に戻しました`);
+        undoCommit(u, `${PANEL_NAMES[id]} を元の位置に戻しました`);
       });
     }
 
@@ -10656,6 +11050,7 @@ registerProcessor('livepad-rec', LivepadRec);
         const div = e.target.closest('.tile-divider');
         if (!div || !layoutUi.edit) return;
         e.preventDefault();
+        const u = undoBegin(['layout'], 'DECKの大きさ');
         const path = div.dataset.path ? div.dataset.path.split('.').map(Number) : [];
         const idx = Number(div.dataset.index);
         const node = nodeAtPath(path);
@@ -10688,6 +11083,7 @@ registerProcessor('livepad-rec', LivepadRec);
           state.layout.active = '';
           renderLayoutBar();
           storage.saveState();
+          undoCommit(u);
         };
         div.addEventListener('pointermove', move);
         div.addEventListener('pointerup', up);
@@ -10750,11 +11146,13 @@ registerProcessor('livepad-rec', LivepadRec);
       updateTileOverlays();
     }
 
-    function layoutChanged(msg) {
+    /** u：undoBegin の記録（あれば「元に戻す」付きのお知らせ） */
+    function layoutChanged(msg, u = null) {
       state.layout.active = '';
       applyResponsiveLayout();
       storage.saveState();
-      if (msg) showToast(msg);
+      if (u) undoCommit(u, msg);
+      else if (msg) showToast(msg);
     }
 
     function hideDeck(id) {
@@ -10762,19 +11160,22 @@ registerProcessor('livepad-rec', LivepadRec);
         showToast('最後の1つのDECKは隠せません');
         return;
       }
+      const u = undoBegin(['layout'], `${PANEL_NAMES[id]} を隠す`);
       if (state.panels[id].floating) dockPanel(id);
       state.layout.tree = normalizeTree(removeFromTree(cloneTree(state.layout.tree), id), new Set());
       state.layout.hidden.push(id);
-      layoutChanged(`${PANEL_NAMES[id]} を隠しました（上のバーの「+」で戻せます）`);
+      layoutChanged(`${PANEL_NAMES[id]} を隠しました（上のバーの「+」で戻せます）`, u);
     }
 
     function showDeck(id) {
+      const u = undoBegin(['layout'], `${PANEL_NAMES[id]} を戻す`);
       state.layout.hidden = state.layout.hidden.filter(x => x !== id);
       state.layout.tree = normalizeTree(insertAtRootEdge(cloneTree(state.layout.tree), id, 'right'), new Set());
-      layoutChanged(`${PANEL_NAMES[id]} を右端に戻しました`);
+      layoutChanged(`${PANEL_NAMES[id]} を右端に戻しました`, u);
     }
 
     function toggleFloatFromLayout(id) {
+      const u = undoBegin(['layout'], state.panels[id].floating ? `${PANEL_NAMES[id]} を元の位置へ` : `${PANEL_NAMES[id]} を浮かせる`);
       if (state.panels[id].floating) {
         dockPanel(id);
       } else {
@@ -10787,6 +11188,7 @@ registerProcessor('livepad-rec', LivepadRec);
         });
       }
       storage.saveState();
+      undoCommit(u);
     }
 
     /** 2回押しで実行するボタン（初期化・削除など） */
@@ -10896,8 +11298,9 @@ registerProcessor('livepad-rec', LivepadRec);
         const where = drop.target === 'root'
           ? { left: '左端', right: '右端', top: '上端', bottom: '下端' }[drop.zone]
           : drop.zone === 'center' ? `${PANEL_NAMES[drop.target]} と入れ替え` : `${PANEL_NAMES[drop.target]} の${{ left: '左', right: '右', top: '上', bottom: '下' }[drop.zone]}`;
+        const u = undoBegin(['layout'], `${PANEL_NAMES[id]} の移動`);
         moveDeckInLayout(id, drop.target, drop.zone);
-        layoutChanged(`${PANEL_NAMES[id]} → ${where}`);
+        layoutChanged(`${PANEL_NAMES[id]} → ${where}`, u);
       };
       ov.addEventListener('pointermove', move);
       ov.addEventListener('pointerup', up);
@@ -10940,14 +11343,16 @@ registerProcessor('livepad-rec', LivepadRec);
         showToast('LAYOUTの編集を終えました（並びは自動で保存されています）');
       });
       $('btnLayoutReset').addEventListener('click', (e) => confirmTwice(e.currentTarget, 'RESET', () => {
+        const u = undoBegin(['layout'], 'LAYOUTのリセット');
         PANEL_IDS.forEach(id => { if (state.panels[id].floating) dockPanel(id); });
         state.layout.tree = createDefaultLayoutTree();
         state.layout.hidden = [];
-        layoutChanged('初期の並びに戻しました');
+        layoutChanged('初期の並びに戻しました', u);
       }));
       $('layoutPresetSelect').addEventListener('change', (e) => {
         const p = state.layout.presets.find(x => x.name === e.target.value);
         if (!p) { renderLayoutBar(); return; }
+        const u = undoBegin(['layout'], 'レイアウトの切り替え');
         p.hidden.forEach(id => { if (state.panels[id].floating) dockPanel(id); });
         state.layout.tree = cloneTree(p.tree);
         state.layout.hidden = p.hidden.slice();
@@ -10955,7 +11360,7 @@ registerProcessor('livepad-rec', LivepadRec);
         state.layout.active = p.name;
         renderLayoutBar();
         storage.saveState();
-        showToast(`レイアウト「${p.name}」に切り替えました`);
+        undoCommit(u, `レイアウト「${p.name}」に切り替えました`);
       });
       $('btnLayoutSave').addEventListener('click', openLayoutName);
       $('btnLayoutNameCancel').addEventListener('click', closeLayoutName);
@@ -10965,6 +11370,7 @@ registerProcessor('livepad-rec', LivepadRec);
         const name = $('layoutNameInput').value.trim().slice(0, 20);
         if (!name) return;
         const entry = { name, tree: cloneTree(state.layout.tree), hidden: state.layout.hidden.slice() };
+        const u = undoBegin(['layout'], 'レイアウトの保存');
         const i = state.layout.presets.findIndex(p => p.name === name);
         if (i >= 0) state.layout.presets[i] = entry;
         else {
@@ -10978,17 +11384,18 @@ registerProcessor('livepad-rec', LivepadRec);
         closeLayoutName();
         renderLayoutBar();
         storage.saveState();
-        showToast(`レイアウト「${name}」を保存しました`);
+        undoCommit(u, `レイアウト「${name}」を保存しました`);
       });
       $('btnLayoutDelete').addEventListener('click', (e) => {
         if (!state.layout.active) return;
         confirmTwice(e.currentTarget, 'DELETE', () => {
           const name = state.layout.active;
+          const u = undoBegin(['layout'], 'レイアウトの削除');
           state.layout.presets = state.layout.presets.filter(p => p.name !== name);
           state.layout.active = '';
           renderLayoutBar();
           storage.saveState();
-          showToast(`レイアウト「${name}」を削除しました`);
+          undoCommit(u, `レイアウト「${name}」を削除しました`);
         });
       });
     }
@@ -11428,34 +11835,13 @@ registerProcessor('livepad-rec', LivepadRec);
         const target = bgmFolderById(bgmAddTarget) ? bgmAddTarget : BGM_UNSORTED;
         const folder = bgmFolderById(target);
         if (folder) folder.open = true;
-        let lastEntry = null;
-        for (const f of files) {
-          const saved = await storage.saveAudioFile(f);
-          const entry = {
-            id: saved.id,
-            name: saved.name.replace(/\.[^/.]+$/, ''),
-            type: 'file',
-            durationSec: 0,
-            fileId: saved.id,
-            folderId: target
-          };
-          lastEntry = entry;
-          // 追加した時点で長さを読み取ってリストに表示
-          try {
-            const buf = await audioEngine.getDecodedBuffer(saved.id);
-            if (buf) entry.durationSec = buf.duration;
-          } catch (err) {
-            console.error(err);
-          }
-          state.bgmList.push(entry);
-        }
+        const u = undoBegin(['bgm'], '曲の追加');
+        const lastEntry = await addBgmFiles(files, target);
         renderBgmList();
         await storage.saveState();
-        // 追加した曲（フォルダの最後）が見えるようにスクロール
-        const lastRow = lastEntry ? $('bgmList').querySelector(`.bgm-row[data-index="${state.bgmList.indexOf(lastEntry)}"]`) : null;
-        if (lastRow) lastRow.scrollIntoView({ block: 'nearest' });
+        scrollToBgmEntry(lastEntry);
         e.target.value = '';
-        showToast(`${files.length}件のBGMを ${folder ? folder.name : 'UNSORTED'} に追加しました`);
+        undoCommit(u, `${files.length}件のBGMを ${folder ? folder.name : 'UNSORTED'} に追加しました`);
       });
 
       // シークバー：動かしている間は表示だけ変え、指を離したら移動
@@ -11670,14 +12056,13 @@ registerProcessor('livepad-rec', LivepadRec);
           }
         }
 
-        if (d.pendingFile) {
-          const oldId = pad.fileId;
-          const saved = await storage.saveAudioFile(d.pendingFile);
+        // 前の音のファイルは、元に戻せる間は残す（undoCommit → purgeAudioTrash）
+        const saved = d.pendingFile ? await storage.saveAudioFile(d.pendingFile) : null;
+        const u = undoBegin(['pads'], 'パッドの編集');
+        if (saved) {
           pad.fileId = saved.id;
           pad.fileName = saved.name;
-          if (oldId) storage.deleteAudioFile(oldId);
         } else if (d.sourceType !== 'file' && pad.fileId) {
-          storage.deleteAudioFile(pad.fileId);
           pad.fileId = null;
           pad.fileName = null;
         }
@@ -11698,7 +12083,7 @@ registerProcessor('livepad-rec', LivepadRec);
         await storage.saveState();
         closeEditModal();
         renderPads();
-        showToast('パッド設定を保存しました');
+        undoCommit(u, 'パッド設定を保存しました');
       });
 
       // ---- タブ名変更 ----
@@ -11713,10 +12098,11 @@ registerProcessor('livepad-rec', LivepadRec);
         const name = $('tabNameInput').value.trim().slice(0, 10);
         closeTabRename();
         if (!name || name === bank.label) return;
+        const u = undoBegin(['pads'], 'タブの名前の変更');
         bank.label = name;
         await storage.saveState();
         renderBankTabs();
-        showToast(`タブ名を「${name}」に変更しました`);
+        undoCommit(u, `タブ名を「${name}」に変更しました`);
       });
 
       // ---- 設定 ----
@@ -11880,6 +12266,17 @@ registerProcessor('livepad-rec', LivepadRec);
           $('btnPanicStop').click();
           return;
         }
+        // Ctrl+Z（Macは ⌘+Z）で元に戻す、Ctrl+Shift+Z／Ctrl+Y でやり直す。文字を打っている間はブラウザの取り消しのまま
+        if ((e.ctrlKey || e.metaKey) && !e.altKey && !isTyping(e.target) && !isOpen('startupOverlay')) {
+          const k = (e.key || '').toLowerCase();
+          if (k === 'z' || k === 'y' || e.code === 'KeyZ' || e.code === 'KeyY') {
+            e.preventDefault();
+            if (e.repeat) return;
+            if (k === 'y' || (k !== 'z' && e.code === 'KeyY') || e.shiftKey) redoEdit();
+            else undoEdit();
+            return;
+          }
+        }
         if (isOpen('startupOverlay') || overlayOpen() || isTyping(e.target)) return;
         if (e.ctrlKey || e.metaKey || e.altKey) return;
 
@@ -11951,6 +12348,7 @@ registerProcessor('livepad-rec', LivepadRec);
         if (REC_SOURCES[saved.recSource]) state.recSource = saved.recSource;
         if (saved.tourSeen) state.tourSeen = true;
         if (saved.a2hsSeen) state.a2hsSeen = true;
+        if (Array.isArray(saved.audioTrash)) state.audioTrash = saved.audioTrash.filter(x => typeof x === 'string');
         if (saved.obs) state.obs = normalizeObs(saved.obs);
         if (typeof saved.duckAmount === 'number') state.duckAmount = saved.duckAmount;
         if (saved.eq) state.eq = normalizeEq(saved.eq);
@@ -11992,6 +12390,14 @@ registerProcessor('livepad-rec', LivepadRec);
       initObs();
       initTour();
       initA2hs();
+      initBgmDrop();
+      $('toastAction').addEventListener('click', () => {
+        const action = $('toastAction').dataset.action;
+        hideToast();
+        if (action === 'redo') redoEdit();
+        else undoEdit();
+      });
+      purgeAudioTrash();   // 前回、消したまま閉じた音のファイルを片付ける
       initPitchDeck();
       initHelp();
       if (window.ResizeObserver) new ResizeObserver(() => fitPadGrid()).observe(document.getElementById('padGrid'));
