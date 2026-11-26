@@ -881,6 +881,14 @@
     .bgm-drop-hint b { display: block; font-size: 12px; font-weight: 800; color: rgb(var(--ac-200)); overflow: hidden; text-overflow: ellipsis; }
     .bgm-drop-hint span { display: block; margin-top: 2px; font-size: 10px; color: rgb(var(--n-94a3b8)); white-space: normal; }
 
+    /* 設定：BGMの下げ方・つなぎ方（1行に名前・スライダー・値） */
+    .bgm-set-row { display: grid; grid-template-columns: 96px 1fr 44px; align-items: center; gap: 8px; font-size: 11px; color: rgb(var(--n-cbd5e1)); }
+    .bgm-set-row > b { text-align: right; font-size: 11px; color: rgb(251 191 36); }
+    .bgm-set-seg { grid-column: 2 / 4; display: flex; border: 1px solid rgb(var(--n-2a3242)); border-radius: 8px; overflow: hidden; }
+    .bgm-set-seg button { flex: 1; padding: 4px 0; font-size: 10.5px; font-weight: 700; color: rgb(var(--n-94a3b8)); }
+    .bgm-set-seg button + button { border-left: 1px solid rgb(var(--n-2a3242)); }
+    .bgm-set-seg button.is-on { color: rgb(var(--ac-200)); background: rgb(var(--ac-500) / .18); }
+
     /* お知らせの「元に戻す」「やり直す」 */
     .toast-action {
       pointer-events: auto; margin-left: 6px; padding: 7px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; line-height: 1;
@@ -2360,17 +2368,34 @@
         <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 space-y-2">
           <div class="text-xs font-bold text-accent-300">キーボード（SEパッド）</div>
           <div id="keyMapGroup" class="grid grid-cols-2 gap-2"></div>
-          <p class="text-[10px] text-slate-500 leading-relaxed">PCのキーボードでSEパッドを鳴らすときのキーの並び。NUMPAD はテンキー用です（テンキーのないPCは、USBのテンキーをつなぐと使えます）。この設定は端末ごとに保存されます</p>
+          <p class="text-[10px] text-slate-500 leading-relaxed">SEパッドを鳴らすキーの並び（端末ごと）。NUMPAD はテンキー用です</p>
           <p class="text-[10px] text-slate-500 leading-relaxed"><b class="text-slate-300">Ctrl+Z</b>（Macは ⌘+Z）で、パッド・BGM・LAYOUT などの編集を元に戻せます。やり直しは Ctrl+Shift+Z か Ctrl+Y</p>
         </div>
 
-        <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 space-y-2">
-          <div class="flex items-center justify-between">
-            <div class="text-xs font-bold text-accent-300">DUCKの下げ幅</div>
-            <span id="duckAmountValue" class="text-[11px] font-mono-num font-bold text-amber-300">80%</span>
+        <!-- BGMの下げ方（DUCKボタン・AUTO DUCKING）とつなぎ方（X-FADE） -->
+        <div class="bg-[rgb(var(--n-10131b))] border border-[rgb(var(--n-262c3a))] rounded-xl p-3 space-y-1.5">
+          <div class="text-xs font-bold text-accent-300">BGMの下げ方・つなぎ方</div>
+          <div class="bgm-set-row" title="MIXERのDUCKボタンを押している間、BGMを今の音量の何%にするか（例：BGM 70% で 80% → 56%）">
+            <span>DUCKボタン</span>
+            <input id="sliderDuckAmount" type="range" min="30" max="95" step="5" value="80" class="pro-fader accent-cyan w-full" aria-label="DUCKボタンの下げ幅">
+            <b id="duckAmountValue" class="font-mono-num">80%</b>
           </div>
-          <input id="sliderDuckAmount" type="range" min="30" max="95" step="5" value="80" class="pro-fader accent-cyan w-full" aria-label="DUCKの下げ幅">
-          <p class="text-[10px] text-slate-500 leading-relaxed">MIXERのDUCKボタンを押している間、BGMを今の音量の何%にするか（例：BGM 70% で 80% の場合 → 56%）</p>
+          <div class="bgm-set-row" title="AUTO DUCKINGがONのとき、SEが鳴っている間BGMを今の音量の何%にするか">
+            <span>AUTO DUCKING</span>
+            <input id="sliderAutoDuck" type="range" min="30" max="95" step="5" value="35" class="pro-fader accent-cyan w-full" aria-label="AUTO DUCKINGの下げ幅">
+            <b id="autoDuckValue" class="font-mono-num">35%</b>
+          </div>
+          <div class="bgm-set-row">
+            <span>└ 戻る速さ</span>
+            <div id="autoDuckRelease" class="bgm-set-seg" role="group" aria-label="AUTO DUCKINGで戻る速さ">
+              <button type="button" data-rel="fast">すぐ</button><button type="button" data-rel="normal">ふつう</button><button type="button" data-rel="slow">ゆっくり</button>
+            </div>
+          </div>
+          <div class="bgm-set-row" title="X-FADEがONのとき、前の曲と次の曲を重ねる時間。曲の終わりでも、この時間だけ次の曲と重ねます">
+            <span>X-FADE</span>
+            <input id="sliderXfade" type="range" min="0.2" max="10" step="0.1" value="0.8" class="pro-fader accent-cyan w-full" aria-label="X-FADEの時間">
+            <b id="xfadeValue" class="font-mono-num">0.8秒</b>
+          </div>
         </div>
         </div>
         </div>
@@ -2870,8 +2895,18 @@
     };
     const DEFAULT_THEME = 'cyan';
 
-    /** AUTO DUCKING 作動中のBGMの音量（元の35%） */
+    /** AUTO DUCKING 作動中のBGMの音量の最初の値（元の35%）。設定で変えられる（state.autoDuckLevel） */
     const AUTO_DUCK_LEVEL = 0.35;
+    /** AUTO DUCKING：SEが鳴り終わってからBGMが戻る速さ（待ち時間ms・戻る速さの時定数秒） */
+    const AUTO_DUCK_RELEASE = {
+      fast: { label: 'すぐ', delay: 80, tau: 0.06 },
+      normal: { label: 'ふつう', delay: 160, tau: 0.18 },
+      slow: { label: 'ゆっくり', delay: 300, tau: 0.5 }
+    };
+    /** X-FADE：曲をつなぐ時間（秒）の範囲と最初の値 */
+    const XFADE_MIN = 0.2;
+    const XFADE_MAX = 10;
+    const XFADE_DEFAULT = 0.8;
 
 
     const COLOR_PALETTE = {
@@ -2988,6 +3023,8 @@
       masterVolume: 0.50,
       seVolume: 1.0,          // MIXERのSEフェーダー（全SE共通の音量）
       duckAmount: 0.8,        // 手動DUCKの下げ幅（今のBGM音量の何倍にするか）
+      autoDuckLevel: AUTO_DUCK_LEVEL,   // AUTO DUCKING の下げ幅（SE中のBGM音量の何倍にするか）
+      autoDuckRelease: 'normal',        // AUTO DUCKING で戻る速さ：fast / normal / slow
       eq: createDefaultEq(),  // BGM専用EQ（EQ DECK）
       fx: createDefaultFx(),  // FX PAD（XYパッドのエフェクト）
       pitch: { tempo: 0, range: 8, key: 0 },   // PITCH DECK（TEMPO：速さと音程％／KEY：音程だけ半音）
@@ -3011,6 +3048,7 @@
         repeat: 'folder',     // リピート：'off'（フォルダの最後で止まる）/ 'folder'（フォルダ）/ 'all'（全体）/ 'one'（1曲）
         manualDuck: false,    // 手動DUCK中か
         crossfade: true,
+        xfadeSec: XFADE_DEFAULT,   // X-FADE で曲をつなぐ時間（秒）
         volume: 0.70,
         elapsedSec: 0
       },
@@ -3068,6 +3106,7 @@
             bgmVolume: state.bgm.volume,
             bgmRepeat: state.bgm.repeat,
             bgmCrossfade: state.bgm.crossfade,
+            bgmXfadeSec: state.bgm.xfadeSec,
             duckingEnabled: state.ducking.enabled,
             layoutMode: state.layoutMode,
             themeColor: state.themeColor,
@@ -3080,6 +3119,8 @@
             audioTrash: state.audioTrash,
             obs: state.obs,
             duckAmount: state.duckAmount,
+            autoDuckLevel: state.autoDuckLevel,
+            autoDuckRelease: state.autoDuckRelease,
             eq: state.eq,
             fx: state.fx,
             pitch: state.pitch,
@@ -5376,7 +5417,7 @@ registerProcessor('livepad-rec', LivepadRec);
             '<b>ONE</b>：同じ曲をくり返す',
             '<b>⏮ ⏭</b> も同じで、ALL のときはフォルダをまたいで、それ以外は今のフォルダの中で動きます'
           ] },
-          { name: 'X-FADE', fig: 'xfade', text: 'ONにすると、曲が切り替わるときに前の曲を小さくしながら次の曲を大きくして、途切れずにつなぎます。' },
+          { name: 'X-FADE', fig: 'xfade', text: 'ONにすると、曲が切り替わるときに前の曲を小さくしながら次の曲を大きくして、途切れずにつなぎます。重ねる時間は設定の「X-FADE」で 0.2〜10秒 に変えられます。曲の終わりでも、その時間だけ前から次の曲と重ねます。' },
           { name: 'TRANSPORT', text: [
             '<b>⏮ ⏭</b>：前の曲・次の曲。<b>▶</b>：再生／一時停止（PCはスペースキーでも）',
             'シークバーを動かすと、再生位置を変えられます'
@@ -5393,7 +5434,7 @@ registerProcessor('livepad-rec', LivepadRec);
             '<b>GATE</b>：押している間だけ鳴る',
             '<b>TOGGLE</b>：1回押すとくり返し鳴り続け、もう1回押すと止まる'
           ] },
-          { name: 'AUTO DUCKING', fig: 'autoDuck', text: 'ONにすると、SEが鳴っている間だけBGMの音量を自動で下げ、鳴り終わると戻します。SEがBGMに埋もれません。' },
+          { name: 'AUTO DUCKING', fig: 'autoDuck', text: 'ONにすると、SEが鳴っている間だけBGMの音量を自動で下げ、鳴り終わると戻します。SEがBGMに埋もれません。下げ幅（最初は35%）と戻る速さは、設定の「BGMの下げ方・つなぎ方」で変えられます。' },
           { name: 'TABS', text: '上のタブでパッドのセットを切り替えます。タブの右の ✎ で、選んでいるタブの名前を変えられます。' },
           { name: '並べ替え', text: [
             'パッドの上の<b>色の帯</b>をつかんで動かします（帯を押しても音は鳴りません）',
@@ -5437,7 +5478,7 @@ registerProcessor('livepad-rec', LivepadRec);
             '<b>L / R</b> は出ている音の大きさ。<b>PEAK</b> は音割れ寸前のときに赤く光ります'
           ] },
           { name: 'SIGNAL FLOW', fig: 'flow', text: '音はこの順に流れます。DUCK（AUTO DUCKINGとDUCKボタン）・EQ・PITCH DECK（TEMPO・KEY）はBGMだけにかかります。FX PADは、FXごとに BGM・ALL・SE のどれにかけるかを選べます。' },
-          { name: 'DUCK', fig: 'duck', text: '押している間だけ、BGMを今の音量の80%に下げます（下げ幅は設定の「DUCKの下げ幅」で変えられます）。離すと元に戻ります。' },
+          { name: 'DUCK', fig: 'duck', text: '押している間だけ、BGMを今の音量の80%に下げます（下げ幅は設定の「DUCKボタン」で変えられます）。離すと元に戻ります。' },
           { name: 'PANIC STOP', text: 'SE・BGM・FXの残響まで、全部の音をすぐに止めます。PCでは Esc キーでも押せます。' }
         ]
       },
@@ -6459,8 +6500,11 @@ registerProcessor('livepad-rec', LivepadRec);
         bgmVolume: state.bgm.volume,
         bgmRepeat: state.bgm.repeat,
         bgmCrossfade: state.bgm.crossfade,
+        bgmXfadeSec: state.bgm.xfadeSec,
         duckingEnabled: state.ducking.enabled,
         duckAmount: state.duckAmount,
+        autoDuckLevel: state.autoDuckLevel,
+        autoDuckRelease: state.autoDuckRelease,
         eq: state.eq,
         fx: state.fx,
         pitch: state.pitch,
@@ -6483,8 +6527,11 @@ registerProcessor('livepad-rec', LivepadRec);
       if (typeof d.bgmVolume === 'number') state.bgm.volume = d.bgmVolume;
       if (REPEAT_ORDER.includes(d.bgmRepeat)) state.bgm.repeat = d.bgmRepeat;
       if (typeof d.bgmCrossfade === 'boolean') state.bgm.crossfade = d.bgmCrossfade;
+      if (typeof d.bgmXfadeSec === 'number') state.bgm.xfadeSec = normalizeXfadeSec(d.bgmXfadeSec);
       if (typeof d.duckingEnabled === 'boolean') state.ducking.enabled = d.duckingEnabled;
       if (typeof d.duckAmount === 'number') state.duckAmount = d.duckAmount;
+      if (typeof d.autoDuckLevel === 'number') state.autoDuckLevel = normalizeAutoDuckLevel(d.autoDuckLevel);
+      if (AUTO_DUCK_RELEASE[d.autoDuckRelease]) state.autoDuckRelease = d.autoDuckRelease;
       if (d.eq) state.eq = normalizeEq(d.eq);
       if (d.fx) state.fx = normalizeFx(d.fx);
       if (d.pitch) state.pitch = normalizePitch(d.pitch);
@@ -7177,18 +7224,19 @@ registerProcessor('livepad-rec', LivepadRec);
           state.ducking.isActive = true;
           updateDuckingVisuals();
           if (this.ctx && this.bgmDuckGain) {
-            this.bgmDuckGain.gain.setTargetAtTime(AUTO_DUCK_LEVEL, this.ctx.currentTime, 0.035);
+            this.bgmDuckGain.gain.setTargetAtTime(state.autoDuckLevel, this.ctx.currentTime, 0.035);
           }
         } else {
+          const rel = AUTO_DUCK_RELEASE[state.autoDuckRelease] || AUTO_DUCK_RELEASE.normal;
           this.duckReleaseTimer = setTimeout(() => {
             if (this.getTotalActiveSeCount() === 0 || !state.ducking.enabled) {
               state.ducking.isActive = false;
               updateDuckingVisuals();
               if (this.ctx && this.bgmDuckGain) {
-                this.bgmDuckGain.gain.setTargetAtTime(1.0, this.ctx.currentTime, 0.18);
+                this.bgmDuckGain.gain.setTargetAtTime(1.0, this.ctx.currentTime, rel.tau);
               }
             }
-          }, 160);
+          }, rel.delay);
         }
       }
 
@@ -7505,35 +7553,58 @@ registerProcessor('livepad-rec', LivepadRec);
         return nodes;
       }
 
-      /** BGMを offsetSec の位置から再生。withCrossfade=true なら前の曲と重ねて切り替える */
+      /**
+       * 消えていくBGM（前の曲）を登録して、fade(秒) で小さくして止められるようにする。
+       * X-FADE の途中で STOP や PANIC を押したときも、ここに残っている曲をまとめて止める
+       */
+      bgmFadeEntry(gainNode, src) {
+        if (!this.bgmFading) this.bgmFading = new Set();
+        const entry = { gain: gainNode, src, timer: 0, stopped: false };
+        entry.fade = (sec, smooth = false, stop = false) => {
+          if (entry.stopped && !stop) return;   // STOP・PANIC で止めたあとは、ゆっくり消す指示を受けない
+          if (stop) entry.stopped = true;
+          const g = gainNode.gain;
+          const t = this.ctx.currentTime;
+          try {
+            g.cancelScheduledValues(t);
+            const v0 = Math.max(0.0001, g.value);
+            g.setValueAtTime(v0, t);
+            if (smooth && sec > 0.3) {
+              // 前の曲は cos、次の曲は sin で：重なっている間も全体の大きさがあまり変わらない
+              const N = 16;
+              for (let i = 1; i <= N; i++) g.linearRampToValueAtTime(Math.max(0.0001, v0 * Math.cos(i / N * Math.PI / 2)), t + sec * i / N);
+            } else {
+              g.linearRampToValueAtTime(0.0001, t + sec);
+            }
+          } catch (e) {}
+          clearTimeout(entry.timer);
+          entry.timer = setTimeout(() => {
+            try { src && src.stop(); src && src.disconnect(); gainNode.disconnect(); } catch (e) {}
+            this.bgmFading.delete(entry);
+          }, sec * 1000 + 80);
+        };
+        this.bgmFading.add(entry);
+        return entry;
+      }
+
+      /** BGMを offsetSec の位置から再生。withCrossfade=true なら前の曲と重ねて切り替える（時間は設定の X-FADE） */
       async startBgm(withCrossfade = false, offsetSec = 0) {
         this.ensureInit();
         const track = state.bgmList[state.bgm.trackIndex];
         if (!track || track.type !== 'file' || !track.fileId) return;
 
+        const xfadeSec = withCrossfade ? normalizeXfadeSec(state.bgm.xfadeSec) : 0.04;
+        // 前の曲：重ねないときはすぐ止める。重ねるときは、次の曲の準備ができてから同時に消し始める
+        let old = null;
         if (this.currentBgmDeckGain) {
-          const oldGain = this.currentBgmDeckGain;
-          const oldSrc = this.currentBgmSource;
-          const fadeSec = withCrossfade ? 0.8 : 0.04;
-          const now = this.ctx.currentTime;
-          try {
-            oldGain.gain.cancelScheduledValues(now);
-            oldGain.gain.setValueAtTime(oldGain.gain.value, now);
-            oldGain.gain.linearRampToValueAtTime(0.0001, now + fadeSec);
-            setTimeout(() => {
-              try { oldSrc && oldSrc.stop(); oldSrc && oldSrc.disconnect(); oldGain.disconnect(); } catch (e) {}
-            }, fadeSec * 1000 + 60);
-          } catch (e) {}
+          old = this.bgmFadeEntry(this.currentBgmDeckGain, this.currentBgmSource);
+          if (!withCrossfade) old.fade(0.04);
         }
+        let oldStarted = !withCrossfade;
+        const fadeOld = () => { if (old && !oldStarted) { oldStarted = true; old.fade(xfadeSec, true); } };
 
         const deckGain = this.ctx.createGain();
-        const now = this.ctx.currentTime;
-        if (withCrossfade) {
-          deckGain.gain.setValueAtTime(0.001, now);
-          deckGain.gain.linearRampToValueAtTime(1.0, now + 0.8);
-        } else {
-          deckGain.gain.setValueAtTime(1.0, now);
-        }
+        deckGain.gain.setValueAtTime(withCrossfade ? 0.0001 : 1.0, this.ctx.currentTime);
         deckGain.connect(this.bgmDuckGain);
         this.currentBgmDeckGain = deckGain;
         this.currentBgmSource = null;
@@ -7545,11 +7616,12 @@ registerProcessor('livepad-rec', LivepadRec);
           try {
             const buf = await this.getDecodedBuffer(track.fileId);
             if (!buf) {
+              fadeOld();
               showToast('BGMファイルの読み込みに失敗しました');
               this.stopBgm(0.05);
               return;
             }
-            if (!state.bgm.isPlaying || this.currentBgmDeckGain !== deckGain) return;
+            if (!state.bgm.isPlaying || this.currentBgmDeckGain !== deckGain) { fadeOld(); return; }
             track.durationSec = buf.duration;
             const offset = Math.max(0, Math.min(offsetSec, buf.duration - 0.05));
             state.bgm.elapsedSec = offset;
@@ -7561,6 +7633,14 @@ registerProcessor('livepad-rec', LivepadRec);
             src.connect(deckGain);
             src.start(0, offset);
             this.currentBgmSource = src;
+            if (withCrossfade) {
+              // 次の曲は sin の形で大きく（前の曲と同時に始める）
+              const g = deckGain.gain; const t = this.ctx.currentTime; const N = 16;
+              g.cancelScheduledValues(t);
+              g.setValueAtTime(0.0001, t);
+              for (let i = 1; i <= N; i++) g.linearRampToValueAtTime(Math.max(0.0001, Math.sin(i / N * Math.PI / 2)), t + xfadeSec * i / N);
+              fadeOld();
+            }
 
             src.onended = () => {
               if (this.currentBgmSource === src && state.bgm.repeat !== 'one') {
@@ -7569,6 +7649,7 @@ registerProcessor('livepad-rec', LivepadRec);
             };
           } catch (err) {
             console.error(err);
+            fadeOld();
             this.stopBgm(0.05);
             return;
           }
@@ -7577,9 +7658,32 @@ registerProcessor('livepad-rec', LivepadRec);
         updateBgmUI();
       }
 
+      /**
+       * X-FADE：曲の終わりの「設定の時間」だけ前から、次の曲と重ねる（毎フレーム呼ぶ）。
+       * 1曲リピート・OFFでフォルダの最後の曲のときは重ねない（今までどおり最後まで流して止まる／繰り返す）
+       */
+      checkAutoCrossfade() {
+        if (!state.bgm.isPlaying || !state.bgm.crossfade || state.bgm.repeat === 'one') return;
+        const src = this.currentBgmSource;
+        if (!src || this.autoXfadeFor === src) return;
+        const track = state.bgmList[state.bgm.trackIndex];
+        const dur = track ? track.durationSec || 0 : 0;
+        if (dur <= 0) return;
+        const rate = 1 + state.pitch.tempo / 100;
+        const xf = Math.min(normalizeXfadeSec(state.bgm.xfadeSec), dur / rate / 2);
+        const left = (dur - state.bgm.elapsedSec) / rate;
+        if (xf < 0.3 || left > xf) return;
+        const isLast = state.bgm.trackIndex >= bgmFolderRange(state.bgm.trackIndex)[1];
+        if (state.bgm.repeat === 'off' && isLast) return;
+        this.autoXfadeFor = src;
+        this.nextBgm();
+      }
+
       /** 停止（一時停止）。再生位置 state.bgm.elapsedSec はそのまま残す */
       stopBgm(fadeSec = 0.12) {
         state.bgm.isPlaying = false;
+        // X-FADE で消えていく途中の前の曲も、一緒に止める
+        if (this.bgmFading) this.bgmFading.forEach(e => e.fade(fadeSec, false, true));
         if (this.currentBgmDeckGain && this.ctx) {
           const oldGain = this.currentBgmDeckGain;
           const oldSrc = this.currentBgmSource;
@@ -10674,14 +10778,14 @@ registerProcessor('livepad-rec', LivepadRec);
     /** 実際に鳴っているBGM音量に合わせてBGMフェーダーのつまみを動かす（元の位置には黄色い印） */
     function updateBgmFaderDuck(dt) {
       if (!faderApi.bgm) return;
-      const autoF = (state.ducking.enabled && state.ducking.isActive) ? AUTO_DUCK_LEVEL : 1;
+      const autoF = (state.ducking.enabled && state.ducking.isActive) ? state.autoDuckLevel : 1;
       const manualF = state.bgm.manualDuck ? state.duckAmount : 1;
       const voiceF = obs.voice.on ? state.obs.voiceDuck.amount : 1;   // OBS連携：しゃべっている間
       const recF = sampler.stream ? 0.15 : 1;                          // マイクで録音している間
       const target = state.bgm.volume * autoF * manualF * voiceF * recF;
       if (bgmFaderDisplay === null) bgmFaderDisplay = target;
       // 下がる時は速く、戻る時はゆっくり（実際の音の変化に合わせる）
-      const tau = target < bgmFaderDisplay ? 0.06 : 0.16;
+      const tau = target < bgmFaderDisplay ? 0.06 : Math.max(0.16, (AUTO_DUCK_RELEASE[state.autoDuckRelease] || AUTO_DUCK_RELEASE.normal).tau);
       bgmFaderDisplay += (target - bgmFaderDisplay) * (1 - Math.exp(-Math.max(0, dt) / tau));
 
       const ducked = Math.abs(bgmFaderDisplay - state.bgm.volume) > 0.004;
@@ -10704,6 +10808,19 @@ registerProcessor('livepad-rec', LivepadRec);
       const pct = Math.round(state.duckAmount * 100);
       $('sliderDuckAmount').value = pct;
       $('duckAmountValue').textContent = `${pct}%`;
+      const auto = Math.round(state.autoDuckLevel * 100);
+      $('sliderAutoDuck').value = auto;
+      $('autoDuckValue').textContent = `${auto}%`;
+      document.querySelectorAll('#autoDuckRelease button').forEach(b => b.classList.toggle('is-on', b.dataset.rel === state.autoDuckRelease));
+      $('sliderXfade').value = state.bgm.xfadeSec;
+      $('xfadeValue').textContent = `${state.bgm.xfadeSec.toFixed(1)}秒`;
+    }
+
+    function normalizeAutoDuckLevel(v) {
+      return typeof v === 'number' && isFinite(v) ? Math.min(0.95, Math.max(0.3, v)) : AUTO_DUCK_LEVEL;
+    }
+    function normalizeXfadeSec(v) {
+      return typeof v === 'number' && isFinite(v) ? Math.round(Math.min(XFADE_MAX, Math.max(XFADE_MIN, v)) * 10) / 10 : XFADE_DEFAULT;
     }
 
     // =========================================================================
@@ -11633,6 +11750,7 @@ registerProcessor('livepad-rec', LivepadRec);
           // 1曲リピートは src.loop で自動的に頭へ戻る。それ以外は再生終了（onended）で次へ進む
           state.bgm.elapsedSec = state.bgm.repeat === 'one' ? 0 : dur;
         }
+        audioEngine.checkAutoCrossfade();
         updateBgmUI();
       }
 
@@ -12317,6 +12435,9 @@ registerProcessor('livepad-rec', LivepadRec);
         dockAllPanels();
         state.bgm.manualDuck = false;
         state.duckAmount = 0.8;
+        state.autoDuckLevel = AUTO_DUCK_LEVEL;
+        state.autoDuckRelease = 'normal';
+        state.bgm.xfadeSec = XFADE_DEFAULT;
         state.eq = createDefaultEq();
         state.fx = createDefaultFx();
         state.pitch = normalizePitch(null);
@@ -12382,11 +12503,29 @@ registerProcessor('livepad-rec', LivepadRec);
       // ウィンドウから離れたら必ず元に戻す（下げっぱなし防止）
       window.addEventListener('blur', releaseManualDuck);
 
-      // ---- DUCKの下げ幅（設定） ----
+      // ---- DUCKボタン・AUTO DUCKINGの下げ幅、戻る速さ、X-FADEの時間（設定） ----
       $('sliderDuckAmount').addEventListener('input', (e) => {
         state.duckAmount = Number(e.target.value) / 100;
         $('duckAmountValue').textContent = `${e.target.value}%`;
         audioEngine.applyManualDuck();
+        storage.saveState();
+      });
+      $('sliderAutoDuck').addEventListener('input', (e) => {
+        state.autoDuckLevel = normalizeAutoDuckLevel(Number(e.target.value) / 100);
+        $('autoDuckValue').textContent = `${e.target.value}%`;
+        audioEngine.updateDucking();   // SEが鳴っている最中なら、すぐ新しい下げ幅に
+        storage.saveState();
+      });
+      $('autoDuckRelease').addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-rel]');
+        if (!b) return;
+        state.autoDuckRelease = b.dataset.rel;
+        updateDuckAmountUI();
+        storage.saveState();
+      });
+      $('sliderXfade').addEventListener('input', (e) => {
+        state.bgm.xfadeSec = normalizeXfadeSec(Number(e.target.value));
+        $('xfadeValue').textContent = `${state.bgm.xfadeSec.toFixed(1)}秒`;
         storage.saveState();
       });
 
@@ -12508,6 +12647,7 @@ registerProcessor('livepad-rec', LivepadRec);
         if (REPEAT_ORDER.includes(saved.bgmRepeat)) state.bgm.repeat = saved.bgmRepeat;
         else if (typeof saved.bgmLoop === 'boolean') state.bgm.repeat = saved.bgmLoop ? 'one' : 'all';
         if (typeof saved.bgmCrossfade === 'boolean') state.bgm.crossfade = saved.bgmCrossfade;
+        state.bgm.xfadeSec = normalizeXfadeSec(saved.bgmXfadeSec);
         if (typeof saved.duckingEnabled === 'boolean') state.ducking.enabled = saved.duckingEnabled;
         if (saved.layoutMode) state.layoutMode = saved.layoutMode;
         if (saved.themeColor && THEMES[saved.themeColor]) state.themeColor = saved.themeColor;
@@ -12520,6 +12660,8 @@ registerProcessor('livepad-rec', LivepadRec);
         if (Array.isArray(saved.audioTrash)) state.audioTrash = saved.audioTrash.filter(x => typeof x === 'string');
         if (saved.obs) state.obs = normalizeObs(saved.obs);
         if (typeof saved.duckAmount === 'number') state.duckAmount = saved.duckAmount;
+        state.autoDuckLevel = normalizeAutoDuckLevel(saved.autoDuckLevel);
+        if (AUTO_DUCK_RELEASE[saved.autoDuckRelease]) state.autoDuckRelease = saved.autoDuckRelease;
         if (saved.eq) state.eq = normalizeEq(saved.eq);
         if (saved.fx) state.fx = normalizeFx(saved.fx);
         if (saved.pitch) state.pitch = normalizePitch(saved.pitch);
