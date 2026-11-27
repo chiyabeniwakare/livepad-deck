@@ -576,6 +576,13 @@
       border-color: rgb(var(--ac-700));
       box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,.7);
     }
+    /* 返し（PCだけ）：フェーダーが1本増えるぶん列を足す */
+    html:not(.no-obs) .mixer-grid { grid-template-columns: repeat(5, minmax(0, 1fr)) clamp(66px, 24%, 92px); }
+    html:not(.no-obs) .mixer-actions { grid-column: 6; }
+    .vfader.is-monitor { --fc: 167 139 250; }
+    .vfader.is-monitor.is-off { opacity: .35; pointer-events: none; }
+    #monitorValue.is-off { color: rgb(var(--n-64748b)); }
+    #monitorValue.is-limited { color: #fbbf24; }
     .vfader.is-emerald { --fc: 52 211 153; }
     .vfader.is-emerald .vfader-thumb {
       background: linear-gradient(180deg, #6ee7b7 0%, #059669 100%);
@@ -2115,11 +2122,13 @@
                 <span class="strip-label">SE</span>
                 <span class="strip-label text-accent-300">BGM</span>
                 <span class="strip-label text-emerald-300">MASTER</span>
+                <span class="strip-label obs-only text-violet-300">返し</span>
                 <span class="strip-label">L&nbsp;R</span>
 
                 <div id="faderSe" class="vfader" aria-label="SE全体の音量"></div>
                 <div id="faderBgm" class="vfader is-accent" aria-label="BGMの音量"></div>
                 <div id="faderMaster" class="vfader is-emerald" aria-label="全体の音量"></div>
+                <div id="faderMonitor" class="vfader is-monitor obs-only" aria-label="返し（自分に聞こえる音量）"></div>
                 <div class="vmeter-box">
                   <div id="meterL" class="vmeter"></div>
                   <div id="meterR" class="vmeter"></div>
@@ -2128,6 +2137,7 @@
                 <span id="seVolValue" class="strip-value text-slate-300">100%</span>
                 <span id="bgmVolValue" class="strip-value text-accent-300">70%</span>
                 <span id="masterVolValue" class="strip-value text-emerald-300">50%</span>
+                <span id="monitorValue" class="strip-value obs-only text-violet-300">0dB</span>
                 <span class="strip-value text-slate-500">OUT</span>
 
                 <!-- 右側：PANIC STOP（上）と DUCK（下）。押しやすい正方形ボタン -->
@@ -2968,6 +2978,9 @@
     }
 
     // OBS連携（obs-websocket 5）の設定。OBSはPCごとなので、この設定は同期しない（端末ごと）
+    /** 返し（MONITOR）で下げられるいちばん下：OBSの音量は +26dB までしか上げられないので */
+    const MONITOR_MIN_DB = -26;
+
     function createDefaultObs() {
       return {
         enabled: false,
@@ -2975,7 +2988,8 @@
         password: '',
         nowPlaying: { enabled: true, inputName: 'LIVEPAD Now Playing', format: '♪ {title}' },
         voiceDuck: { enabled: false, inputName: '', thresholdDb: -35, amount: 0.35 },
-        stream: { onStart: 'none', onStop: 'none' }   // onStart：none / resume / folder:<id>、onStop：none / fade
+        stream: { onStart: 'none', onStop: 'none' },  // onStart：none / resume / folder:<id>、onStop：none / fade
+        monitor: { db: 0, applied: 0 }   // 返し：db＝下げたい量（0〜-26dB）、applied＝今OBSの「LIVEPAD DECK Audio」を上げている量（dB）
       };
     }
 
@@ -3004,6 +3018,10 @@
         stream: {
           onStart: typeof st.onStart === 'string' ? st.onStart : 'none',
           onStop: st.onStop === 'fade' ? 'fade' : 'none'
+        },
+        monitor: {
+          db: num((x.monitor || {}).db, MONITOR_MIN_DB, 0, 0),
+          applied: num((x.monitor || {}).applied, 0, -MONITOR_MIN_DB, 0)
         }
       };
     }
@@ -5478,6 +5496,7 @@ registerProcessor('livepad-rec', LivepadRec);
             '<b>L / R</b> は出ている音の大きさ。<b>PEAK</b> は音割れ寸前のときに赤く光ります'
           ] },
           { name: 'SIGNAL FLOW', fig: 'flow', text: '音はこの順に流れます。DUCK（AUTO DUCKINGとDUCKボタン）・EQ・PITCH DECK（TEMPO・KEY）はBGMだけにかかります。FX PADは、FXごとに BGM・ALL・SE のどれにかけるかを選べます。' },
+          { name: '返し（PC・OBS連携）', text: '自分のヘッドホンやスピーカーに聞こえる LIVEPAD の音だけを下げます。下げたぶん OBS の「LIVEPAD DECK Audio」を同じだけ上げるので、<b>配信の音量は変わりません</b>。OBSにつないで「LIVEPAD DECK Audio」があるときに使えます（−26dBまで）。ダブルクリックで 0dB に戻ります。' },
           { name: 'DUCK', fig: 'duck', text: '押している間だけ、BGMを今の音量の80%に下げます（下げ幅は設定の「DUCKボタン」で変えられます）。離すと元に戻ります。' },
           { name: 'PANIC STOP', text: 'SE・BGM・FXの残響まで、全部の音をすぐに止めます。PCでは Esc キーでも押せます。' }
         ]
@@ -6641,7 +6660,11 @@ registerProcessor('livepad-rec', LivepadRec);
           this.buildFx();
 
           this.mainGain.connect(compressor);
-          compressor.connect(this.ctx.destination);
+          // 返し（MONITOR）：スピーカー・ヘッドホンに出る直前。メーターと録音はこの手前（＝配信と同じ大きさ）
+          this.monitorGain = this.ctx.createGain();
+          this.monitorGain.gain.value = Math.pow(10, -state.obs.monitor.applied / 20);
+          compressor.connect(this.monitorGain);
+          this.monitorGain.connect(this.ctx.destination);
 
           const splitter = this.ctx.createChannelSplitter(2);
           this.analyserL = this.ctx.createAnalyser();
@@ -6665,6 +6688,12 @@ registerProcessor('livepad-rec', LivepadRec);
         if (this.ctx.state === 'suspended') {
           this.ctx.resume();
         }
+      }
+
+      /** 返し：スピーカー・ヘッドホンに出る音だけを db 下げる（0 以下） */
+      setMonitorDb(db) {
+        if (!this.ctx || !this.monitorGain) return;
+        this.monitorGain.gain.setTargetAtTime(Math.pow(10, Math.min(0, db) / 20), this.ctx.currentTime, 0.03);
       }
 
       setMasterVolume(val) {
@@ -9430,6 +9459,9 @@ registerProcessor('livepad-rec', LivepadRec);
       obsFailPending();
       obsVoiceRelease(true);
       obs.lastNowPlaying = null;
+      monitor.available = false;
+      monitor.lastSet = null;
+      renderMonitor();
     }
 
     function obsFailPending() {
@@ -9482,10 +9514,13 @@ registerProcessor('livepad-rec', LivepadRec);
         console.warn('OBSの一覧を取れません:', err);
       }
       renderObsLists();
+      monitorRead();   // 返し：「LIVEPAD DECK Audio」の音量を読み直す
     }
 
     function obsOnEvent(type, data) {
-      if (type === 'InputVolumeMeters') {
+      if (type === 'InputVolumeChanged') {
+        monitorOnVolumeChanged(data);
+      } else if (type === 'InputVolumeMeters') {
         obsOnVolumeMeters(data.inputs || []);
       } else if (type === 'StreamStateChanged') {
         obsOnStreamState(data);
@@ -9608,6 +9643,113 @@ registerProcessor('livepad-rec', LivepadRec);
       } finally {
         btn.disabled = obs.status !== 'connected';
       }
+    }
+
+    // ---- 返し（MONITOR）：自分に聞こえる音だけを下げ、下げたぶん OBS の「LIVEPAD DECK Audio」を上げて、配信の音量は変えない ----
+    const monitor = { available: false, base: null, lastSet: null, limited: false, timer: 0, busy: false, again: false };
+
+    /** OBSの「LIVEPAD DECK Audio」の今の音量を読み、元の（配信の）音量を求める */
+    async function monitorRead() {
+      if (!obsConnected()) { monitor.available = false; renderMonitor(); return; }
+      if (!obs.inputs.some(i => i.inputName === OBS_AUDIO_SOURCE)) {
+        // ソースがない：OBS側で上げられないので、返しも下げない
+        monitor.available = false;
+        monitor.base = null;
+        if (state.obs.monitor.applied) { state.obs.monitor.applied = 0; audioEngine.setMonitorDb(0); storage.saveState(); }
+        renderMonitor();
+        return;
+      }
+      try {
+        const r = await obsRequest('GetInputVolume', { inputName: OBS_AUDIO_SOURCE });
+        const db = typeof r.inputVolumeDb === 'number' && isFinite(r.inputVolumeDb) ? r.inputVolumeDb : 0;
+        monitor.base = db - state.obs.monitor.applied;   // 前に上げたぶんを引くと、元の配信の音量
+        monitor.available = true;
+        await monitorApply();
+      } catch (err) {
+        monitor.available = false;
+      }
+      renderMonitor();
+    }
+
+    /** 返しの設定どおりに、LIVEPAD の音を下げ、OBS 側を同じだけ上げる */
+    async function monitorApply() {
+      if (!monitor.available || monitor.base === null || !obsConnected()) { renderMonitor(); return; }
+      if (monitor.busy) { monitor.again = true; return; }
+      monitor.busy = true;
+      try {
+        do {
+          monitor.again = false;
+          const want = -state.obs.monitor.db;                                 // 上げたい量
+          const room = Math.max(0, -MONITOR_MIN_DB - Math.max(0, monitor.base)); // OBS は +26dB まで
+          const comp = Math.min(want, room);
+          monitor.limited = comp < want - 0.05;
+          if (Math.abs(comp - state.obs.monitor.applied) > 0.01 || monitor.lastSet === null) {
+            const target = monitor.base + comp;
+            monitor.lastSet = target;
+            await obsRequest('SetInputVolume', { inputName: OBS_AUDIO_SOURCE, inputVolumeDb: target });
+            state.obs.monitor.applied = comp;
+            audioEngine.setMonitorDb(-comp);
+            storage.saveState();
+          }
+        } while (monitor.again);
+      } catch (err) {
+        console.warn('返しの音量を合わせられません:', err);
+      } finally {
+        monitor.busy = false;
+      }
+      renderMonitor();
+    }
+
+    /** フェーダーを動かしている間は、少しまとめてから送る */
+    function monitorApplySoon() {
+      renderMonitor();
+      if (monitor.timer) return;
+      monitor.timer = setTimeout(() => { monitor.timer = 0; monitorApply(); }, 40);
+    }
+
+    /** OBS の音量が変わった：自分で変えたのでなければ（OBSのフェーダーを手で動かした）、それを新しい元の音量にする */
+    function monitorOnVolumeChanged(data) {
+      if (data.inputName !== OBS_AUDIO_SOURCE || typeof data.inputVolumeDb !== 'number') return;
+      if (monitor.lastSet !== null && Math.abs(data.inputVolumeDb - monitor.lastSet) < 0.05) return;
+      monitor.base = data.inputVolumeDb - state.obs.monitor.applied;
+      monitor.lastSet = data.inputVolumeDb;
+      monitorApply();
+    }
+
+    /** OBS連携をオフにするとき：OBS の音量を元に戻し、返しも 0dB に */
+    async function monitorReset() {
+      if (obsConnected() && monitor.base !== null && state.obs.monitor.applied) {
+        try {
+          monitor.lastSet = monitor.base;
+          await obsRequest('SetInputVolume', { inputName: OBS_AUDIO_SOURCE, inputVolumeDb: monitor.base });
+          state.obs.monitor.applied = 0;
+          audioEngine.setMonitorDb(0);
+          storage.saveState();
+        } catch (err) { /* 戻せなくても進める */ }
+      }
+      monitor.available = false;
+      renderMonitor();
+    }
+
+    function renderMonitor() {
+      const f = $('faderMonitor');
+      const label = $('monitorValue');
+      if (!f || !label) return;
+      const m = state.obs.monitor;
+      const on = monitor.available;
+      f.classList.toggle('is-off', !on);
+      label.classList.toggle('is-off', !on);
+      label.classList.toggle('is-limited', on && monitor.limited);
+      const eff = on ? -Math.min(-m.db, m.applied) : -m.applied;
+      label.textContent = on ? `${eff === 0 ? '0' : eff.toFixed(1).replace(/\.0$/, '')}dB` : 'OBS';
+      if (faderApi.monitor && !f.classList.contains('is-dragging')) faderApi.monitor.set(Math.round((1 - m.db / MONITOR_MIN_DB) * 100));
+      const what = '返し：自分に聞こえる LIVEPAD の音だけを下げます（配信の音量は変わりません）';
+      f.title = !obsConnected()
+        ? `${what}。OBSにつなぐと使えます（右上の OBS ボタン）`
+        : !on ? `${what}。OBSに「${OBS_AUDIO_SOURCE}」がありません（OBS連携の画面の「ブラウザの音をOBSに追加」で作れます）`
+          : monitor.limited ? `${what}。OBS側をこれ以上上げられないので、ここまでしか下げられません`
+            : `${what}。今 ${eff}dB（OBSの「${OBS_AUDIO_SOURCE}」を +${m.applied.toFixed(1)}dB）`;
+      label.title = f.title;
     }
 
     // ---- B：しゃべるとBGMを下げる ----
@@ -9851,7 +9993,7 @@ registerProcessor('livepad-rec', LivepadRec);
         state.obs.enabled = e.target.checked;
         save();
         if (state.obs.enabled) obsConnect();
-        else { obsDisconnect(); setObsStatus('off'); }
+        else monitorReset().finally(() => { obsDisconnect(); setObsStatus('off'); });
       });
       $('obsUrl').addEventListener('change', (e) => { state.obs.url = e.target.value.trim() || createDefaultObs().url; save(); });
       $('obsPassword').addEventListener('change', (e) => { state.obs.password = e.target.value; save(); });
@@ -11847,6 +11989,17 @@ registerProcessor('livepad-rec', LivepadRec);
       $('seVolValue').textContent = `${Math.round(state.seVolume * 100)}%`;
       $('bgmVolValue').textContent = `${Math.round(state.bgm.volume * 100)}%`;
       $('masterVolValue').textContent = `${Math.round(state.masterVolume * 100)}%`;
+      // 返し：上いっぱい＝0dB（配信と同じ）、下いっぱい＝-26dB
+      faderApi.monitor = createVFader($('faderMonitor'), {
+        value: Math.round((1 - state.obs.monitor.db / MONITOR_MIN_DB) * 100),
+        defaultValue: 100,
+        onInput: (pct) => {
+          state.obs.monitor.db = Math.round(MONITOR_MIN_DB * (1 - pct / 100) * 2) / 2;
+          monitorApplySoon();
+          storage.saveState();
+        }
+      });
+      renderMonitor();
     }
 
     // =========================================================================
